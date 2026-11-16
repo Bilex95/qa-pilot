@@ -84,4 +84,4 @@ Data sent to the model provider when AI is on: only the fields listed per featur
 | RISK-08 | Context resets during long stages | Medium | Low | `PROGRESS.md` after every task; review files per stage |
 | RISK-09 | Next.js or dependency version churn breaks the build | Medium | Medium | Pin exact versions in lockfiles; record versions in the Stage 3 review |
 | RISK-10 | Kanban drag and drop is hard to make accessible | Medium | Low | "Move to" menu as keyboard alternative |
-| RISK-11 | SLA rule mistaken for a contractual SLA | Low | Low | Labelled as an assumption in D-019 and the UI tooltip |
+| RISK-11 | SLA rule mistaken for a contractual SLA | Low | Low | Thresholds kept in one constant; labelled as working values in D-019 and the UI tooltip until the product owner confirms the numbers |

@@ -19,8 +19,8 @@ The seed data (Stage 3) creates these personas plus extra members so every role 
 | `org_admin` | Org Admin | Everything in the org, including members, settings, audit log and AI controls |
 | `qa_lead` | QA Lead | Owns projects, releases, triage, test planning and reports; cannot manage members or org settings |
 | `qa_engineer` | QA Engineer | Reports and edits bugs, writes cases, executes runs, uses AI helpers |
-| `developer` | Developer | Works assigned bugs, comments, reports bugs without severity or priority (D-006, D-032) |
-| `viewer` | Viewer | Read only across the org; no comments, no AI (D-007) |
+| `developer` | Developer | Works assigned bugs, self assigns unassigned bugs, comments, reports bugs without severity or priority (D-006, D-032) |
+| `viewer` | Viewer | Read only across the org except comments; no AI (D-007) |
 
 Rules that apply to everyone:
 * Roles are per membership; a user can be QA Lead in one org and Viewer in another (D-022).
@@ -62,11 +62,11 @@ Legend: **Y** allowed, **O** own records only (see notes), **A** assigned to me 
 | `bug.create` | Y | Y | Y | Y (no severity or priority) | N |
 | `bug.update_fields` (title, description, steps, expected, actual, component, environment, labels, release) | Y | Y | Y | O (reported by me) | N |
 | `bug.set_severity_priority` | Y | Y | Y | N | N |
-| `bug.assign` | Y | Y | Y | N | N |
+| `bug.assign` | Y | Y | Y | Self (only when unassigned) | N |
 | `bug.transition` | Y (any allowed) | Y (any allowed) | Y (QA transitions, section 4 of DOMAIN_MODEL) | A (dev transitions) | N |
 | `bug.delete` | Y | Y | N | N | N |
-| `comment.create` | Y | Y | Y | Y | N |
-| `comment.update` / `comment.delete` | Y (delete any) | O | O | O | N |
+| `comment.create` | Y | Y | Y | Y | Y |
+| `comment.update` / `comment.delete` | Y (delete any) | O | O | O | O |
 | `attachment.upload` | Y | Y | Y | Y | N |
 | `attachment.delete` | Y | Y | O | O | N |
 | `attachment.download` | Y | Y | Y | Y | Y |

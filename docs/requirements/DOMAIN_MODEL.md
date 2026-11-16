@@ -152,11 +152,12 @@ Org Admin and QA Lead may perform every transition below. The table lists the ad
 | reopened | in_progress | Developer (assignee) | Work restarted |
 
 Rules:
-* "Developer (assignee)" means the developer is the bug's assignee (D-006). Otherwise 403.
+* "Developer (assignee)" means the developer is the bug's assignee, or the bug is unassigned, in which case the move self assigns it (D-006). A bug assigned to someone else returns 403.
 * Viewer may perform no transition.
 * A transition not in the table returns `409 invalid_transition` with `details.allowed` listing valid targets.
 * Side effects: `status_changed_at` set on every move; `resolved_at` set on entering `fixed` or `wont_fix`; `closed_at` set on `closed`; both cleared on `reopened`. Every move writes a BugActivity and an AuditEvent.
-* Moving to `in_progress` with no assignee assigns the acting developer.
+* Moving to `in_progress` with no assignee assigns the acting user when that user is a Developer.
+* Developers may also self assign an unassigned bug without changing its status (`PATCH` with their own id as `assignee_id`).
 
 ## 5. Other workflows
 

@@ -101,3 +101,24 @@ All 32 are in `docs/DECISIONS.md`. The ones most worth your attention:
 ## 7. Next stage
 
 Stage 2: HTML first prototype and design lock. One self contained `design/reference/approved.html` with hash routing covering all 22 screens, a role switcher for the 5 roles, a dev toolbar to show empty, loading and error states, design tokens documented in `design/TOKENS.md`, 100 Playwright screenshots (desktop 1440x900, mobile 390x844) validated by `validate_design_assets.py`, and a contact sheet in `design/screenshots/INDEX.md`.
+
+## 8. Changes after feedback
+
+Feedback at the gate: "Approved with these notes". Applied on `stage/1-requirements` before the merge (see D-033):
+
+| Note | Change |
+|---|---|
+| Developers can also self assign unassigned bugs | D-006 updated; `bug.assign` for Developer is now "Self (only when unassigned)"; DOMAIN_MODEL transition rules and REQ-020 updated; C-05 updated |
+| Viewers can comment but can't change anything else | D-007 reversed; `comment.create` allowed for Viewer, own comment edit and delete allowed; REQ-023 and C-06 updated. Sections 3 and 5 above still describe the original rule and are kept as the record of what was reviewed |
+| Keep D-014 as is | No change |
+| SLA thresholds, Critical in hours, mark confirmed | D-019 now measures Critical in hours. **Not marked confirmed:** the note's numbers were still placeholders ("X"). Working values meanwhile: Critical 48 hours, High 5 days, Medium 14 days, Low 30 days, kept in one constant. RISK-11 and C-09 updated |
+
+Rerun of the checker after the changes:
+
+```
+> python scripts/check_traceability.py
+Requirements: 63 (Must 52, Should 9, Could 2)
+Screens: 22  Endpoints: 97  Artifacts: 5  Decisions: 33
+Planned screenshots: 100 (100 unique)
+PASS: every screen maps to a REQ, every Must REQ maps to a screen, endpoint or artifact, no orphan ids, prose rule holds
+```

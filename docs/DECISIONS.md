@@ -29,12 +29,12 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 
 ## D-006 Developer edit scope (attribute based rule)
 * **Options:** developers edit any bug; developers edit only bugs assigned to them or reported by them.
-* **Decision:** Developers may change status and comment on any bug, but status changes are limited to bugs assigned to them. They may edit descriptive fields only on bugs they reported. They cannot change severity or priority.
-* **Reason:** Prevents accidental edits while keeping developers unblocked.
+* **Decision:** Developers may comment on any bug. Status changes are limited to bugs assigned to them. They may assign an unassigned bug to themselves (self assign), and moving an unassigned bug to In progress self assigns it. They cannot assign bugs to other people or take a bug already assigned to someone else. They may edit descriptive fields only on bugs they reported. They cannot change severity or priority.
+* **Reason:** Prevents accidental edits while keeping developers unblocked. Self assign confirmed by the product owner at the Stage 1 gate (D-033).
 
 ## D-007 Can Viewers comment?
-* **Decision:** No. Viewers are fully read only, including comments and AI features.
-* **Reason:** BUILD_PLAN defines the Viewer as read only dashboards and release reports.
+* **Decision:** Yes. Viewers can add comments and edit or delete their own comments. Everything else stays read only: no bug fields, status, attachments, test data, releases or AI features.
+* **Reason:** Changed by the product owner at the Stage 1 gate (D-033). Stakeholders often need to ask questions on a bug.
 
 ## D-008 Bug identifiers
 * **Decision:** Each project has a short uppercase key (2 to 6 letters, for example `WEB`). Bugs get a per project sequence number, shown as `WEB-42`. UUIDs remain the internal primary keys.
@@ -87,8 +87,9 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 * **Reason:** Bug content can be sensitive; metadata is enough for cost tracking.
 
 ## D-019 SLA definition for the sla-breach seed scenario and dashboard
-* **Decision:** A bug breaches SLA when it is open and not updated for longer than: Critical 2 days, High 5 days, Medium 14 days, Low 30 days. Shown as a dashboard count. Not configurable in v1.
-* **Reason:** A reasonable default; marked as an assumption, not a contractual SLA.
+* **Decision:** A bug breaches SLA when it is open and not updated for longer than its severity threshold. Critical is measured in hours; the others in days. Shown as a dashboard count. Not configurable in v1. The thresholds live in one constant so they can be changed in one place.
+* **Status:** Product owner will supply the confirmed values. At the Stage 1 gate the feedback gave the format ("Critical X hours, High X days, Medium X days, Low X days") but the numbers were still placeholders. Until the numbers arrive, these **working values** are used: Critical 48 hours, High 5 days, Medium 14 days, Low 30 days. They will be marked confirmed once the numbers are given.
+* **Reason:** Avoids recording guessed numbers as confirmed.
 
 ## D-020 Password policy and hashing
 * **Decision:** Minimum 10 characters, at least one letter and one number. Hashed with argon2id (`argon2-cffi`). Login is throttled to 10 failed attempts per email per 15 minutes.
@@ -141,3 +142,9 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 ## D-032 Developers creating bugs
 * **Decision:** Developers may create bugs (they often find them) but cannot set severity or priority; those default to Medium and P3 and wait for triage.
 * **Reason:** Supports real teams while keeping triage with QA.
+
+## D-033 Stage 1 gate feedback
+* **Question:** How should the Stage 1 approval notes be applied?
+* **Notes received:** (1) Developers can also self assign unassigned bugs; (2) Viewers can comment but cannot change anything else; (3) keep D-014; (4) use confirmed SLA thresholds with Critical in hours.
+* **Decision:** (1) adopted, D-006 updated. (2) adopted, D-007 updated. (3) D-014 unchanged. (4) Format adopted and D-019 updated, but the numbers in the note were still placeholders ("X"), so D-019 is marked as waiting for values and uses working values meanwhile.
+* **Reason:** Notes 1 and 2 still contained the template's "(or: keep as is)" alternatives; the stated option was taken as the choice. Either can be reversed at the Stage 2 gate.
