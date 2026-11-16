@@ -1,0 +1,1658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA Pilot prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   QA Pilot design tokens (documented in design/TOKENS.md)
+   ========================================================================== */
+:root {
+  /* Base palette */
+  --paper: #F6F7F5;          /* app background, cool off white */
+  --surface: #FFFFFF;        /* panels, tables, inputs */
+  --surface-sunk: #EEF0ED;   /* table header, sunken areas */
+  --ink: #18222F;            /* primary text, sidebar */
+  --ink-2: #435061;          /* secondary text */
+  --ink-3: #5F6B7A;          /* muted text, meets 4.5:1 on paper */
+  --line: #D9DDD8;           /* borders */
+  --line-strong: #828B84;    /* input and control borders: 3.51:1 on white, 3.27:1 on paper, 3.07:1 on the grey disabled fill (WCAG 1.4.11) */
+  --primary: #0C6B67;        /* instrument teal: primary actions, links, focus */
+  --primary-hover: #095753;
+  --primary-wash: #E3F1EF;
+  --on-primary: #FFFFFF;
+  --sidebar: #18222F;
+  --sidebar-ink: #C9D2DC;
+  --sidebar-active: #253244;
+
+  /* AI suggestion "proof mark" (reserved for AI output only) */
+  --ai-wash: #FFF7D6;
+  --ai-mark: #F4D35E;
+  --ai-line: #9A7400;
+  --ai-ink: #4D3A00;
+
+  /* Severity (always paired with a text label) */
+  --sev-critical: #B42318; --sev-critical-wash: #FDE8E6;
+  --sev-high: #B5400B;     --sev-high-wash: #FDEBDD;
+  --sev-medium: #3E5BA9;   --sev-medium-wash: #E6ECFA;
+  --sev-low: #4F6B5A;      --sev-low-wash: #E5EFE8;
+
+  /* Feedback */
+  --ok: #1E7F4F;  --ok-wash: #E2F3E9;
+  --warn: #8A5300; --warn-wash: #FCEFD9;
+  --danger: #B42318; --danger-wash: #FDE8E6;
+  --info: #2563C9; --info-wash: #E5EEFC;
+
+  /* Test results */
+  --res-pass: #1E7F4F; --res-fail: #B42318; --res-blocked: #6B5BB5; --res-skipped: #7C8696; --res-untested: #D5DAD6;
+
+  /* Chart series (validated with the dataviz validator) */
+  --series-1: #C2410C; /* opened */
+  --series-2: #2563C9; /* closed */
+  --chart-bar: #0C6B67;
+  --chart-grid: #E6E9E5;
+
+  /* Type */
+  --font-ui: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --fs-xs: 12px; --fs-sm: 13px; --fs-md: 14px; --fs-lg: 16px; --fs-xl: 20px; --fs-2xl: 26px; --fs-3xl: 34px;
+  --lh-tight: 1.2; --lh-body: 1.5;
+  --fw-regular: 400; --fw-bold: 700;
+
+  /* Spacing (4 px base) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  /* Radius: small for controls, medium for panels, pill for badges */
+  --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
+
+  /* Elevation: borders do most of the work, shadows only for floating layers */
+  --shadow-float: 0 8px 24px rgba(24, 34, 47, 0.16), 0 1px 3px rgba(24, 34, 47, 0.10);
+  --shadow-drag: 0 12px 28px rgba(24, 34, 47, 0.22);
+
+  /* Layout */
+  --sidebar-w: 232px; --header-h: 56px; --content-max: 1280px;
+  --focus: 0 0 0 3px rgba(12, 107, 103, 0.35);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--font-ui); font-size: var(--fs-md); line-height: var(--lh-body); color: var(--ink); background: var(--paper); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { margin: 0; line-height: var(--lh-tight); font-weight: var(--fw-bold); }
+h1 { font-size: var(--fs-2xl); letter-spacing: -0.01em; }
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
+p { margin: 0; }
+a { color: var(--primary); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--primary-hover); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-size: 0.92em; font-weight: 500; letter-spacing: 0; white-space: nowrap; }
+.muted { color: var(--ink-3); }
+.small { font-size: var(--fs-sm); }
+.xs { font-size: var(--fs-xs); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: #fff; padding: 8px 12px; border-radius: var(--r-sm); z-index: 100; }
+.skip:focus { left: 8px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+/* ==========================================================================
+   Controls
+   ========================================================================== */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); height: 36px; padding: 0 var(--sp-4); border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-weight: var(--fw-bold); font-size: var(--fs-md); cursor: pointer; white-space: nowrap; text-decoration: none; }
+.btn:hover { background: var(--surface-sunk); color: var(--ink); }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.btn.primary:hover { background: var(--primary-hover); color: var(--on-primary); }
+.btn.danger { color: var(--danger); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ghost:hover { background: var(--surface-sunk); }
+.btn.sm { height: 30px; padding: 0 var(--sp-3); font-size: var(--fs-sm); }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.icon-btn { width: 36px; padding: 0; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label, .label { font-weight: var(--fw-bold); font-size: var(--fs-sm); color: var(--ink); }
+.hint { font-size: var(--fs-xs); color: var(--ink-3); }
+.input, .select, .textarea { width: 100%; min-height: 36px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface); }
+.textarea { min-height: 96px; resize: vertical; line-height: var(--lh-body); }
+.input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--primary); box-shadow: var(--focus); }
+.input[disabled], .select[disabled], .textarea[disabled] { background: var(--surface-sunk); color: var(--ink-3); }
+.field.invalid .input, .field.invalid .select, .field.invalid .textarea { border-color: var(--danger); }
+.err { color: var(--danger); font-size: var(--fs-sm); display: flex; gap: 6px; align-items: flex-start; }
+.checkbox { display: inline-flex; gap: var(--sp-2); align-items: center; cursor: pointer; }
+.checkbox input { width: 16px; height: 16px; accent-color: var(--primary); }
+.switch { position: relative; width: 40px; height: 22px; flex: none; }
+.switch input { opacity: 0; position: absolute; inset: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch span { position: absolute; inset: 0; background: var(--line-strong); border-radius: var(--r-pill); transition: background .15s; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch input:checked + span { background: var(--primary); }
+.switch input:checked + span::after { transform: translateX(18px); }
+.switch input:focus-visible + span { box-shadow: var(--focus); }
+
+/* Badges */
+.badge { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: var(--fw-bold); white-space: nowrap; background: var(--surface-sunk); color: var(--ink-2); }
+.badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.sev-critical { background: var(--sev-critical-wash); color: var(--sev-critical); }
+.sev-high { background: var(--sev-high-wash); color: var(--sev-high); }
+.sev-medium { background: var(--sev-medium-wash); color: var(--sev-medium); }
+.sev-low { background: var(--sev-low-wash); color: var(--sev-low); }
+.pri { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 500; padding: 1px 6px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); color: var(--ink-2); background: var(--surface); }
+.pri.p1 { border-color: var(--sev-critical); color: var(--sev-critical); }
+.st { background: var(--surface-sunk); color: var(--ink-2); }
+.st-new { background: #E8ECF2; color: #2F3E52; }
+.st-triaged { background: #E9E7F7; color: #44388F; }
+.st-in_progress { background: var(--info-wash); color: #1C4E9E; }
+.st-fixed { background: var(--primary-wash); color: #095753; }
+.st-ready_for_retest { background: #F1E6F7; color: #6A2F86; }
+.st-verified { background: var(--ok-wash); color: #17663F; }
+.st-closed { background: #ECEEEC; color: #4A5560; }
+.st-reopened { background: var(--sev-high-wash); color: #96350A; }
+.st-wont_fix { background: transparent; color: var(--ink-3); border: 1px dashed var(--line-strong); }
+.ready { background: var(--ok-wash); color: #17663F; }
+.at_risk { background: var(--warn-wash); color: var(--warn); }
+.blocked { background: var(--danger-wash); color: var(--danger); }
+.sla { background: var(--danger-wash); color: var(--danger); }
+.label-chip { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: var(--r-sm); font-size: var(--fs-xs); background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); }
+.avatar { width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: var(--fw-bold); color: #fff; flex: none; }
+.who { display: inline-flex; align-items: center; gap: var(--sp-2); }
+
+/* ==========================================================================
+   App shell
+   ========================================================================== */
+.shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+.sidebar { background: var(--sidebar); color: var(--sidebar-ink); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.brand { display: flex; align-items: center; gap: 10px; height: var(--header-h); padding: 0 var(--sp-5); color: #fff; text-decoration: none; font-weight: var(--fw-bold); font-size: var(--fs-lg); }
+.brand:hover { color: #fff; }
+.brand-mark { width: 26px; height: 26px; }
+.nav { padding: var(--sp-2) var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: 2px; }
+.nav-group { margin-top: var(--sp-4); padding: 0 var(--sp-2) var(--sp-1); font-size: var(--fs-xs); color: #8D9AAA; }
+.nav a { display: flex; align-items: center; gap: var(--sp-3); height: 36px; padding: 0 var(--sp-3); border-radius: var(--r-sm); color: var(--sidebar-ink); text-decoration: none; font-size: var(--fs-md); }
+.nav a svg { width: 18px; height: 18px; opacity: .8; }
+.nav a:hover { background: var(--sidebar-active); color: #fff; }
+.nav a[aria-current="page"] { background: var(--sidebar-active); color: #fff; box-shadow: inset 3px 0 0 #5FC3BC; }
+.nav .count { margin-left: auto; font-size: var(--fs-xs); color: #8D9AAA; }
+.sidebar-foot { margin-top: auto; padding: var(--sp-4) var(--sp-5); font-size: var(--fs-xs); color: #8D9AAA; border-top: 1px solid #263345; }
+.main { min-width: 0; display: flex; flex-direction: column; }
+.header { height: var(--header-h); display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-6); background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+.org-switch { display: inline-flex; align-items: center; gap: var(--sp-2); height: 36px; padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); cursor: pointer; font-weight: var(--fw-bold); }
+.org-switch .org-badge { width: 22px; height: 22px; border-radius: var(--r-sm); background: var(--primary); color: #fff; display: grid; place-items: center; font-size: 11px; }
+.search { position: relative; flex: 1; max-width: 420px; }
+.search input { padding-left: 34px; background: var(--paper); }
+.search svg { position: absolute; left: 10px; top: 10px; width: 16px; height: 16px; color: var(--ink-3); }
+.header-spacer { flex: 1; }
+.role-switch { display: inline-flex; align-items: center; gap: var(--sp-2); padding: 3px 4px 3px 10px; border: 1.5px dashed var(--line-strong); border-radius: var(--r-sm); font-size: var(--fs-xs); color: var(--ink-3); }
+.role-switch select { border: 0; background: transparent; font-weight: var(--fw-bold); font-size: var(--fs-sm); color: var(--ink); padding: 4px; }
+.user-btn { display: inline-flex; align-items: center; gap: var(--sp-2); background: none; border: 0; cursor: pointer; padding: 4px; border-radius: var(--r-sm); }
+.menu-toggle { display: none; }
+.content { padding: var(--sp-6); max-width: var(--content-max); width: 100%; }
+.content.wide { max-width: none; }
+.page-head { display: flex; align-items: flex-end; gap: var(--sp-4); flex-wrap: wrap; margin-bottom: var(--sp-5); }
+.page-head .grow { flex: 1; min-width: 220px; }
+.page-head p { color: var(--ink-3); margin-top: 6px; }
+.crumbs { font-size: var(--fs-sm); color: var(--ink-3); margin-bottom: var(--sp-2); }
+.crumbs a { color: var(--ink-3); }
+.actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.scrim { display: none; }
+
+/* Panels and layout helpers */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+.panel-head { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--line); }
+.panel-head h2, .panel-head h3 { font-size: var(--fs-lg); flex: 1; }
+.panel-body { padding: var(--sp-5); }
+.grid { display: grid; gap: var(--sp-4); }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--sp-5); align-items: start; }
+.split.left { grid-template-columns: 300px minmax(0, 1fr); }
+.split > *, .grid > *, .stack > * { min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: var(--sp-4); }
+.row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.divider { height: 1px; background: var(--line); margin: var(--sp-4) 0; }
+
+/* Readout strip: numbers that matter, set like an instrument panel, not cards */
+.readout { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); margin-bottom: var(--sp-5); }
+.readout > div { padding: var(--sp-4) var(--sp-5); border-left: 1px solid var(--line); }
+.readout > div:first-child { border-left: 0; }
+.readout .num { font-size: var(--fs-3xl); font-weight: var(--fw-bold); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.readout .cap { color: var(--ink-2); font-size: var(--fs-sm); margin-top: 2px; }
+.readout .sub { color: var(--ink-3); font-size: var(--fs-xs); margin-top: 6px; }
+.readout .alert .num { color: var(--danger); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table.t { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
+.t th { text-align: left; font-size: var(--fs-xs); color: var(--ink-2); font-weight: var(--fw-bold); background: var(--surface-sunk); padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.t td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.t tr:last-child td { border-bottom: 0; }
+.t tbody tr:hover { background: #FAFBFA; }
+.t .title-cell a { color: var(--ink); text-decoration: none; font-weight: var(--fw-bold); }
+.t .title-cell a:hover { color: var(--primary); text-decoration: underline; }
+.t th button { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.pager { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line); font-size: var(--fs-sm); color: var(--ink-3); }
+.pager .grow { flex: 1; }
+
+/* Filter bar */
+.filters { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); }
+.filters .input, .filters .select { width: auto; min-width: 140px; height: 34px; min-height: 34px; padding-top: 4px; padding-bottom: 4px; }
+.filters .search-f { min-width: 240px; flex: 1; max-width: 340px; }
+.views { display: flex; gap: var(--sp-1); align-items: center; padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.view-tab { border: 0; background: none; padding: 6px 10px; border-radius: var(--r-sm); font-weight: var(--fw-bold); font-size: var(--fs-sm); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.view-tab[aria-pressed="true"] { background: var(--primary-wash); color: var(--primary-hover); }
+.view-tab:hover { background: var(--surface-sunk); }
+
+/* Tabs */
+.tabs { display: flex; gap: var(--sp-1); border-bottom: 1px solid var(--line); margin-bottom: var(--sp-4); overflow-x: auto; }
+.tab { border: 0; background: none; padding: 10px 12px; font-weight: var(--fw-bold); color: var(--ink-3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--primary); }
+
+/* Definition list (bug fields) */
+.dl { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px var(--sp-3); align-items: center; font-size: var(--fs-md); }
+.dl dt { color: var(--ink-3); font-size: var(--fs-sm); }
+.dl dd { margin: 0; min-width: 0; }
+.dl .select { height: 32px; min-height: 32px; padding: 4px 8px; }
+
+/* Bug detail text blocks */
+.prose h3 { font-size: var(--fs-md); margin: var(--sp-5) 0 var(--sp-2); }
+.prose h3:first-child { margin-top: 0; }
+.prose ol { margin: 0; padding-left: 22px; }
+.prose ol li { padding: 2px 0; }
+.ea { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.ea > div { border: 1px solid var(--line); border-radius: var(--r-sm); padding: var(--sp-3); }
+.ea .ea-title { font-size: var(--fs-xs); font-weight: var(--fw-bold); margin-bottom: 4px; }
+.ea .exp .ea-title { color: var(--ok); }
+.ea .act .ea-title { color: var(--danger); }
+
+/* Timeline */
+.timeline { list-style: none; margin: 0; padding: 0; }
+.timeline li { display: grid; grid-template-columns: 26px 1fr; gap: var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--line); }
+.timeline li:last-child { border-bottom: 0; }
+.timeline .comment-body { margin-top: 4px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-sm); padding: var(--sp-3); white-space: pre-line; }
+.event-dot { width: 26px; height: 26px; display: grid; place-items: center; color: var(--ink-3); }
+.event-dot svg { width: 16px; height: 16px; }
+
+/* Attachments */
+.files { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.file { display: inline-flex; align-items: center; gap: var(--sp-2); padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); font-size: var(--fs-sm); background: var(--surface); }
+.file svg { width: 16px; height: 16px; color: var(--ink-3); }
+.drop { border: 1.5px dashed var(--line-strong); border-radius: var(--r-md); padding: var(--sp-4); text-align: center; color: var(--ink-3); font-size: var(--fs-sm); }
+
+/* AI proof mark: the one memorable element */
+.suggest { position: relative; border: 1.5px dashed var(--ai-line); background: var(--ai-wash); border-radius: var(--r-md); padding: var(--sp-4); }
+.suggest-tag { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: var(--fw-bold); color: var(--ai-ink); background: var(--ai-mark); padding: 2px 8px; border-radius: var(--r-sm); margin-bottom: var(--sp-3); }
+.suggest-tag svg { width: 14px; height: 14px; }
+.suggest mark { background: linear-gradient(transparent 55%, var(--ai-mark) 55%); color: inherit; padding: 0 1px; }
+.suggest .reason { color: var(--ai-ink); font-size: var(--fs-sm); margin-top: var(--sp-2); }
+.suggest-actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); flex-wrap: wrap; }
+.ai-panel { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.ai-panel .panel-head { gap: var(--sp-2); }
+.ai-panel .panel-head svg { width: 18px; height: 18px; color: var(--ai-line); }
+.ai-note { font-size: var(--fs-xs); color: var(--ink-3); }
+.dupes { border: 1px solid #E8C98A; background: #FFF9EC; border-radius: var(--r-md); padding: var(--sp-4); }
+.dupes h3 { font-size: var(--fs-md); display: flex; gap: var(--sp-2); align-items: center; color: var(--warn); }
+.dupe { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) 0; border-top: 1px solid #F0E0BC; }
+.dupe:first-of-type { border-top: 0; }
+.score { font-variant-numeric: tabular-nums; font-weight: var(--fw-bold); font-size: var(--fs-sm); color: var(--ink-2); }
+.score-bar { width: 64px; height: 6px; border-radius: 3px; background: #F0E0BC; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.score-bar i { display: block; height: 100%; background: var(--warn); }
+.thinking { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4); border: 1.5px dashed var(--ai-line); border-radius: var(--r-md); background: var(--ai-wash); color: var(--ai-ink); font-size: var(--fs-sm); }
+.thinking .bar { flex: 1; height: 4px; border-radius: 2px; background: rgba(154,116,0,.18); overflow: hidden; position: relative; }
+.thinking .bar::after { content: ""; position: absolute; inset: 0; width: 40%; background: var(--ai-line); border-radius: 2px; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+
+/* Kanban */
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: 272px; gap: var(--sp-3); overflow-x: auto; padding-bottom: var(--sp-3); align-items: start; }
+.col { background: var(--surface-sunk); border: 1px solid var(--line); border-radius: var(--r-md); display: flex; flex-direction: column; max-height: calc(100vh - 220px); }
+.col-head { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3); font-weight: var(--fw-bold); font-size: var(--fs-sm); }
+.col-head .n { margin-left: auto; color: var(--ink-3); font-weight: var(--fw-regular); }
+.col-body { padding: 0 var(--sp-2) var(--sp-2); display: flex; flex-direction: column; gap: var(--sp-2); overflow-y: auto; min-height: 80px; }
+.col.drop-ok { outline: 2px solid var(--primary); outline-offset: -2px; background: var(--primary-wash); }
+.col.drop-no { outline: 2px dashed var(--danger); outline-offset: -2px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px; cursor: grab; }
+.card:hover { border-color: var(--line-strong); }
+.card.dragging { opacity: .5; box-shadow: var(--shadow-drag); }
+.card .k { font-size: var(--fs-xs); color: var(--ink-3); }
+.card .ttl { font-weight: var(--fw-bold); font-size: var(--fs-sm); margin: 4px 0 8px; line-height: 1.35; }
+.card .ttl a { color: var(--ink); text-decoration: none; }
+.card .meta { display: flex; align-items: center; gap: 6px; }
+.card .meta .avatar { margin-left: auto; width: 22px; height: 22px; font-size: 10px; }
+.col-empty { font-size: var(--fs-xs); color: var(--ink-3); text-align: center; padding: var(--sp-4) var(--sp-2); }
+
+/* Test runs */
+.progress { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--res-untested); gap: 2px; }
+.progress i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--sp-3); font-size: var(--fs-xs); color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.case-row { border-bottom: 1px solid var(--line); }
+.case-row:last-child { border-bottom: 0; }
+.case-head { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); }
+.case-head button.expander { background: none; border: 0; text-align: left; cursor: pointer; padding: 0; font-weight: var(--fw-bold); display: flex; gap: var(--sp-2); align-items: center; }
+.result-btns { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--r-sm); overflow: hidden; }
+.result-btns button { border: 0; border-left: 1px solid var(--line-strong); background: var(--surface); padding: 5px 10px; font-size: var(--fs-xs); font-weight: var(--fw-bold); cursor: pointer; color: var(--ink-2); }
+.result-btns button:first-child { border-left: 0; }
+.result-btns button[aria-pressed="true"].pass { background: var(--res-pass); color: #fff; }
+.result-btns button[aria-pressed="true"].fail { background: var(--res-fail); color: #fff; }
+.result-btns button[aria-pressed="true"].blocked { background: var(--res-blocked); color: #fff; }
+.result-btns button[aria-pressed="true"].skipped { background: var(--res-skipped); color: #fff; }
+.case-detail { padding: 0 var(--sp-4) var(--sp-4) 44px; }
+.steps-t { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.steps-t td, .steps-t th { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+.steps-t th { background: var(--surface-sunk); font-size: var(--fs-xs); }
+.steps-t tr.failed td { background: var(--danger-wash); }
+.failbox { margin-top: var(--sp-3); border: 1px solid #F2B8B2; background: #FFF6F5; border-radius: var(--r-md); padding: var(--sp-4); }
+.res { font-weight: var(--fw-bold); font-size: var(--fs-xs); }
+.res-pass { color: var(--res-pass); } .res-fail { color: var(--res-fail); } .res-blocked { color: var(--res-blocked); } .res-skipped { color: var(--res-skipped); } .res-untested { color: var(--ink-3); }
+
+/* Step editor */
+.step-ed { display: grid; grid-template-columns: 28px 1fr 1fr auto; gap: var(--sp-2); align-items: start; padding: var(--sp-2) 0; border-bottom: 1px solid var(--line); }
+.step-ed .n { font-family: var(--font-mono); color: var(--ink-3); padding-top: 8px; text-align: right; }
+.step-ed .textarea { min-height: 60px; }
+.gen-case { display: grid; grid-template-columns: 22px 1fr; gap: var(--sp-3); padding: var(--sp-3) 0; border-top: 1px dashed rgba(154,116,0,.4); }
+.gen-case:first-of-type { border-top: 0; }
+.type-tag { font-size: var(--fs-xs); font-weight: var(--fw-bold); padding: 1px 6px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line-strong); }
+
+/* Suite list */
+.suite-list { list-style: none; margin: 0; padding: var(--sp-2); }
+.suite-list li a { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); text-decoration: none; color: var(--ink); }
+.suite-list li a:hover { background: var(--surface-sunk); }
+.suite-list li a[aria-current="true"] { background: var(--primary-wash); }
+.suite-list .proj { padding: var(--sp-3) 12px var(--sp-1); font-size: var(--fs-xs); color: var(--ink-3); }
+
+/* Charts */
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: var(--font-ui); fill: var(--ink-2); font-size: 12px; }
+.chart .axis { stroke: var(--line-strong); }
+.chart .grid-l { stroke: var(--chart-grid); }
+.chart [data-tip] { cursor: default; }
+.hbars { display: flex; flex-direction: column; gap: 10px; }
+.hbar { display: grid; grid-template-columns: 120px 1fr 40px; gap: var(--sp-3); align-items: center; font-size: var(--fs-sm); }
+.hbar .track { height: 12px; background: var(--surface-sunk); border-radius: 0 4px 4px 0; }
+.hbar .fill { height: 100%; border-radius: 0 4px 4px 0; background: var(--chart-bar); min-width: 2px; }
+.hbar .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: var(--fw-bold); }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: #fff; padding: 6px 10px; border-radius: var(--r-sm); font-size: var(--fs-xs); z-index: 200; display: none; max-width: 240px; box-shadow: var(--shadow-float); }
+
+/* States */
+.state-box { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-3); padding: var(--sp-12) var(--sp-6); }
+.state-box svg.big { width: 56px; height: 56px; color: var(--ink-3); }
+.state-box h2 { font-size: var(--fs-xl); }
+.state-box p { color: var(--ink-3); max-width: 44ch; }
+.state-box.error svg.big { color: var(--danger); }
+.err-code { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-3); }
+.sk { background: linear-gradient(90deg, #E8EBE7 0%, #F2F4F1 50%, #E8EBE7 100%); background-size: 200% 100%; border-radius: var(--r-sm); animation: shimmer 1.4s linear infinite; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.sk-line { height: 12px; margin: 10px 0; }
+
+/* Auth */
+.auth { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); min-height: 100vh; }
+.auth-side { background: var(--sidebar); color: #DCE3EA; padding: var(--sp-10) var(--sp-12); display: flex; flex-direction: column; gap: var(--sp-8); }
+.auth-side .brand { padding: 0; height: auto; }
+.auth-side h1 { color: #fff; font-size: var(--fs-3xl); max-width: 16ch; line-height: 1.12; letter-spacing: -0.015em; }
+.auth-side p { max-width: 42ch; color: #AEBBC8; }
+.auth-demo { margin-top: auto; background: #FFFFFF; color: var(--ink); border-radius: var(--r-md); padding: var(--sp-5); max-width: 440px; }
+.auth-demo .raw { font-size: var(--fs-sm); color: var(--ink-3); font-style: italic; margin-bottom: var(--sp-3); }
+.auth-main { display: flex; align-items: center; justify-content: center; padding: var(--sp-10) var(--sp-6); }
+.auth-card { width: 100%; max-width: 400px; }
+.auth-card h2 { font-size: var(--fs-2xl); margin-bottom: 6px; }
+.auth-card form { display: flex; flex-direction: column; gap: var(--sp-4); margin-top: var(--sp-6); }
+.banner { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.banner svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.banner.error { background: var(--danger-wash); color: #8E1C13; }
+.banner.info { background: var(--info-wash); color: #1C4E9E; }
+.banner.warn { background: var(--warn-wash); color: #6B4100; }
+.banner.ok { background: var(--ok-wash); color: #17663F; }
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Dialog, toast, menus */
+.modal-back { position: fixed; inset: 0; background: rgba(24,34,47,.45); display: grid; place-items: center; z-index: 90; padding: var(--sp-4); }
+.modal { background: var(--surface); border-radius: var(--r-lg); width: 100%; max-width: 520px; box-shadow: var(--shadow-float); max-height: calc(100vh - 32px); overflow: auto; }
+.modal-head { display: flex; align-items: center; padding: var(--sp-5) var(--sp-5) 0; }
+.modal-head h2 { flex: 1; font-size: var(--fs-xl); }
+.modal-body { padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-4); }
+.modal-foot { display: flex; justify-content: flex-end; gap: var(--sp-2); padding: 0 var(--sp-5) var(--sp-5); }
+.copy-row { display: flex; gap: var(--sp-2); }
+.copy-row .input { font-family: var(--font-mono); font-size: var(--fs-sm); }
+#toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 150; align-items: center; }
+.toast { background: var(--ink); color: #fff; padding: 10px 16px; border-radius: var(--r-sm); box-shadow: var(--shadow-float); font-size: var(--fs-sm); display: flex; gap: 10px; align-items: center; max-width: 92vw; }
+.toast.error { background: #7E1810; }
+.menu { position: absolute; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-float); padding: 4px; min-width: 200px; z-index: 60; }
+.menu button, .menu a { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px 10px; border: 0; background: none; text-align: left; border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm); color: var(--ink); text-decoration: none; }
+.menu button:hover, .menu a:hover { background: var(--surface-sunk); }
+.menu button[disabled] { color: var(--ink-3); cursor: not-allowed; }
+.menu .menu-label { font-size: var(--fs-xs); color: var(--ink-3); padding: 6px 10px 2px; }
+
+/* Prototype dev toolbar (not part of the product) */
+.devbar { position: fixed; right: 16px; bottom: 16px; z-index: 120; background: #fff; border: 1.5px dashed var(--line-strong); border-radius: var(--r-md); box-shadow: var(--shadow-float); padding: 8px 10px; display: flex; gap: 10px; align-items: center; font-size: var(--fs-xs); color: var(--ink-3); }
+.devbar select { font-size: var(--fs-xs); padding: 3px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: #fff; }
+.devbar b { color: var(--ink); }
+body.clean .devbar { display: none; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 1180px) {
+  .split { grid-template-columns: minmax(0, 1fr) 300px; }
+  .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1023px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 264px; transform: translateX(-100%); transition: transform .2s; z-index: 80; }
+  body.nav-open .sidebar { transform: none; }
+  body.nav-open .scrim { display: block; position: fixed; inset: 0; background: rgba(24,34,47,.45); z-index: 70; }
+  .menu-toggle { display: inline-flex; }
+  .split, .split.left { grid-template-columns: 1fr; }
+  .readout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .readout > div:nth-child(3) { border-left: 0; }
+  .readout > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 767px) {
+  .header { padding: 0 var(--sp-3); gap: var(--sp-2); }
+  .header .search, .header .hide-sm { display: none; }
+  .role-switch { padding-left: 6px; }
+  .role-switch .rs-label { display: none; }
+  .content { padding: var(--sp-4); }
+  h1 { font-size: var(--fs-xl); }
+  .g2, .g3, .g4 { grid-template-columns: 1fr; }
+  .ea { grid-template-columns: 1fr; }
+  .readout .num { font-size: var(--fs-2xl); }
+  .readout > div { padding: var(--sp-3) var(--sp-4); }
+  .auth { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .auth-side { padding: var(--sp-6) var(--sp-4); gap: var(--sp-4); }
+  .auth-side h1 { font-size: var(--fs-xl); }
+  .auth-side p, .auth-demo { display: none; }
+  .auth-main { padding: var(--sp-6) var(--sp-4); align-items: flex-start; }
+  .filters .input, .filters .select, .filters .search-f { min-width: 0; flex: 1 1 140px; max-width: none; }
+  /* Tables become stacked rows */
+  table.t.stackable thead { display: none; }
+  table.t.stackable, table.t.stackable tbody, table.t.stackable tr, table.t.stackable td { display: block; width: 100%; }
+  table.t.stackable tr { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); }
+  table.t.stackable td { border: 0; padding: 3px 0; display: flex; gap: var(--sp-3); align-items: center; }
+  table.t.stackable td::before { content: attr(data-label); width: 96px; flex: none; font-size: var(--fs-xs); color: var(--ink-3); }
+  table.t.stackable td.title-cell::before, table.t.stackable td.no-label::before { display: none; }
+  table.t.stackable td.title-cell { padding-bottom: 6px; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .step-ed { grid-template-columns: 24px 1fr auto; }
+  .step-ed .exp-col { grid-column: 2 / 3; }
+  .case-detail { padding-left: var(--sp-4); }
+  .case-head { grid-template-columns: 1fr; }
+  .devbar { left: 8px; right: 8px; bottom: 8px; flex-wrap: wrap; }
+  .hbar { grid-template-columns: 90px 1fr 32px; }
+  .page-head .actions { width: 100%; }
+}
+/* Off canvas drawer is hidden from layout checks and keyboard while closed (D-035) */
+@media (max-width: 1023px) {
+  .sidebar { visibility: hidden; transition: transform .2s, visibility .2s; }
+  body.nav-open .sidebar { visibility: visible; }
+}
+/* Touch sizing: 44 px tap targets at 1024 px and below (D-035) */
+@media (max-width: 1024px) {
+  .btn, .btn.sm { min-height: 44px; height: auto; }
+  .btn.icon-btn, .btn.sm.icon-btn { width: 44px !important; height: 44px !important; min-width: 44px; }
+  .input, .select, .filters .input, .filters .select, .dl .select, .role-switch select { min-height: 44px; height: 44px; }
+  .nav a { height: 44px; }
+  .brand, .org-switch, .user-btn { min-height: 44px; min-width: 44px; }
+  .view-tab, .tab { min-height: 44px; }
+  .result-btns button { min-height: 44px; min-width: 52px; }
+  .case-head button.expander { min-height: 44px; }
+  .t th button { min-height: 44px; min-width: 44px; }
+  .t .title-cell a, .crumbs a, .panel-head a, a.small, .dupe a, .row > a:not(.btn) { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
+  .card .ttl a { display: flex; align-items: center; min-height: 44px; }
+  .checkbox { min-height: 44px; }
+  summary { padding: 12px 0; line-height: 20px; cursor: pointer; }
+  .switch { width: 52px; height: 44px; }
+  .switch span { top: 8px; bottom: 8px; }
+  .switch span::after { width: 22px; height: 22px; }
+  .switch input:checked + span::after { transform: translateX(24px); }
+  .menu button, .menu a { min-height: 44px; }
+}
+/* Small phones */
+@media (max-width: 400px) {
+  .header { gap: 6px; padding: 0 8px; }
+  .org-switch { padding: 0 8px; }
+  .role-switch { padding: 0 2px 0 4px; }
+  .role-switch select { max-width: 112px; }
+  .content { padding: var(--sp-3); }
+  .panel-body { padding: var(--sp-4); }
+  .readout .num { font-size: var(--fs-xl); }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="app"></div>
+<div id="tip" role="tooltip"></div>
+<div id="toasts" aria-live="polite"></div>
+<div class="devbar" id="devbar" aria-label="Prototype controls">
+  <span>Prototype</span>
+  <label>State <select id="dev-state" aria-label="Screen state"></select></label>
+  <span id="dev-route" class="mono"></span>
+</div>
+
+<script>
+/* ==========================================================================
+   Icons (inline SVG, stroke based)
+   ========================================================================== */
+const I = (d, extra='') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${d}</svg>`;
+const ic = {
+  dash: I('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>'),
+  folder: I('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  bug: I('<path d="M8 8a4 4 0 0 1 8 0v1H8z"/><rect x="7" y="9" width="10" height="11" rx="5"/><path d="M12 13v7M3 13h4M17 13h4M4 7l3 2M20 7l-3 2M4 20l3-2M20 20l-3-2"/>'),
+  board: I('<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/>'),
+  suite: I('<path d="M9 5h11M9 12h11M9 19h11"/><path d="M4 5l1 1 2-2M4 12l1 1 2-2M4 19l1 1 2-2"/>'),
+  run: I('<circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z"/>'),
+  release: I('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>'),
+  report: I('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  users: I('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>'),
+  gear: I('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  spark: I('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>'),
+  meter: I('<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/>'),
+  search: I('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
+  plus: I('<path d="M12 5v14M5 12h14"/>'),
+  menu: I('<path d="M4 6h16M4 12h16M4 18h16"/>'),
+  x: I('<path d="M6 6l12 12M18 6L6 18"/>'),
+  chev: I('<path d="M6 9l6 6 6-6"/>'),
+  chevr: I('<path d="M9 6l6 6-6 6"/>'),
+  alert: I('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>'),
+  info: I('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>'),
+  check: I('<path d="M5 12l5 5 9-10"/>'),
+  clip: I('<path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>'),
+  file: I('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>'),
+  img: I('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/>'),
+  msg: I('<path d="M21 12a8 8 0 0 1-11.6 7.2L4 21l1.8-5.4A8 8 0 1 1 21 12z"/>'),
+  move: I('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  user: I('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  copy: I('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>'),
+  grip: I('<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>'),
+  trash: I('<path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/>'),
+  up: I('<path d="M12 19V5M6 11l6-6 6 6"/>'),
+  down: I('<path d="M12 5v14M6 13l6 6 6-6"/>'),
+  download: I('<path d="M12 4v12M6 11l6 6 6-6M4 20h16"/>'),
+  cloud: I('<path d="M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19.5 10 4 4 0 0 1 18 18z"/>'),
+  lock: I('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+  compass: I('<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>'),
+  refresh: I('<path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4"/>'),
+  logout: I('<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/>'),
+};
+const brandMark = `<svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="1" y="1" width="26" height="26" rx="6" fill="#0C6B67"/><circle cx="13" cy="13" r="6.5" fill="none" stroke="#fff" stroke-width="2.4"/><path d="M17.5 17.5L22 22" stroke="#F4D35E" stroke-width="2.8" stroke-linecap="round"/></svg>`;
+
+/* ==========================================================================
+   Synthetic data (fictional company "Lumen Freight"; no real people or brands)
+   ========================================================================== */
+const NOW = new Date('2026-11-16T10:00:00Z');
+const ROLES = { org_admin: 'Org Admin', qa_lead: 'QA Lead', qa_engineer: 'QA Engineer', developer: 'Developer', viewer: 'Viewer' };
+const AV = ['#0C6B67', '#3E5BA9', '#8A4B9E', '#B5400B', '#2F6F3E', '#5B4BA6', '#8C3A3A', '#2563C9', '#6B5B2E', '#40566E'];
+const USERS = [
+  { id: 'u1', name: 'Amara Okafor', email: 'amara@lumenfreight.test', role: 'org_admin', joined: '2026-03-02' },
+  { id: 'u2', name: 'Lukas Weber', email: 'lukas@lumenfreight.test', role: 'qa_lead', joined: '2026-03-04' },
+  { id: 'u3', name: 'Priya Raman', email: 'priya@lumenfreight.test', role: 'qa_engineer', joined: '2026-03-10' },
+  { id: 'u4', name: 'Diego Alvarez', email: 'diego@lumenfreight.test', role: 'developer', joined: '2026-03-11' },
+  { id: 'u5', name: 'Hana Sato', email: 'hana@lumenfreight.test', role: 'viewer', joined: '2026-04-01' },
+  { id: 'u6', name: 'Tomás Silva', email: 'tomas@lumenfreight.test', role: 'qa_engineer', joined: '2026-05-19' },
+  { id: 'u7', name: 'Mei Chen', email: 'mei@lumenfreight.test', role: 'developer', joined: '2026-05-20' },
+  { id: 'u8', name: 'Kwame Mensah', email: 'kwame@lumenfreight.test', role: 'developer', joined: '2026-06-02' },
+  { id: 'u9', name: 'Sofia Rossi', email: 'sofia@lumenfreight.test', role: 'viewer', joined: '2026-07-14' },
+  { id: 'u10', name: 'Arjun Mehta', email: 'arjun@lumenfreight.test', role: 'qa_lead', joined: '2026-08-21' },
+];
+const ME_BY_ROLE = { org_admin: 'u1', qa_lead: 'u2', qa_engineer: 'u3', developer: 'u4', viewer: 'u5' };
+const ORGS = [{ slug: 'lumen', name: 'Lumen Freight', initials: 'LF' }, { slug: 'harbor', name: 'Harbor Clinics', initials: 'HC' }];
+const PROJECTS = [
+  { id: 'p1', key: 'WEB', name: 'Customer portal', desc: 'Booking, checkout and account pages for shippers.', comps: ['Checkout', 'Accounts', 'Search', 'Notifications'] },
+  { id: 'p2', key: 'API', name: 'Shipping API', desc: 'Public REST API for rates, tracking and webhooks.', comps: ['Rates', 'Tracking', 'Webhooks', 'Auth'] },
+  { id: 'p3', key: 'MOB', name: 'Driver app', desc: 'Android and iOS app used by delivery drivers.', comps: ['Onboarding', 'Navigation', 'Proof of delivery', 'Offline sync'] },
+];
+const ENVS = ['dev', 'staging', 'prod'];
+const LABELS = { regression: 'Regression', payments: 'Payments', browser: 'Browser', ui: 'UI', ux: 'UX', api: 'API', security: 'Security', docs: 'Docs', crash: 'Crash', 'data loss': 'Data loss', android: 'Android', performance: 'Performance' };
+// [key, title, severity, priority, status, assignee, reporter, component, env, hoursAgo, labels, release]
+const RAW_BUGS = [
+  ['WEB-142', 'Checkout total ignores discount code after changing delivery address', 'critical', 'p1', 'in_progress', 'u4', 'u3', 'Checkout', 'prod', 20, ['regression', 'payments'], 'r1'],
+  ['WEB-141', 'Password reset link opens a blank page in Safari 17', 'high', 'p2', 'triaged', null, 'u6', 'Accounts', 'prod', 30, ['browser'], null],
+  ['WEB-139', 'Search results show archived shipments for new customers', 'medium', 'p3', 'new', null, 'u3', 'Search', 'staging', 6, [], null],
+  ['WEB-138', 'Order history table overlaps the footer at 768 px width', 'low', 'p4', 'ready_for_retest', 'u7', 'u6', 'Accounts', 'staging', 50, ['ui'], 'r1'],
+  ['WEB-137', 'Card payment fails with 3D Secure on the second attempt', 'critical', 'p1', 'triaged', 'u8', 'u3', 'Checkout', 'prod', 70, ['payments'], 'r1'],
+  ['WEB-135', 'Notification preferences are not saved when toggled quickly', 'medium', 'p3', 'fixed', 'u7', 'u6', 'Notifications', 'staging', 26, [], 'r1'],
+  ['WEB-133', 'Invoice PDF shows the wrong currency symbol for CHF', 'high', 'p2', 'reopened', 'u4', 'u3', 'Checkout', 'prod', 140, ['regression'], null],
+  ['WEB-131', 'Login form accepts trailing spaces in email and then fails', 'low', 'p4', 'verified', null, 'u6', 'Accounts', 'staging', 90, [], null],
+  ['WEB-128', 'Saved addresses list does not scroll on small screens', 'low', 'p3', 'closed', 'u7', 'u3', 'Accounts', 'prod', 400, ['ui'], 'r4'],
+  ['WEB-126', 'Session expires during checkout without a warning', 'high', 'p2', 'in_progress', 'u8', 'u2', 'Checkout', 'prod', 40, ['ux'], 'r1'],
+  ['WEB-124', 'Search suggestions flicker while typing', 'low', 'p4', 'wont_fix', null, 'u6', 'Search', 'dev', 500, [], null],
+  ['API-88', 'Rate quote returns 500 when parcel weight has three decimals', 'high', 'p1', 'in_progress', 'u4', 'u3', 'Rates', 'prod', 10, ['api'], 'r2'],
+  ['API-87', 'Tracking webhook retries forever after receiver returns 410', 'high', 'p2', 'triaged', 'u8', 'u6', 'Webhooks', 'prod', 150, ['api'], null],
+  ['API-85', 'Token refresh endpoint accepts revoked refresh tokens', 'critical', 'p1', 'fixed', 'u4', 'u2', 'Auth', 'staging', 15, ['security'], null],
+  ['API-84', 'Tracking events arrive out of order for multi leg shipments', 'medium', 'p3', 'new', null, 'u3', 'Tracking', 'prod', 3, [], null],
+  ['API-82', 'OpenAPI spec lists the wrong type for pickup_window', 'low', 'p4', 'ready_for_retest', 'u7', 'u6', 'Rates', 'dev', 70, ['docs'], 'r2'],
+  ['API-80', 'Pagination cursor skips records that share a timestamp', 'medium', 'p2', 'verified', 'u8', 'u3', 'Tracking', 'staging', 200, [], 'r2'],
+  ['API-77', 'Webhook signature header uses lowercase hex', 'low', 'p4', 'closed', 'u8', 'u6', 'Webhooks', 'prod', 600, [], null],
+  ['MOB-61', 'App crashes when the proof of delivery photo exceeds 12 MB', 'critical', 'p1', 'new', null, 'u6', 'Proof of delivery', 'prod', 4, ['crash'], null],
+  ['MOB-60', 'Offline queue loses scans after the app is force closed', 'high', 'p1', 'triaged', 'u4', 'u3', 'Offline sync', 'prod', 60, ['data loss'], null],
+  ['MOB-58', 'Turn by turn voice repeats the same instruction twice', 'medium', 'p3', 'in_progress', 'u7', 'u6', 'Navigation', 'staging', 30, [], null],
+  ['MOB-57', 'Onboarding skips the licence photo step on Android 14', 'high', 'p2', 'ready_for_retest', 'u8', 'u3', 'Onboarding', 'staging', 20, ['android'], null],
+  ['MOB-55', 'Map tiles load slowly on 3G connections', 'medium', 'p3', 'reopened', 'u7', 'u6', 'Navigation', 'prod', 360, ['performance'], null],
+  ['MOB-52', 'Signature pad is too small on tablets', 'low', 'p4', 'verified', null, 'u3', 'Proof of delivery', 'staging', 100, ['ui'], 'r3'],
+  ['MOB-50', 'Driver name is truncated on the delivery receipt', 'low', 'p4', 'closed', 'u8', 'u6', 'Proof of delivery', 'prod', 800, [], 'r3'],
+];
+const BUGS = RAW_BUGS.map(([key, title, sev, pri, status, assignee, reporter, comp, env, h, labels, release]) => ({
+  key, title, sev, pri, status, assignee, reporter, comp, env, h, labels, release, project: PROJECTS.find(p => key.startsWith(p.key)) }));
+const STATUSES = [
+  ['new', 'New'], ['triaged', 'Triaged'], ['in_progress', 'In progress'], ['fixed', 'Fixed'], ['ready_for_retest', 'Ready for retest'],
+  ['verified', 'Verified'], ['closed', 'Closed'], ['reopened', 'Reopened'], ['wont_fix', "Won't fix"]];
+const STATUS_NAME = Object.fromEntries(STATUSES);
+const OPEN = s => !['verified', 'closed', 'wont_fix'].includes(s);
+const SEVS = [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']];
+const SEV_NAME = Object.fromEntries(SEVS);
+// D-019 (confirmed): calendar time from creation until Fixed. Won't fix also stops the clock; Reopened restarts it from creation.
+const SLA_HOURS = { critical: 24, high: 72, medium: 336, low: 720 };
+const SLA_TEXT = { critical: '24 hours', high: '3 days', medium: '14 days', low: '30 days' };
+const createdHoursAgo = b => b.h + 30; // the prototype reports every bug 30 hours before its last update
+const NOT_FIXED = s => ['new', 'triaged', 'in_progress', 'reopened'].includes(s);
+const slaBreached = b => NOT_FIXED(b.status) && createdHoursAgo(b) > SLA_HOURS[b.sev];
+
+// Workflow (DOMAIN_MODEL section 4). roles beyond admin and lead.
+const TRANSITIONS = [
+  ['new', 'triaged', ['qa_engineer']], ['new', 'wont_fix', []], ['triaged', 'in_progress', ['developer']], ['triaged', 'wont_fix', []],
+  ['in_progress', 'fixed', ['developer']], ['in_progress', 'triaged', ['developer']], ['fixed', 'ready_for_retest', ['developer']],
+  ['fixed', 'reopened', ['qa_engineer']], ['ready_for_retest', 'verified', ['qa_engineer']], ['ready_for_retest', 'reopened', ['qa_engineer']],
+  ['verified', 'closed', ['qa_engineer']], ['verified', 'reopened', ['qa_engineer']], ['closed', 'reopened', ['qa_engineer']],
+  ['wont_fix', 'reopened', []], ['reopened', 'triaged', []], ['reopened', 'in_progress', ['developer']]];
+
+const SUITES = [
+  { id: 's1', project: 'p1', name: 'Checkout', comp: 'Checkout', desc: 'Cart, discounts, payment and order confirmation.' },
+  { id: 's2', project: 'p1', name: 'Login and accounts', comp: 'Accounts', desc: 'Sign in, password reset and profile.' },
+  { id: 's3', project: 'p2', name: 'Shipment tracking API', comp: 'Tracking', desc: 'Tracking events endpoint and ordering.' },
+  { id: 's4', project: 'p3', name: 'Driver onboarding', comp: 'Onboarding', desc: 'First run setup, licence and vehicle checks.' },
+];
+const st = (a, e) => ({ a, e });
+const CASES = [
+  { id: 'TC-101', suite: 's1', title: 'Apply a valid discount code', type: 'positive', pri: 'p2', tags: ['discounts'], pre: 'Signed in shipper with one parcel in the cart.', steps: [st('Open the cart', 'Cart shows one parcel and the subtotal'), st('Enter code SAVE10 and choose Apply', 'Code is accepted and listed under the subtotal'), st('Check the order total', 'Total is reduced by 10 percent'), st('Continue to payment', 'Payment page shows the reduced total')] },
+  { id: 'TC-102', suite: 's1', title: 'Reject an expired discount code', type: 'negative', pri: 'p3', tags: ['discounts'], pre: 'Code OLD5 expired yesterday.', steps: [st('Enter code OLD5 and choose Apply', 'Message says the code has expired'), st('Check the order total', 'Total is unchanged')] },
+  { id: 'TC-103', suite: 's1', title: 'Recalculate total after changing delivery address', type: 'positive', pri: 'p1', tags: ['discounts', 'address'], pre: 'Discount SAVE10 applied to the cart.', steps: [st('Open checkout', 'Delivery address and total are shown'), st('Change the delivery address to another city', 'Shipping cost updates'), st('Check the order total', 'Total includes the new shipping cost and still applies SAVE10'), st('Place the order', 'Confirmation shows the same total')] },
+  { id: 'TC-104', suite: 's1', title: 'Pay with a 3D Secure card', type: 'positive', pri: 'p1', tags: ['payments'], pre: 'Test card 4000 0027 6000 3184.', steps: [st('Enter the card and choose Pay', '3D Secure challenge opens'), st('Approve the challenge', 'Order is confirmed')] },
+  { id: 'TC-105', suite: 's1', title: 'Checkout with 100 parcels in the cart', type: 'edge', pri: 'p3', tags: ['limits'], pre: 'Cart filled with 100 parcels by script.', steps: [st('Open the cart', 'All 100 parcels are listed with paging'), st('Continue to payment', 'Page loads in under 2 seconds')] },
+  { id: 'TC-111', suite: 's2', title: 'Sign in with a valid account', type: 'positive', pri: 'p1', tags: ['auth'], pre: 'Active account exists.', steps: [st('Open the sign in page', 'Email and password fields are shown'), st('Enter valid details and choose Sign in', 'Dashboard opens')] },
+  { id: 'TC-112', suite: 's2', title: 'Lock the account after 10 wrong passwords', type: 'negative', pri: 'p2', tags: ['auth', 'security'], pre: 'Active account exists.', steps: [st('Enter a wrong password 10 times', 'Each attempt shows a generic error'), st('Enter the correct password', 'Message says to try again in 15 minutes')] },
+  { id: 'TC-113', suite: 's2', title: 'Reset password from the email link', type: 'positive', pri: 'p2', tags: ['auth'], pre: 'Reset email received.', steps: [st('Open the link from the email', 'Reset form opens'), st('Enter a new password twice', 'Password is changed and you are signed in')] },
+  { id: 'TC-114', suite: 's2', title: 'Email with trailing spaces', type: 'edge', pri: 'p4', tags: ['auth'], pre: '', steps: [st('Enter the email with two trailing spaces', 'Spaces are trimmed'), st('Sign in', 'Sign in succeeds')] },
+  { id: 'TC-121', suite: 's3', title: 'List tracking events for a shipment', type: 'positive', pri: 'p1', tags: ['tracking'], pre: 'Shipment with 5 events.', steps: [st('GET /v2/shipments/{id}/events', '200 with 5 events')] },
+  { id: 'TC-122', suite: 's3', title: 'Unknown shipment returns 404', type: 'negative', pri: 'p2', tags: ['tracking'], pre: '', steps: [st('GET events for a random id', '404 with error code shipment_not_found')] },
+  { id: 'TC-123', suite: 's3', title: 'Events are ordered for multi leg shipments', type: 'edge', pri: 'p2', tags: ['tracking'], pre: 'Shipment with 3 legs.', steps: [st('GET events', 'Events sorted by occurred_at across legs')] },
+  { id: 'TC-131', suite: 's4', title: 'Complete onboarding as a new driver', type: 'positive', pri: 'p1', tags: ['onboarding'], pre: 'Fresh install.', steps: [st('Open the app and sign in', 'Onboarding starts'), st('Take the licence photo', 'Photo is accepted'), st('Confirm the vehicle', 'Home screen opens')] },
+  { id: 'TC-132', suite: 's4', title: 'Licence photo step cannot be skipped', type: 'negative', pri: 'p1', tags: ['onboarding'], pre: 'Fresh install on Android 14.', steps: [st('Reach the licence step', 'Skip is not offered'), st('Press back', 'Stays on the licence step')] },
+  { id: 'TC-133', suite: 's4', title: 'Onboarding with less than 50 MB free storage', type: 'edge', pri: 'p3', tags: ['storage'], pre: 'Device storage nearly full.', steps: [st('Start onboarding', 'Warning about storage is shown'), st('Continue', 'Photo is saved at lower quality')] },
+];
+// Runs: results keyed by case id
+const RUNS = [
+  { id: 'R-31', project: 'p1', name: 'WEB 2.4.0 regression', env: 'staging', release: 'r1', status: 'in_progress', by: 'u2', started: 30,
+    results: { 'TC-101': 'pass', 'TC-102': 'pass', 'TC-103': 'fail', 'TC-104': 'fail', 'TC-105': 'blocked', 'TC-111': 'pass', 'TC-112': 'pass', 'TC-113': 'pass', 'TC-114': 'untested' } },
+  { id: 'R-30', project: 'p2', name: 'API 1.9.0 smoke', env: 'staging', release: 'r2', status: 'in_progress', by: 'u3', started: 8,
+    results: { 'TC-121': 'pass', 'TC-122': 'pass', 'TC-123': 'untested' } },
+  { id: 'R-29', project: 'p3', name: 'MOB 3.1.0 full regression', env: 'staging', release: 'r3', status: 'completed', by: 'u6', started: 52,
+    results: { 'TC-131': 'pass', 'TC-132': 'pass', 'TC-133': 'pass' } },
+  { id: 'R-27', project: 'p1', name: 'WEB 2.3.2 hotfix check', env: 'prod', release: 'r4', status: 'completed', by: 'u3', started: 340,
+    results: { 'TC-101': 'pass', 'TC-103': 'pass', 'TC-111': 'pass', 'TC-113': 'pass' } },
+  { id: 'R-26', project: 'p2', name: 'API nightly, 14 November', env: 'staging', release: null, status: 'completed', by: 'u6', started: 56,
+    results: { 'TC-121': 'pass', 'TC-122': 'fail', 'TC-123': 'pass' } },
+];
+const RELEASES = [
+  { id: 'r1', project: 'p1', name: 'WEB 2.4.0', target: '2026-11-24', status: 'in_progress', desc: 'New checkout flow and saved payment methods.' },
+  { id: 'r2', project: 'p2', name: 'API 1.9.0', target: '2026-11-28', status: 'planned', desc: 'Decimal weights and webhook retry policy.' },
+  { id: 'r3', project: 'p3', name: 'MOB 3.1.0', target: '2026-11-20', status: 'in_progress', desc: 'Tablet layout for proof of delivery.' },
+  { id: 'r4', project: 'p1', name: 'WEB 2.3.2', target: '2026-11-02', status: 'released', desc: 'Hotfix for saved addresses.',
+    summary: { headline: 'Shipped with no open risk', text: 'The hotfix closed the one linked bug and the hotfix check passed all 4 cases on production. Nothing open is linked to this release.', by: 'u2', at: '2 Nov 2026' } },
+];
+
+/* ==========================================================================
+   Helpers
+   ========================================================================== */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const user = id => USERS.find(u => u.id === id);
+const initials = n => n.split(' ').map(x => x[0]).join('').slice(0, 2);
+const avatar = (id, size) => { const u = user(id); if (!u) return ''; const i = USERS.indexOf(u); return `<span class="avatar" style="background:${AV[i % AV.length]}${size ? `;width:${size}px;height:${size}px` : ''}" aria-hidden="true">${initials(u.name)}</span>`; };
+const who = id => id ? `<span class="who">${avatar(id)}<span>${esc(user(id).name)}</span></span>` : '<span class="muted">Unassigned</span>';
+const ago = h => h < 1 ? 'just now' : h < 24 ? `${Math.round(h)} h ago` : `${Math.round(h / 24)} d ago`;
+const sevBadge = s => `<span class="badge sev-${s}"><span class="dot"></span>${SEV_NAME[s]}</span>`;
+const stBadge = s => `<span class="badge st st-${s}">${STATUS_NAME[s]}</span>`;
+const priTag = p => `<span class="pri ${p}" title="Priority ${p.toUpperCase()}">${p.toUpperCase()}</span>`;
+const labelChips = ls => ls.map(l => `<span class="label-chip">${esc(LABELS[l])}</span>`).join(' ');
+const readinessName = { ready: 'Ready', at_risk: 'At risk', blocked: 'Blocked' };
+const readyBadge = r => `<span class="badge ${r}"><span class="dot"></span>${readinessName[r]}</span>`;
+const runCounts = run => { const c = { pass: 0, fail: 0, blocked: 0, skipped: 0, untested: 0 }; Object.values(run.results).forEach(r => c[r]++); return c; };
+const passRate = runs => { let p = 0, t = 0; runs.forEach(r => { const c = runCounts(r); p += c.pass; t += c.pass + c.fail + c.blocked; }); return t ? Math.round(100 * p / t) : null; };
+const progressBar = c => { const total = Object.values(c).reduce((a, b) => a + b, 0); return `<div class="progress" role="img" aria-label="${c.pass} pass, ${c.fail} fail, ${c.blocked} blocked, ${c.skipped} skipped, ${c.untested} untested">${['pass', 'fail', 'blocked', 'skipped'].map(k => c[k] ? `<i style="width:${100 * c[k] / total}%;background:var(--res-${k})" data-tip="${c[k]} ${k}"></i>` : '').join('')}</div>`; };
+
+function readiness(rel) {
+  const bugs = BUGS.filter(b => b.release === rel.id && OPEN(b.status));
+  const runs = RUNS.filter(r => r.release === rel.id);
+  const crit = bugs.filter(b => b.sev === 'critical').length, high = bugs.filter(b => b.sev === 'high').length;
+  const rate = passRate(runs), inProg = runs.filter(r => r.status === 'in_progress').length;
+  const reasons = [];
+  let status = 'ready';
+  if (crit) reasons.push(`${crit} open Critical bug${crit > 1 ? 's' : ''}`);
+  if (rate !== null && rate < 80) reasons.push(`Pass rate ${rate}% is below 80%`);
+  if (reasons.length) status = 'blocked';
+  const risk = [];
+  if (high) risk.push(`${high} open High bug${high > 1 ? 's' : ''}`);
+  if (rate !== null && rate >= 80 && rate < 95) risk.push(`Pass rate ${rate}% is below 95%`);
+  if (inProg) risk.push(`${inProg} run${inProg > 1 ? 's' : ''} still in progress`);
+  if (!runs.length) risk.push('No test runs linked');
+  if (status === 'ready' && risk.length) status = 'at_risk';
+  reasons.push(...risk);
+  if (!reasons.length) reasons.push(`No open Critical or High bugs, pass rate ${rate}%`);
+  return { status, reasons, rate, open: bugs.length, runs };
+}
+
+/* ==========================================================================
+   Roles and permissions (PERSONAS_AND_ROLES section 3)
+   ========================================================================== */
+const A = ['org_admin', 'qa_lead', 'qa_engineer', 'developer', 'viewer'];
+const PERM = {
+  'project.manage': ['org_admin', 'qa_lead'],
+  'bug.create': ['org_admin', 'qa_lead', 'qa_engineer', 'developer'],
+  'bug.sevpri': ['org_admin', 'qa_lead', 'qa_engineer'],
+  'bug.assign': ['org_admin', 'qa_lead', 'qa_engineer'],
+  'bug.delete': ['org_admin', 'qa_lead'],
+  'bug.edit': ['org_admin', 'qa_lead', 'qa_engineer'],
+  'comment.create': A,
+  'attachment.upload': ['org_admin', 'qa_lead', 'qa_engineer', 'developer'],
+  'test.manage': ['org_admin', 'qa_lead', 'qa_engineer'],
+  'release.manage': ['org_admin', 'qa_lead'],
+  'ai.writer': ['org_admin', 'qa_lead', 'qa_engineer', 'developer'],
+  'ai.triage': ['org_admin', 'qa_lead', 'qa_engineer'],
+  'ai.cases': ['org_admin', 'qa_lead', 'qa_engineer'],
+  'ai.release': ['org_admin', 'qa_lead'],
+  'ai.usage': ['org_admin', 'qa_lead'],
+  'member.view': ['org_admin', 'qa_lead'],
+  'member.manage': ['org_admin'],
+  'settings.org': ['org_admin'],
+  'label.manage': ['org_admin', 'qa_lead'],
+  'audit.read': ['org_admin'],
+};
+const can = a => PERM[a].includes(S.role);
+const me = () => ME_BY_ROLE[S.role];
+function allowedTargets(bug) {
+  if (S.role === 'viewer') return [];
+  return TRANSITIONS.filter(([f, , roles]) => f === bug.status).filter(([, , roles]) => {
+    if (S.role === 'org_admin' || S.role === 'qa_lead') return true;
+    if (!roles.includes(S.role)) return false;
+    if (S.role === 'developer') return bug.assignee === me() || bug.assignee === null;
+    return true;
+  }).map(([, t]) => t);
+}
+
+/* ==========================================================================
+   State, routing
+   ========================================================================== */
+const S = { role: 'qa_lead', state: 'default', clean: false, org: 'lumen' };
+try { const r = localStorage.getItem('qap-role'); if (r && ROLES[r]) S.role = r; } catch (e) {}
+const F = { q: '', project: '', status: '', sev: '', assignee: '', view: 'all', sort: 'updated' };
+let selSuite = 's1';
+let tabState = {};
+let dragKey = null;
+
+const STATE_OPTIONS = {
+  login: ['default', 'error', 'loading'], register: ['default', 'error'], 'org-setup': ['default', 'error'], invite: ['default', 'error'],
+  'bug-detail': ['default', 'ai', 'loading', 'error'], 'bug-new': ['default', 'ai', 'loading', 'error'],
+  'test-case-editor': ['default', 'ai', 'loading', 'error'], 'test-run': ['default', 'failed', 'loading', 'error'],
+  'release-detail': ['default', 'ai', 'loading', 'error'], members: ['default', 'invite', 'loading', 'error'],
+  settings: ['default', 'profile', 'loading', 'error'], 'not-found': ['default'],
+};
+const DEFAULT_STATES = ['default', 'empty', 'loading', 'error'];
+
+const ROUTES = [
+  [/^\/login$/, 'login', () => scrLogin()],
+  [/^\/register$/, 'register', () => scrRegister()],
+  [/^\/onboarding\/org$/, 'org-setup', () => scrOrgSetup()],
+  [/^\/invite\/([\w-]+)$/, 'invite', () => scrInvite()],
+  [/^\/o\/(\w+)\/dashboard$/, 'dashboard', () => scrDashboard(), 'dashboard'],
+  [/^\/o\/(\w+)\/projects$/, 'projects', () => scrProjects(), 'projects'],
+  [/^\/o\/(\w+)\/projects\/([A-Z]+)$/, 'project-overview', m => scrProject(m[2]), 'projects'],
+  [/^\/o\/(\w+)\/bugs$/, 'bug-list', () => scrBugList(), 'bugs'],
+  [/^\/o\/(\w+)\/bugs\/new$/, 'bug-new', () => scrBugNew(), 'bugs'],
+  [/^\/o\/(\w+)\/bugs\/([A-Z]+-\d+)$/, 'bug-detail', m => scrBugDetail(m[2]), 'bugs'],
+  [/^\/o\/(\w+)\/board$/, 'board', () => scrBoard(), 'board'],
+  [/^\/o\/(\w+)\/tests$/, 'test-suites', () => scrSuites(), 'tests'],
+  [/^\/o\/(\w+)\/tests\/cases\/([\w-]+)$/, 'test-case-editor', m => scrCaseEditor(m[2]), 'tests'],
+  [/^\/o\/(\w+)\/runs$/, 'test-runs', () => scrRuns(), 'runs'],
+  [/^\/o\/(\w+)\/runs\/([\w-]+)$/, 'test-run', m => scrRun(m[2]), 'runs'],
+  [/^\/o\/(\w+)\/releases$/, 'releases', () => scrReleases(), 'releases'],
+  [/^\/o\/(\w+)\/releases\/(\w+)$/, 'release-detail', m => scrRelease(m[2]), 'releases'],
+  [/^\/o\/(\w+)\/reports$/, 'reports', () => scrReports(), 'reports'],
+  [/^\/o\/(\w+)\/members$/, 'members', () => scrMembers(), 'members'],
+  [/^\/o\/(\w+)\/settings$/, 'settings', () => scrSettings(), 'settings'],
+  [/^\/o\/(\w+)\/ai-usage$/, 'ai-usage', () => scrAIUsage(), 'ai-usage'],
+];
+const o = path => `#/o/${S.org}${path}`;
+
+function parse() {
+  const raw = location.hash.slice(1) || '/login';
+  const [path, q] = raw.split('?');
+  return { path, params: new URLSearchParams(q || '') };
+}
+function go(hash) { location.hash = hash; }
+
+let current = { slug: 'login' };
+function render() {
+  const { path, params } = parse();
+  if (params.get('role') && ROLES[params.get('role')]) { S.role = params.get('role'); try { localStorage.setItem('qap-role', S.role); } catch (e) {} }
+  S.state = params.get('state') || 'default';
+  S.clean = params.get('clean') === '1';
+  document.body.classList.toggle('clean', S.clean);
+  document.body.classList.remove('nav-open');
+  document.querySelectorAll('body > .menu, body > .modal-back').forEach(x => x.remove());
+  let match = null, route = null;
+  for (const r of ROUTES) { const m = path.match(r[0]); if (m) { match = m; route = r; break; } }
+  if (match && match[1] && path.startsWith('/o/')) { if (!ORGS.some(x => x.slug === match[1])) route = null; else S.org = match[1]; }
+  let html, slug, nav;
+  if (!route) { slug = 'not-found'; html = scrNotFound(); nav = null; }
+  else { slug = route[1]; nav = route[3]; html = route[2](match); }
+  current = { slug, nav };
+  const inApp = path.startsWith('/o/') || slug === 'not-found';
+  document.getElementById('app').innerHTML = inApp ? shell(html, nav) : html;
+  const opts = STATE_OPTIONS[slug] || DEFAULT_STATES;
+  const sel = document.getElementById('dev-state');
+  sel.innerHTML = opts.map(x => `<option ${x === S.state ? 'selected' : ''}>${x}</option>`).join('');
+  document.getElementById('dev-route').textContent = slug;
+  document.title = `${titleFor(slug)} | QA Pilot prototype`;
+  afterRender(slug);
+  window.scrollTo(0, 0);
+}
+function titleFor(s) { return ({ login: 'Sign in', register: 'Create account', 'org-setup': 'Set up workspace', invite: 'Invitation', dashboard: 'Dashboard', projects: 'Projects', 'project-overview': 'Project', 'bug-list': 'Bugs', 'bug-new': 'Report a bug', 'bug-detail': 'Bug', board: 'Board', 'test-suites': 'Test suites', 'test-case-editor': 'Test case', 'test-runs': 'Test runs', 'test-run': 'Test run', releases: 'Releases', 'release-detail': 'Release', reports: 'Reports', members: 'Members', settings: 'Settings', 'ai-usage': 'AI usage', 'not-found': 'Page not found' })[s] || 'QA Pilot'; }
+
+/* ==========================================================================
+   Shell
+   ========================================================================== */
+function shell(inner, nav) {
+  const org = ORGS.find(x => x.slug === S.org);
+  const openCount = BUGS.filter(b => OPEN(b.status)).length;
+  const link = (id, href, icon, label, extra = '') => `<a href="${href}" ${nav === id ? 'aria-current="page"' : ''}>${icon}<span>${label}</span>${extra}</a>`;
+  return `
+  <div class="shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="${o('/dashboard')}">${brandMark}<span>QA Pilot</span></a>
+      <nav class="nav">
+        ${link('dashboard', o('/dashboard'), ic.dash, 'Dashboard')}
+        ${link('projects', o('/projects'), ic.folder, 'Projects')}
+        <div class="nav-group">Bugs</div>
+        ${link('bugs', o('/bugs'), ic.bug, 'All bugs', `<span class="count">${openCount}</span>`)}
+        ${link('board', o('/board'), ic.board, 'Board')}
+        <div class="nav-group">Testing</div>
+        ${link('tests', o('/tests'), ic.suite, 'Test suites')}
+        ${link('runs', o('/runs'), ic.run, 'Test runs')}
+        <div class="nav-group">Delivery</div>
+        ${link('releases', o('/releases'), ic.release, 'Releases')}
+        ${link('reports', o('/reports'), ic.report, 'Reports')}
+        <div class="nav-group">Workspace</div>
+        ${can('member.view') ? link('members', o('/members'), ic.users, 'Members') : ''}
+        ${can('ai.usage') ? link('ai-usage', o('/ai-usage'), ic.meter, 'AI usage') : ''}
+        ${link('settings', o('/settings'), ic.gear, 'Settings')}
+      </nav>
+      <div class="sidebar-foot">AI provider: mock (offline)</div>
+    </aside>
+    <div class="scrim" data-action="close-nav"></div>
+    <div class="main">
+      <header class="header">
+        <button class="btn ghost icon-btn menu-toggle" data-action="open-nav" aria-label="Open navigation">${ic.menu}</button>
+        <button class="org-switch" data-action="org-menu" aria-haspopup="menu" aria-label="Switch organization, current ${esc(org.name)}"><span class="org-badge">${org.initials}</span><span class="hide-sm">${esc(org.name)}</span>${ic.chev.replace('<svg', '<svg width="14" height="14"')}</button>
+        <div class="search"><label class="sr-only" for="gsearch">Search bugs</label>${ic.search}<input id="gsearch" class="input" placeholder="Search bugs by key or title" data-action="global-search"></div>
+        <div class="header-spacer"></div>
+        <label class="role-switch" title="Prototype only: view the app as another role"><span class="rs-label">View as</span>
+          <select id="role-select" aria-label="View as role">${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${k === S.role ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        ${can('bug.create') ? `<a class="btn primary hide-sm" href="${o('/bugs/new')}">${ic.plus}Report bug</a>` : ''}
+        <button class="user-btn" data-action="user-menu" aria-label="Account menu for ${esc(user(me()).name)}">${avatar(me(), 30)}</button>
+      </header>
+      <main id="main" class="content ${current.slug === 'board' ? 'wide' : ''}" tabindex="-1">${inner}</main>
+    </div>
+  </div>`;
+}
+
+/* Generic states */
+function skeleton(kind = 'table') {
+  if (kind === 'readout') return `<div class="readout" aria-hidden="true">${[1, 2, 3, 4].map(() => `<div><div class="sk" style="height:34px;width:60%"></div><div class="sk sk-line" style="width:80%"></div></div>`).join('')}</div>${skeleton('grid')}`;
+  if (kind === 'grid') return `<div class="grid g2">${[1, 2, 3, 4].map(() => `<div class="panel panel-body"><div class="sk" style="height:16px;width:40%"></div><div class="sk" style="height:160px;margin-top:16px"></div></div>`).join('')}</div>`;
+  if (kind === 'board') return `<div class="board">${[1, 2, 3, 4, 5].map(() => `<div class="col" style="padding:12px"><div class="sk" style="height:14px;width:50%"></div>${[1, 2, 3].map(() => `<div class="sk" style="height:84px;margin-top:10px"></div>`).join('')}</div>`).join('')}</div>`;
+  if (kind === 'detail') return `<div class="split"><div class="panel panel-body">${[90, 70, 100, 60, 85, 40].map(w => `<div class="sk sk-line" style="width:${w}%"></div>`).join('')}<div class="sk" style="height:140px;margin-top:20px"></div></div><div class="panel panel-body">${[1, 2, 3, 4, 5, 6].map(() => `<div class="sk sk-line"></div>`).join('')}</div></div>`;
+  return `<div class="panel" aria-hidden="true"><div class="filters"><div class="sk" style="height:34px;width:260px"></div><div class="sk" style="height:34px;width:140px"></div><div class="sk" style="height:34px;width:140px"></div></div>${[1, 2, 3, 4, 5, 6, 7].map(() => `<div style="display:flex;gap:16px;padding:14px 16px;border-bottom:1px solid var(--line)"><div class="sk" style="height:12px;width:60px"></div><div class="sk" style="height:12px;flex:1"></div><div class="sk" style="height:12px;width:80px"></div><div class="sk" style="height:12px;width:100px"></div></div>`).join('')}</div>`;
+}
+const loadingWrap = (kind) => `<div role="status" aria-live="polite"><span class="sr-only">Loading</span>${skeleton(kind)}</div>`;
+function errorBox(what) {
+  return `<div class="panel"><div class="state-box error" role="alert">${ic.alert.replace('<svg', '<svg class="big"')}<h2>Could not load ${what}</h2><p>The server did not respond. Check your connection and try again. If it keeps happening, share the request id with your admin.</p><button class="btn primary" data-action="retry">${ic.refresh}Try again</button><div class="err-code">Request id 7f3c9a12</div></div></div>`;
+}
+function emptyBox(icon, title, text, action = '') {
+  return `<div class="panel"><div class="state-box">${icon.replace('<svg', '<svg class="big"')}<h2>${title}</h2><p>${text}</p>${action}</div></div>`;
+}
+function pageHead(title, sub = '', actions = '', crumbs = '') {
+  return `${crumbs ? `<div class="crumbs">${crumbs}</div>` : ''}<div class="page-head"><div class="grow"><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div>${actions ? `<div class="actions">${actions}</div>` : ''}</div>`;
+}
+function stateGate(kind, what) {
+  if (S.state === 'loading') return loadingWrap(kind);
+  if (S.state === 'error') return errorBox(what);
+  return null;
+}
+
+/* ==========================================================================
+   Charts (inline SVG). Single series bars use one hue; the trend uses the
+   validated pair --series-1 / --series-2 with a legend and direct labels.
+   ========================================================================== */
+function hbars(rows, max) {
+  max = max || Math.max(1, ...rows.map(r => r.v));
+  return `<div class="hbars">${rows.map(r => `<div class="hbar" data-tip="${esc(r.label)}: ${r.v}"><span>${r.labelHtml || esc(r.label)}</span><div class="track"><div class="fill" style="width:${100 * r.v / max}%"></div></div><span class="v">${r.v}</span></div>`).join('')}</div>`;
+}
+function trendSeries(days = 30) {
+  const opened = [], closed = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const seed = (i * 37 + 11) % 7;
+    opened.push(Math.max(0, Math.round(3 + 2 * Math.sin(i / 3) + seed / 3)));
+    closed.push(Math.max(0, Math.round(2.6 + 2 * Math.cos(i / 4) + ((i * 13) % 5) / 3)));
+  }
+  return { opened, closed };
+}
+function lineChart({ opened, closed }, w = 640, hgt = 220) {
+  const pad = { l: 32, r: 76, t: 12, b: 28 };
+  const n = opened.length, max = Math.max(...opened, ...closed) + 1;
+  const x = i => pad.l + i * (w - pad.l - pad.r) / (n - 1);
+  const y = v => pad.t + (hgt - pad.t - pad.b) * (1 - v / max);
+  const path = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const ticks = [0, Math.round(max / 2), max];
+  const day = i => { const d = new Date(NOW); d.setDate(d.getDate() - (n - 1 - i)); return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
+  const hits = opened.map((v, i) => `<rect x="${x(i) - 8}" y="${pad.t}" width="16" height="${hgt - pad.t - pad.b}" fill="transparent" data-tip="${day(i)}: ${v} opened, ${closed[i]} closed"/>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${w} ${hgt}" role="img" aria-label="Bugs opened and closed per day, last ${n} days">
+    ${ticks.map(t => `<line class="grid-l" x1="${pad.l}" x2="${w - pad.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${pad.l - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`).join('')}
+    ${[0, Math.floor(n / 2), n - 1].map(i => `<text x="${x(i)}" y="${hgt - 8}" text-anchor="middle">${day(i)}</text>`).join('')}
+    <path d="${path(opened)}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="${path(closed)}" fill="none" stroke="var(--series-2)" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 3"/>
+    <circle cx="${x(n - 1)}" cy="${y(opened[n - 1])}" r="4" fill="var(--series-1)" stroke="#fff" stroke-width="2"/>
+    <circle cx="${x(n - 1)}" cy="${y(closed[n - 1])}" r="4" fill="var(--series-2)" stroke="#fff" stroke-width="2"/>
+    <text x="${x(n - 1) + 10}" y="${y(opened[n - 1]) + 4}">Opened ${opened[n - 1]}</text>
+    <text x="${x(n - 1) + 10}" y="${y(closed[n - 1]) + (Math.abs(y(closed[n - 1]) - y(opened[n - 1])) < 14 ? 18 : 4)}">Closed ${closed[n - 1]}</text>
+    ${hits}
+  </svg>`;
+}
+const trendLegend = `<div class="legend"><span><i style="background:var(--series-1)"></i>Opened (solid)</span><span><i style="background:var(--series-2)"></i>Closed (dashed)</span></div>`;
+function vbars(rows, w = 520, hgt = 200) {
+  const pad = { l: 32, r: 8, t: 16, b: 30 }; const max = 100;
+  const bw = (w - pad.l - pad.r) / rows.length;
+  const y = v => pad.t + (hgt - pad.t - pad.b) * (1 - v / max);
+  return `<svg class="chart" viewBox="0 0 ${w} ${hgt}" role="img" aria-label="Pass rate per run">
+    ${[0, 50, 100].map(t => `<line class="grid-l" x1="${pad.l}" x2="${w - pad.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${pad.l - 6}" y="${y(t) + 4}" text-anchor="end">${t}%</text>`).join('')}
+    <line class="axis" x1="${pad.l}" x2="${w - pad.r}" y1="${y(80)}" y2="${y(80)}" stroke-dasharray="3 3"/><text x="${w - pad.r}" y="${y(80) - 4}" text-anchor="end">80% gate</text>
+    ${rows.map((r, i) => { const bx = pad.l + i * bw + bw * 0.22, bwid = bw * 0.56, top = y(r.v); return `<path d="M${bx},${y(0)} V${top + 4} Q${bx},${top} ${bx + 4},${top} H${bx + bwid - 4} Q${bx + bwid},${top} ${bx + bwid},${top + 4} V${y(0)} Z" fill="var(--chart-bar)" data-tip="${esc(r.label)}: ${r.v}% pass"/><text x="${bx + bwid / 2}" y="${top - 5}" text-anchor="middle" style="font-weight:700;fill:var(--ink)">${r.v}%</text><text x="${bx + bwid / 2}" y="${hgt - 10}" text-anchor="middle">${esc(r.short)}</text>`; }).join('')}
+  </svg>`;
+}
+
+/* ==========================================================================
+   Auth screens
+   ========================================================================== */
+function authLayout(inner) {
+  return `<div class="auth"><aside class="auth-side"><a class="brand" href="#/login">${brandMark}<span>QA Pilot</span></a>
+    <h1>Rough notes in. Clear bug reports out.</h1>
+    <p>Report bugs, run test cycles and see release risk in one place. AI drafts the tedious parts; you decide what gets saved.</p>
+    <div class="auth-demo" aria-hidden="true"><div class="raw">"checkout total wrong after changing address, discount gone, prod, chrome"</div>
+      <div class="suggest" style="padding:14px"><div class="suggest-tag">${ic.spark}AI suggestion, not saved</div>
+        <div style="font-weight:700"><mark>Checkout total ignores discount code after changing delivery address</mark></div>
+        <div class="row small" style="margin-top:8px">${sevBadge('critical')}<span class="muted">Checkout, prod</span></div></div></div>
+  </aside><main class="auth-main" id="main">${inner}</main></div>`;
+}
+function scrLogin() {
+  const err = S.state === 'error', load = S.state === 'loading';
+  return authLayout(`<div class="auth-card"><h2>Sign in</h2><p class="muted">Welcome back. Sign in to your workspace.</p>
+    <form data-action="login" novalidate>
+      ${err ? `<div class="banner error" role="alert">${ic.alert}<div>Email or password is incorrect. Check both and try again.</div></div>` : ''}
+      <div class="field"><label for="l-email">Email</label><input class="input" id="l-email" type="email" autocomplete="email" value="${err || load ? 'priya@lumenfreight.test' : ''}" ${load ? 'disabled' : ''}></div>
+      <div class="field"><div class="row between"><label for="l-pass" class="label">Password</label><a class="small" href="#/login">Forgot password?</a></div><input class="input" id="l-pass" type="password" autocomplete="current-password" value="${err || load ? 'not-the-password' : ''}" ${load ? 'disabled' : ''}></div>
+      <button class="btn primary" type="submit" ${load ? 'aria-disabled="true"' : ''}>${load ? '<span class="spinner" aria-hidden="true"></span>Signing in' : 'Sign in'}</button>
+      <p class="small muted">New to QA Pilot? <a href="#/register">Create an account</a></p>
+      <div class="banner info small">${ic.info}<div>Prototype: any email signs you in. Use <b>View as</b> in the header to switch roles.</div></div>
+    </form></div>`);
+}
+function scrRegister() {
+  const err = S.state === 'error';
+  return authLayout(`<div class="auth-card"><h2>Create your account</h2><p class="muted">You will set up or join a workspace next.</p>
+    <form data-action="register" novalidate>
+      <div class="field"><label for="r-name">Full name</label><input class="input" id="r-name" autocomplete="name" value="${err ? 'Priya Raman' : ''}"></div>
+      <div class="field ${err ? 'invalid' : ''}"><label for="r-email">Work email</label><input class="input" id="r-email" type="email" value="${err ? 'priya@lumenfreight.test' : ''}" ${err ? 'aria-invalid="true" aria-describedby="r-email-e"' : ''}>${err ? `<div class="err" id="r-email-e">${ic.alert.replace('<svg', '<svg width="16" height="16"')}<span>An account with this email already exists. <a href="#/login">Sign in instead</a></span></div>` : ''}</div>
+      <div class="field ${err ? 'invalid' : ''}"><label for="r-pass">Password</label><input class="input" id="r-pass" type="password" value="${err ? 'short1' : ''}" aria-describedby="r-pass-h${err ? ' r-pass-e' : ''}" ${err ? 'aria-invalid="true"' : ''}><div class="hint" id="r-pass-h">At least 10 characters with a letter and a number.</div>${err ? `<div class="err" id="r-pass-e">${ic.alert.replace('<svg', '<svg width="16" height="16"')}<span>Password is too short. Use at least 10 characters.</span></div>` : ''}</div>
+      <button class="btn primary" type="submit">Create account</button>
+      <p class="small muted">Already have an account? <a href="#/login">Sign in</a></p>
+    </form></div>`);
+}
+function scrOrgSetup() {
+  const err = S.state === 'error';
+  return authLayout(`<div class="auth-card"><h2>Set up your workspace</h2><p class="muted">A workspace holds your projects, bugs and tests. You will be its Org Admin.</p>
+    <form data-action="org-setup" novalidate>
+      <div class="field"><label for="o-name">Organization name</label><input class="input" id="o-name" value="Lumen Freight"></div>
+      <div class="field ${err ? 'invalid' : ''}"><label for="o-slug">Workspace address</label><div class="row" style="flex-wrap:nowrap;gap:0"><span class="input" style="width:auto;border-right:0;border-radius:4px 0 0 4px;background:var(--surface-sunk);color:var(--ink-3)">qapilot.app/o/</span><input class="input" id="o-slug" value="lumen" style="border-radius:0 4px 4px 0" ${err ? 'aria-invalid="true" aria-describedby="o-slug-e"' : ''}></div>${err ? `<div class="err" id="o-slug-e">${ic.alert.replace('<svg', '<svg width="16" height="16"')}This address is taken. Try lumen-freight.</div>` : '<div class="hint">Lowercase letters, numbers and hyphens.</div>'}</div>
+      <button class="btn primary" type="submit">Create workspace</button>
+      <p class="small muted">Waiting for an invite? Ask your admin for the invite link.</p>
+    </form></div>`);
+}
+function scrInvite() {
+  const err = S.state === 'error';
+  if (err) return authLayout(`<div class="auth-card"><div class="state-box error" style="padding:0;align-items:flex-start;text-align:left">${ic.alert.replace('<svg', '<svg class="big"')}<h2>This invite link no longer works</h2><p>It expired on 9 November or was already used. Ask your workspace admin for a new link.</p><a class="btn" href="#/login">Go to sign in</a></div></div>`);
+  return authLayout(`<div class="auth-card"><h2>Join Lumen Freight</h2><p class="muted">Amara Okafor invited <b>t•••s@lumenfreight.test</b> to join as <b>QA Engineer</b>. The link expires on 23 November.</p>
+    <form data-action="accept-invite"><div class="banner info">${ic.info}<div>Sign in or create an account with the invited email to accept.</div></div>
+      <button class="btn primary" type="submit">Accept and continue</button><a class="btn" href="#/register">Create an account</a></form></div>`);
+}
+
+/* ==========================================================================
+   Dashboard
+   ========================================================================== */
+function scrDashboard() {
+  const sub = S.role === 'developer' ? `You have ${BUGS.filter(b => b.assignee === me() && OPEN(b.status)).length} open bugs assigned to you.` : 'Quality across all projects in Lumen Freight.';
+  const head = pageHead(`Dashboard`, sub, `<label class="sr-only" for="d-proj">Project</label><select class="select" id="d-proj" style="width:auto"><option>All projects</option>${PROJECTS.map(p => `<option>${p.name}</option>`).join('')}</select>`);
+  const g = stateGate('readout', 'the dashboard'); if (g) return head + g;
+  if (S.state === 'empty') return head + emptyBox(ic.dash, 'Nothing to measure yet', 'Create a project and report the first bug. Charts fill in as your team works.', can('project.manage') ? `<a class="btn primary" href="${o('/projects')}">${ic.plus}Create a project</a>` : '');
+  const open = BUGS.filter(b => OPEN(b.status));
+  const crit = open.filter(b => b.sev === 'critical').length;
+  const sla = open.filter(slaBreached).length;
+  const rate7 = passRate(RUNS.filter(r => r.started <= 168));
+  const comps = {}; open.forEach(b => comps[b.comp] = (comps[b.comp] || 0) + 1);
+  const topComps = Object.entries(comps).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const mine = BUGS.filter(b => b.assignee === me() && OPEN(b.status));
+  return head + `
+  <section class="readout" aria-label="Key numbers">
+    <div><div class="num">${open.length}</div><div class="cap">Open bugs</div><div class="sub">${BUGS.length - open.length} resolved or closed</div></div>
+    <div class="${crit ? 'alert' : ''}"><div class="num">${crit}</div><div class="cap">Open Critical</div><div class="sub">${open.filter(b => b.sev === 'critical' && b.status === 'new').length} not triaged yet</div></div>
+    <div class="${sla ? 'alert' : ''}"><div class="num">${sla}</div><div class="cap">Past SLA</div><div class="sub"><a href="${o('/bugs')}" data-action="filter-sla">See breaching bugs</a></div></div>
+    <div><div class="num">${rate7}%</div><div class="cap">Run pass rate, 7 days</div><div class="sub">${RUNS.filter(r => r.started <= 168).length} runs</div></div>
+  </section>
+  <div class="grid g2">
+    <section class="panel"><div class="panel-head"><h2>Open bugs by severity</h2></div><div class="panel-body">
+      ${hbars(SEVS.map(([k, v]) => ({ label: v, labelHtml: sevBadge(k), v: open.filter(b => b.sev === k).length })))}</div></section>
+    <section class="panel"><div class="panel-head"><h2>Opened and closed, last 30 days</h2>${trendLegend}</div><div class="panel-body">${lineChart(trendSeries())}
+      <details class="small" style="margin-top:8px"><summary>Show as table</summary><div class="table-wrap"><table class="t"><thead><tr><th>Day</th><th>Opened</th><th>Closed</th></tr></thead><tbody>${(() => { const t = trendSeries(); return t.opened.slice(-7).map((v, i) => `<tr><td>${7 - i} days ago</td><td>${v}</td><td>${t.closed.slice(-7)[i]}</td></tr>`).join(''); })()}</tbody></table></div></details></div></section>
+    <section class="panel"><div class="panel-head"><h2>Components with most open bugs</h2></div><div class="panel-body">${hbars(topComps.map(([k, v]) => ({ label: k, v })))}</div></section>
+    <section class="panel"><div class="panel-head"><h2>Release readiness</h2><a class="small" href="${o('/releases')}">All releases</a></div>
+      <div class="table-wrap"><table class="t"><tbody>${RELEASES.filter(r => r.status !== 'released').map(r => { const rd = readiness(r); return `<tr><td class="title-cell"><a href="${o('/releases/' + r.id)}">${esc(r.name)}</a><div class="xs muted">Target ${fmtDate(r.target)}</div></td><td>${readyBadge(rd.status)}</td><td class="small muted">${esc(rd.reasons[0])}</td></tr>`; }).join('')}</tbody></table></div></section>
+  </div>
+  ${S.role === 'developer' ? `<section class="panel" style="margin-top:16px"><div class="panel-head"><h2>Assigned to you</h2></div>${bugTable(mine, false)}</section>` : ''}`;
+}
+const fmtDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/* ==========================================================================
+   Projects
+   ========================================================================== */
+function scrProjects() {
+  const head = pageHead('Projects', 'Each project has its own bugs, components, environments and test suites.', can('project.manage') ? `<button class="btn primary" data-action="new-project">${ic.plus}New project</button>` : '');
+  const g = stateGate('table', 'projects'); if (g) return head + g;
+  if (S.state === 'empty') return head + emptyBox(ic.folder, 'No projects yet', can('project.manage') ? 'Create your first project to start tracking bugs and tests.' : 'An admin or QA lead creates projects. Once one exists it appears here.', can('project.manage') ? `<button class="btn primary" data-action="new-project">${ic.plus}New project</button>` : '');
+  return head + `<div class="panel"><div class="table-wrap"><table class="t stackable"><thead><tr><th>Project</th><th>Key</th><th>Open bugs</th><th>Critical</th><th>Last run</th><th>Next release</th></tr></thead><tbody>
+    ${PROJECTS.map(p => { const bugs = BUGS.filter(b => b.project === p && OPEN(b.status)); const run = RUNS.filter(r => r.project === p.id)[0]; const rel = RELEASES.find(r => r.project === p.id && r.status !== 'released');
+      return `<tr><td class="title-cell"><a href="${o('/projects/' + p.key)}">${esc(p.name)}</a><div class="xs muted">${esc(p.desc)}</div></td><td data-label="Key"><span class="mono">${p.key}</span></td><td data-label="Open bugs">${bugs.length}</td><td data-label="Critical">${bugs.filter(b => b.sev === 'critical').length}</td><td data-label="Last run">${run ? `${passRate([run])}% pass` : '<span class="muted">None</span>'}</td><td data-label="Next release">${rel ? `${esc(rel.name)} ${readyBadge(readiness(rel).status)}` : '<span class="muted">None planned</span>'}</td></tr>`; }).join('')}
+  </tbody></table></div></div>`;
+}
+function scrProject(key) {
+  const p = PROJECTS.find(x => x.key === key); if (!p) return scrNotFound();
+  const head = pageHead(`${esc(p.name)} <span class="mono muted" style="font-size:16px">${p.key}</span>`, esc(p.desc), can('project.manage') ? `<button class="btn" data-action="toast" data-msg="Project settings saved">Edit project</button>` : '', `<a href="${o('/projects')}">Projects</a> / ${p.key}`);
+  const g = stateGate('detail', 'this project'); if (g) return head + g;
+  const empty = S.state === 'empty';
+  const bugs = empty ? [] : BUGS.filter(b => b.project === p);
+  const open = bugs.filter(b => OPEN(b.status));
+  const runs = empty ? [] : RUNS.filter(r => r.project === p.id);
+  return head + `
+  <section class="readout" aria-label="Project numbers"><div><div class="num">${open.length}</div><div class="cap">Open bugs</div></div><div class="${open.some(b => b.sev === 'critical') ? 'alert' : ''}"><div class="num">${open.filter(b => b.sev === 'critical').length}</div><div class="cap">Open Critical</div></div><div><div class="num">${runs.length ? passRate(runs) + '%' : 'None'}</div><div class="cap">Pass rate, all runs</div></div><div><div class="num">${SUITES.filter(s => s.project === p.id).length}</div><div class="cap">Test suites</div></div></section>
+  <div class="split">
+    <div class="stack">
+      <section class="panel"><div class="panel-head"><h2>Recently updated bugs</h2><a class="small" href="${o('/bugs')}">All bugs</a></div>
+        ${open.length ? bugTable(open.slice(0, 5), false) : `<div class="state-box">${ic.bug.replace('<svg', '<svg class="big"')}<h2>No bugs in ${esc(p.name)}</h2><p>Bugs reported for this project will show up here.</p>${can('bug.create') ? `<a class="btn primary" href="${o('/bugs/new')}">${ic.plus}Report bug</a>` : ''}</div>`}</section>
+      <section class="panel"><div class="panel-head"><h2>Latest test runs</h2></div>${runs.length ? `<div class="table-wrap"><table class="t stackable"><tbody>${runs.map(r => `<tr><td class="title-cell"><a href="${o('/runs/' + r.id)}">${esc(r.name)}</a></td><td data-label="Progress" style="width:40%">${progressBar(runCounts(r))}</td><td data-label="Pass rate">${passRate([r])}%</td></tr>`).join('')}</tbody></table></div>` : '<div class="panel-body muted">No runs yet.</div>'}</section>
+    </div>
+    <div class="stack">
+      <section class="panel"><div class="panel-head"><h3>Components</h3>${can('project.manage') ? `<button class="btn sm" data-action="toast" data-msg="Component added">${ic.plus}Add</button>` : ''}</div>
+        <div class="table-wrap"><table class="t"><tbody>${p.comps.map(c => `<tr><td>${esc(c)}</td><td style="text-align:right" class="muted small">${open.filter(b => b.comp === c).length} open</td></tr>`).join('')}</tbody></table></div></section>
+      <section class="panel"><div class="panel-head"><h3>Environments</h3>${can('project.manage') ? `<button class="btn sm" data-action="toast" data-msg="Environment added">${ic.plus}Add</button>` : ''}</div>
+        <div class="panel-body row">${ENVS.map(e => `<span class="label-chip mono">${e}</span>`).join('')}</div></section>
+    </div>
+  </div>`;
+}
+
+/* ==========================================================================
+   Bug list
+   ========================================================================== */
+const VIEWS = [['all', 'All open'], ['mine', 'Assigned to me'], ['critical-prod', 'Critical in prod'], ['retest', 'Ready for retest'], ['sla', 'Past SLA']];
+function filteredBugs() {
+  let list = BUGS.slice();
+  if (F.view === 'all') list = list.filter(b => OPEN(b.status));
+  if (F.view === 'mine') list = list.filter(b => b.assignee === me() && OPEN(b.status));
+  if (F.view === 'critical-prod') list = list.filter(b => b.sev === 'critical' && b.env === 'prod' && OPEN(b.status));
+  if (F.view === 'retest') list = list.filter(b => b.status === 'ready_for_retest');
+  if (F.view === 'sla') list = list.filter(slaBreached);
+  if (F.q) { const q = F.q.toLowerCase(); list = list.filter(b => b.key.toLowerCase().includes(q) || b.title.toLowerCase().includes(q)); }
+  if (F.project) list = list.filter(b => b.project.id === F.project);
+  if (F.status) list = list.filter(b => b.status === F.status);
+  if (F.sev) list = list.filter(b => b.sev === F.sev);
+  if (F.assignee) list = list.filter(b => F.assignee === 'none' ? !b.assignee : b.assignee === F.assignee);
+  const sevRank = { critical: 0, high: 1, medium: 2, low: 3 };
+  if (F.sort === 'updated') list.sort((a, b) => a.h - b.h);
+  if (F.sort === 'severity') list.sort((a, b) => sevRank[a.sev] - sevRank[b.sev] || a.h - b.h);
+  if (F.sort === 'priority') list.sort((a, b) => a.pri.localeCompare(b.pri) || a.h - b.h);
+  return list;
+}
+function bugTable(list, sortable = true) {
+  const sortBtn = (k, label) => sortable ? `<button data-action="sort" data-sort="${k}" aria-label="Sort by ${label}">${label}${F.sort === k ? ic.down.replace('<svg', '<svg width="12" height="12"') : ''}</button>` : label;
+  return `<div class="table-wrap"><table class="t stackable"><thead><tr><th>Key</th><th>Title</th><th>Status</th><th>${sortBtn('severity', 'Severity')}</th><th>${sortBtn('priority', 'Priority')}</th><th>Assignee</th><th>${sortBtn('updated', 'Updated')}</th></tr></thead><tbody>
+    ${list.map(b => `<tr><td data-label="Key" class="no-label"><span class="mono muted">${b.key}</span></td><td class="title-cell"><a href="${o('/bugs/' + b.key)}">${esc(b.title)}</a><div class="xs muted">${esc(b.comp)}, ${b.env}${b.labels.length ? ' ' + labelChips(b.labels) : ''}</div></td><td data-label="Status">${stBadge(b.status)}</td><td data-label="Severity">${sevBadge(b.sev)}</td><td data-label="Priority">${priTag(b.pri)}</td><td data-label="Assignee">${who(b.assignee)}</td><td data-label="Updated"><span class="small">${ago(b.h)}</span>${slaBreached(b) ? ` <span class="badge sla" title="Not fixed within ${SLA_TEXT[b.sev]} of being reported (SLA for ${SEV_NAME[b.sev]} bugs)">Past SLA</span>` : ''}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function scrBugList() {
+  const head = pageHead('Bugs', 'Every bug across your projects. Filter, search and save views.', `${can('bug.create') ? `<a class="btn primary" href="${o('/bugs/new')}">${ic.plus}Report bug</a>` : ''}<button class="btn" data-action="toast" data-msg="Exported 18 bugs to CSV">${ic.download}Export CSV</button>`);
+  const g = stateGate('table', 'bugs'); if (g) return head + g;
+  return head + `<div class="panel" id="bug-panel">${bugListInner()}</div>`;
+}
+function bugListInner() {
+  const list = S.state === 'empty' ? [] : filteredBugs();
+  const qVal = S.state === 'empty' ? 'refund' : F.q;
+  const opt = (v, l, cur) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${l}</option>`;
+  return `<div class="views" role="group" aria-label="Saved views">${VIEWS.map(([k, l]) => `<button class="view-tab" data-action="view" data-view="${k}" aria-pressed="${F.view === k}">${l}</button>`).join('')}<button class="view-tab" data-action="save-view">${ic.plus.replace('<svg', '<svg width="14" height="14" style="vertical-align:-2px"')} Save view</button></div>
+  <div class="filters" role="search">
+    <label class="sr-only" for="f-q">Search</label><input id="f-q" class="input search-f" placeholder="Search key or title" value="${esc(qVal)}" data-action="filter" data-f="q">
+    <label class="sr-only" for="f-p">Project</label><select id="f-p" class="select" data-action="filter" data-f="project">${opt('', 'All projects', F.project)}${PROJECTS.map(p => opt(p.id, p.name, F.project)).join('')}</select>
+    <label class="sr-only" for="f-s">Status</label><select id="f-s" class="select" data-action="filter" data-f="status">${opt('', 'Any status', F.status)}${STATUSES.map(([k, v]) => opt(k, v, F.status)).join('')}</select>
+    <label class="sr-only" for="f-v">Severity</label><select id="f-v" class="select" data-action="filter" data-f="sev">${opt('', 'Any severity', F.sev)}${SEVS.map(([k, v]) => opt(k, v, F.sev)).join('')}</select>
+    <label class="sr-only" for="f-a">Assignee</label><select id="f-a" class="select" data-action="filter" data-f="assignee">${opt('', 'Anyone', F.assignee)}${opt('none', 'Unassigned', F.assignee)}${USERS.filter(u => u.role === 'developer').map(u => opt(u.id, u.name, F.assignee)).join('')}</select>
+    ${qVal || F.project || F.status || F.sev || F.assignee ? `<button class="btn ghost sm" data-action="clear-filters">Clear filters</button>` : ''}
+  </div>
+  ${list.length ? bugTable(list) + `<div class="pager"><span class="grow">Showing 1 to ${list.length} of ${list.length}</span><button class="btn sm" disabled>Previous</button><button class="btn sm" disabled>Next</button></div>`
+    : `<div class="state-box">${ic.search.replace('<svg', '<svg class="big"')}<h2>No bugs match these filters</h2><p>Try a different search or clear the filters to see every open bug.</p><button class="btn" data-action="clear-filters">Clear filters</button></div>`}`;
+}
+
+/* ==========================================================================
+   Board
+   ========================================================================== */
+function scrBoard() {
+  const head = pageHead('Board', 'Drag a card to change its status. Only moves allowed for your role are accepted.', `<label class="sr-only" for="b-proj">Project</label><select class="select" id="b-proj" style="width:auto"><option>All projects</option>${PROJECTS.map(p => `<option>${p.name}</option>`).join('')}</select>`);
+  const g = stateGate('board', 'the board'); if (g) return head + g;
+  const empty = S.state === 'empty';
+  if (empty) return head + emptyBox(ic.board, 'The board is empty', 'There are no bugs in this project yet. Reported bugs appear in the New column.', can('bug.create') ? `<a class="btn primary" href="${o('/bugs/new')}">${ic.plus}Report bug</a>` : '');
+  return head + `<div class="board" id="board">${STATUSES.map(([k, v]) => { const cards = BUGS.filter(b => b.status === k);
+    return `<section class="col" data-col="${k}" aria-label="${v}, ${cards.length} bugs"><div class="col-head">${stBadge(k)}<span class="n">${cards.length}</span></div><div class="col-body">
+      ${cards.map(b => `<article class="card" draggable="${S.role !== 'viewer'}" data-key="${b.key}"><div class="row between"><span class="k mono">${b.key}</span>${S.role !== 'viewer' ? `<button class="btn ghost sm icon-btn" style="width:26px;height:26px" data-action="move-menu" data-key="${b.key}" aria-label="Move ${b.key} to another status">${ic.move}</button>` : ''}</div><div class="ttl"><a href="${o('/bugs/' + b.key)}">${esc(b.title)}</a></div><div class="meta">${sevBadge(b.sev)}${priTag(b.pri)}${slaBreached(b) ? '<span class="badge sla">SLA</span>' : ''}${b.assignee ? avatar(b.assignee) : ''}</div></article>`).join('') || '<div class="col-empty">No bugs</div>'}
+    </div></section>`; }).join('')}</div>`;
+}
+
+/* ==========================================================================
+   Bug detail
+   ========================================================================== */
+function scrBugDetail(key) {
+  const b = BUGS.find(x => x.key === key); if (!b) return scrNotFound();
+  const crumbs = `<a href="${o('/bugs')}">Bugs</a> / <span class="mono">${b.key}</span>`;
+  if (S.state === 'loading') return `<div class="crumbs">${crumbs}</div>` + loadingWrap('detail');
+  if (S.state === 'error') return `<div class="crumbs">${crumbs}</div><div class="panel"><div class="state-box error" role="alert">${ic.alert.replace('<svg', '<svg class="big"')}<h2>Bug ${b.key} was not found</h2><p>It may have been deleted, or it belongs to a workspace you are not a member of.</p><a class="btn primary" href="${o('/bugs')}">Back to bugs</a></div></div>`;
+  const targets = allowedTargets(b);
+  const canEdit = can('bug.edit') || (S.role === 'developer' && b.reporter === me());
+  const ai = S.state === 'ai';
+  const sel = (id, opts, cur, enabled, label) => `<label class="sr-only" for="${id}">${label}</label><select class="select" id="${id}" ${enabled ? '' : 'disabled'} data-action="field-change" data-label="${label}">${opts.map(([k, v]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+  const devSelf = S.role === 'developer' && !b.assignee;
+  const assigneeOpts = [['', 'Unassigned'], ...USERS.filter(u => u.role !== 'viewer').map(u => [u.id, u.name])];
+  return `<div class="crumbs">${crumbs}</div>
+  <div class="page-head"><div class="grow"><div class="row small" style="margin-bottom:8px"><span class="mono muted">${b.key}</span>${stBadge(b.status)}${sevBadge(b.sev)}${priTag(b.pri)}${slaBreached(b) ? '<span class="badge sla">Past SLA</span>' : ''}</div><h1>${esc(b.title)}</h1><p>Reported by ${esc(user(b.reporter).name)} ${ago(createdHoursAgo(b))}. Updated ${ago(b.h)}.</p></div>
+    <div class="actions">${targets.length ? targets.map((t, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-action="transition" data-key="${b.key}" data-to="${t}">${transitionLabel(t)}</button>`).join('') : `<span class="small muted">${S.role === 'viewer' ? 'Viewers can comment but cannot change bugs.' : S.role === 'developer' ? 'Only the assignee can move this bug.' : 'No status changes available.'}</span>`}
+      ${can('bug.delete') ? `<button class="btn ghost icon-btn" data-action="confirm-delete" aria-label="Delete bug">${ic.trash}</button>` : ''}</div></div>
+  <div class="split">
+    <div class="stack">
+      <section class="panel"><div class="panel-body prose">
+        <h3>Description</h3><p>After applying discount code SAVE10 at checkout, changing the delivery address recalculates shipping but drops the discount. The order total goes up by the discount amount and the code disappears from the summary. Seen by 3 customers in support tickets today.</p>
+        <h3>Steps to reproduce</h3><ol><li>Sign in as a shipper with a parcel in the cart.</li><li>Apply discount code SAVE10.</li><li>On the checkout page choose Change address and pick another saved address.</li><li>Look at the order summary.</li></ol>
+        <h3>Expected and actual</h3><div class="ea"><div class="exp"><div class="ea-title">Expected</div>Total includes the new shipping cost and still applies SAVE10.</div><div class="act"><div class="ea-title">Actual</div>SAVE10 is removed and the total rises by the discount amount.</div></div>
+        <h3>Attachments</h3><div class="files"><span class="file">${ic.img}checkout-summary.png <span class="muted xs">412 KB</span></span><span class="file">${ic.file}console.log <span class="muted xs">8 KB</span></span>${can('attachment.upload') ? `<button class="btn sm" data-action="toast" data-msg="Attachment uploaded">${ic.clip}Attach file</button>` : ''}</div>
+      </div></section>
+      <section class="panel"><div class="panel-body">
+        <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="${(tabState.bug || 'all') === 'all'}" data-action="tab" data-group="bug" data-tab="all">Comments and activity</button><button class="tab" role="tab" aria-selected="${tabState.bug === 'comments'}" data-action="tab" data-group="bug" data-tab="comments">Comments only</button></div>
+        <ul class="timeline">${timeline(b, tabState.bug === 'comments')}</ul>
+        ${can('comment.create') ? `<form data-action="comment" style="margin-top:16px" class="stack"><div class="field"><label for="c-body">Add a comment</label><textarea class="textarea" id="c-body" placeholder="Ask a question or share findings. Plain text."></textarea></div><div><button class="btn primary" type="submit">Post comment</button></div></form>` : ''}
+      </div></section>
+    </div>
+    <aside class="stack">
+      ${ai && can('ai.triage') ? triagePanel(b, ai) : ''}
+      <section class="panel"><div class="panel-head"><h3>Details</h3></div><div class="panel-body"><dl class="dl">
+        <dt>Status</dt><dd>${stBadge(b.status)}</dd>
+        <dt>Severity</dt><dd>${sel('d-sev', SEVS, b.sev, can('bug.sevpri'), 'Severity')}</dd>
+        <dt>Priority</dt><dd>${sel('d-pri', [['p1', 'P1 urgent'], ['p2', 'P2 high'], ['p3', 'P3 normal'], ['p4', 'P4 low']], b.pri, can('bug.sevpri'), 'Priority')}</dd>
+        <dt>Assignee</dt><dd>${devSelf ? `<button class="btn sm" data-action="self-assign" data-key="${b.key}">${ic.user}Assign to me</button>` : sel('d-asg', assigneeOpts, b.assignee || '', can('bug.assign'), 'Assignee')}</dd>
+        <dt>Component</dt><dd>${sel('d-comp', b.project.comps.map(c => [c, c]), b.comp, canEdit, 'Component')}</dd>
+        <dt>Environment</dt><dd>${sel('d-env', ENVS.map(e => [e, e]), b.env, canEdit, 'Environment')}</dd>
+        <dt>Release</dt><dd>${sel('d-rel', [['', 'None'], ...RELEASES.filter(r => r.project === b.project.id).map(r => [r.id, r.name])], b.release || '', canEdit, 'Release')}</dd>
+        <dt>Labels</dt><dd>${labelChips(b.labels) || '<span class="muted">None</span>'}</dd>
+        <dt>Reporter</dt><dd>${who(b.reporter)}</dd>
+      </dl></div></section>
+      ${!ai && can('ai.triage') ? triagePanel(b, ai) : ''}
+    </aside>
+  </div>`;
+}
+const transitionLabel = t => ({ triaged: 'Mark triaged', in_progress: 'Start work', fixed: 'Mark fixed', ready_for_retest: 'Ready for retest', verified: 'Verify fix', closed: 'Close', reopened: 'Reopen', wont_fix: "Won't fix" })[t];
+function timeline(b, commentsOnly) {
+  const items = [
+    ['comment', 'u2', '3 h ago', 'Confirmed on staging with SAVE10 and SPRING15. Raising to Critical because it changes what customers pay.'],
+    ['event', 'u2', '3 h ago', `changed severity from <b>High</b> to <b>Critical</b>`],
+    ['event', 'u4', '20 h ago', `changed status from ${stBadge('triaged')} to ${stBadge('in_progress')}`],
+    ['comment', 'u4', '20 h ago', 'Looks like the address change rebuilds the cart without the applied codes. Working on a fix in the pricing service.'],
+    ['event', 'u3', '1 d ago', 'attached <b>checkout-summary.png</b>'],
+    ['event', 'u3', '2 d ago', `created this bug with help from the AI Bug Writer`],
+  ].filter(x => !commentsOnly || x[0] === 'comment');
+  return items.map(([k, u, t, body]) => k === 'comment'
+    ? `<li>${avatar(u)}<div><div class="small"><b>${esc(user(u).name)}</b> <span class="muted">${t}</span></div><div class="comment-body">${esc(body)}</div></div></li>`
+    : `<li><span class="event-dot">${ic.chevr}</span><div class="small"><b>${esc(user(u).name)}</b> ${body} <span class="muted">${t}</span></div></li>`).join('');
+}
+function triagePanel(b, ai) {
+  return `<section class="ai-panel"><div class="panel-head">${ic.spark}<h3>AI triage</h3></div><div class="panel-body">
+    ${ai ? `<div class="suggest" aria-label="AI suggestion, not saved"><div class="suggest-tag">${ic.spark}AI suggestion, not saved</div>
+      <dl class="dl"><dt>Severity</dt><dd>${sevBadge('critical')}</dd><dt>Priority</dt><dd>${priTag('p1')}</dd><dt>Component</dt><dd>Checkout</dd><dt>Confidence</dt><dd>High</dd></dl>
+      <p class="reason">Customers are charged more than the displayed price on production, and the issue affects every order that changes address after a discount. Money and trust impact make this Critical and P1.</p>
+      <div class="suggest-actions"><button class="btn primary sm" data-action="ai-accept" data-msg="Triage applied: Critical, P1, Checkout">${ic.check}Accept</button><button class="btn sm" data-action="ai-edit">Edit</button><button class="btn ghost sm" data-action="ai-discard">Discard</button></div></div>`
+    : `<p class="small muted">Get a suggested severity, priority and component with a short reason. Nothing changes until you accept.</p><button class="btn" style="margin-top:12px" data-action="ai-run" data-state="ai">${ic.spark}Suggest triage</button>`}
+    <p class="ai-note" style="margin-top:12px">Mock provider. Bug text is sent as data only.</p></div></section>`;
+}
+
+/* ==========================================================================
+   New bug with AI Bug Writer and duplicate warning
+   ========================================================================== */
+function scrBugNew() {
+  const head = pageHead('Report a bug', 'Write it yourself, or paste rough notes and let the AI Bug Writer draft it.', '', `<a href="${o('/bugs')}">Bugs</a> / New`);
+  if (!can('bug.create')) return head + emptyBox(ic.lock, 'Viewers cannot report bugs', 'Ask a QA engineer or lead to report it, or comment on an existing bug.', `<a class="btn" href="${o('/bugs')}">Back to bugs</a>`);
+  const ai = S.state === 'ai', load = S.state === 'loading', err = S.state === 'error';
+  const fromRun = parse().params.get('from') === 'run';
+  const v = ai || fromRun ? {
+    title: fromRun ? 'Total not recalculated with discount after changing delivery address' : 'Checkout total ignores discount code after changing delivery address',
+    steps: fromRun ? ['Open checkout with discount SAVE10 applied.', 'Change the delivery address to another city.', 'Check the order total.'] : ['Sign in as a shipper with a parcel in the cart.', 'Apply discount code SAVE10.', 'On checkout choose Change address and pick another saved address.', 'Look at the order summary.'],
+    exp: 'Total includes the new shipping cost and still applies SAVE10.', act: 'SAVE10 is removed and the total rises by the discount amount.' } : { title: '', steps: [''], exp: '', act: '' };
+  const isDev = S.role === 'developer';
+  return head + `<div class="split">
+    <form class="panel" data-action="submit-bug" novalidate><div class="panel-body stack">
+      ${fromRun ? `<div class="banner info">${ic.info}<div>Prefilled from failed step 3 of <b>TC-103</b> in run <a href="${o('/runs/R-31')}">WEB 2.4.0 regression</a>. Review before saving. The bug will link back to the run.</div></div>` : ''}
+      ${err ? `<div class="banner error" role="alert">${ic.alert}<div>Fix 2 fields before saving: title and project.</div></div>` : ''}
+      <div class="grid g2"><div class="field ${err ? 'invalid' : ''}"><label for="n-proj">Project</label><select class="select" id="n-proj" ${err ? 'aria-invalid="true"' : ''}>${err ? '<option>Choose a project</option>' : ''}${PROJECTS.map(p => `<option>${p.name}</option>`).join('')}</select>${err ? '<div class="err">Choose a project.</div>' : ''}</div>
+        <div class="field"><label for="n-comp">Component</label><select class="select" id="n-comp">${PROJECTS[0].comps.map(c => `<option>${c}</option>`).join('')}</select></div></div>
+      <div class="field ${err ? 'invalid' : ''}"><label for="n-title">Title</label><input class="input" id="n-title" value="${esc(v.title)}" placeholder="What is wrong, where" data-action="dupe-check" ${err ? 'aria-invalid="true" aria-describedby="n-title-e"' : ''}>${err ? '<div class="err" id="n-title-e">Title must be at least 5 characters.</div>' : ''}</div>
+      ${ai ? dupesBox() : ''}
+      <div class="field"><label>Steps to reproduce</label><div class="stack" style="gap:8px">${v.steps.map((s, i) => `<div class="row" style="flex-wrap:nowrap"><span class="mono muted" style="width:20px;text-align:right">${i + 1}</span><input class="input" aria-label="Step ${i + 1}" value="${esc(s)}"></div>`).join('')}<div><button type="button" class="btn sm" data-action="toast" data-msg="Step added">${ic.plus}Add step</button></div></div></div>
+      <div class="grid g2"><div class="field"><label for="n-exp">Expected result</label><textarea class="textarea" id="n-exp">${esc(v.exp)}</textarea></div><div class="field"><label for="n-act">Actual result</label><textarea class="textarea" id="n-act">${esc(v.act)}</textarea></div></div>
+      <div class="grid g3">
+        <div class="field"><label for="n-sev">Severity</label><select class="select" id="n-sev" ${isDev ? 'disabled aria-describedby="dev-note"' : ''}>${SEVS.map(([k, l]) => `<option value="${k}" ${(ai || fromRun) && k === 'critical' || !(ai || fromRun) && k === 'medium' ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div class="field"><label for="n-pri">Priority</label><select class="select" id="n-pri" ${isDev ? 'disabled aria-describedby="dev-note"' : ''}><option>P1 urgent</option><option>P2 high</option><option selected>P3 normal</option><option>P4 low</option></select></div>
+        <div class="field"><label for="n-env">Environment</label><select class="select" id="n-env">${ENVS.map(e => `<option ${e === (fromRun ? 'staging' : 'prod') ? 'selected' : ''}>${e}</option>`).join('')}</select></div>
+      </div>
+      ${isDev ? `<p class="hint" id="dev-note">Developers report bugs as Medium and P3. A QA engineer or lead sets severity and priority at triage.</p>` : ''}
+      <div class="grid g2"><div class="field"><label for="n-asg">Assignee</label><select class="select" id="n-asg" ${can('bug.assign') ? '' : 'disabled'}><option>Unassigned</option>${USERS.filter(u => u.role === 'developer').map(u => `<option>${u.name}</option>`).join('')}</select></div>
+        <div class="field"><label for="n-lab">Labels</label><input class="input" id="n-lab" placeholder="Type to add labels" value="${ai ? 'Payments, Regression' : ''}"></div></div>
+      <div class="drop">${ic.clip.replace('<svg', '<svg width="18" height="18" style="vertical-align:-4px"')} Drop screenshots, logs or recordings here, or <button type="button" class="btn ghost sm" data-action="toast" data-msg="File picker opened">browse</button><div class="xs">PNG, JPG, GIF, WEBP, PDF, TXT, LOG, JSON, CSV, ZIP, MP4, WEBM. Up to 10 MB each.</div></div>
+      <div class="row"><button class="btn primary" type="submit">Save bug</button><a class="btn ghost" href="${o('/bugs')}">Cancel</a></div>
+    </div></form>
+    <aside class="stack">
+      <section class="ai-panel"><div class="panel-head">${ic.spark}<h3>AI Bug Writer</h3></div><div class="panel-body stack">
+        <div class="field"><label for="w-notes">Rough notes</label><textarea class="textarea" id="w-notes" placeholder="Describe what happened in your own words">${ai || load ? 'checkout total wrong after changing address. discount SAVE10 disappears. prod, chrome 131. happened 3 times' : ''}</textarea></div>
+        <div class="field"><label for="w-log">Log or stack trace (optional)</label><textarea class="textarea mono" id="w-log" style="min-height:64px;font-size:12px" placeholder="Paste console or server output">${ai ? 'PricingError: discount context lost on cart rebuild\n  at rebuildCart (pricing.ts:214)' : ''}</textarea></div>
+        ${load ? `<div class="thinking" role="status"><span>Drafting the report</span><div class="bar"></div><button type="button" class="btn ghost sm" data-action="retry">Cancel</button></div>`
+          : ai ? `<div class="suggest"><div class="suggest-tag">${ic.spark}AI suggestion, not saved</div><p class="small">Draft filled into the form: title, 4 steps, expected and actual results, severity <b>Critical</b>, environment <b>prod</b>, component <b>Checkout</b>.</p><p class="reason"><b>Missing information:</b> which browser versions are affected, and does it happen with every discount code?</p>
+              <div class="suggest-actions"><button type="button" class="btn primary sm" data-action="ai-accept" data-msg="Draft accepted. Review the form and save.">${ic.check}Accept</button><button type="button" class="btn sm" data-action="ai-edit">Edit</button><button type="button" class="btn ghost sm" data-action="ai-discard">Discard</button></div></div>
+              <details class="small"><summary>Explain this log</summary><div class="suggest" style="margin-top:8px"><div class="suggest-tag">${ic.spark}AI suggestion, not saved</div><p><b>PricingError</b> in <span class="mono">rebuildCart</span>: when the cart is rebuilt after an address change, applied discount codes are not carried over.</p><div class="suggest-actions"><button type="button" class="btn sm" data-action="ai-accept" data-msg="Explanation added to the description">Insert into description</button></div></div></details>`
+          : `<button type="button" class="btn" data-action="ai-run" data-state="ai">${ic.spark}Write the report</button>`}
+        <p class="ai-note">Your notes are sent to the AI as data only. Nothing is saved until you choose Save bug.</p>
+      </div></section>
+    </aside></div>`;
+}
+function dupesBox() {
+  const d = [['WEB-133', 0.41], ['WEB-126', 0.33], ['WEB-137', 0.27]];
+  return `<div class="dupes" role="status"><h3>${ic.alert.replace('<svg', '<svg width="18" height="18"')}This may be a duplicate</h3><p class="small muted" style="margin:4px 0 8px">Open bugs in Customer portal with similar wording. Check them before saving.</p>
+    ${d.map(([k, s]) => { const b = BUGS.find(x => x.key === k); return `<div class="dupe"><div><span class="mono muted small">${k}</span> <a href="${o('/bugs/' + k)}" target="_blank">${esc(b.title)}</a> ${stBadge(b.status)}</div><span class="score"><span class="score-bar"><i style="width:${s * 100}%"></i></span>${Math.round(s * 100)}% similar</span></div>`; }).join('')}</div>`;
+}
+
+/* ==========================================================================
+   Test suites and case editor
+   ========================================================================== */
+function scrSuites() {
+  const head = pageHead('Test suites', 'Group test cases by feature. Generate new cases from a user story.', can('test.manage') ? `<button class="btn" data-action="toast" data-msg="Suite created">${ic.plus}New suite</button><a class="btn primary" href="${o('/tests/cases/new')}">${ic.plus}New test case</a>` : '');
+  const g = stateGate('table', 'test suites'); if (g) return head + g;
+  if (S.state === 'empty') return head + emptyBox(ic.suite, 'No test suites yet', 'Create a suite for a feature, then add cases by hand or generate them from a user story.', can('test.manage') ? `<button class="btn primary" data-action="toast" data-msg="Suite created">${ic.plus}New suite</button>` : '');
+  const s = SUITES.find(x => x.id === selSuite); const cases = CASES.filter(c => c.suite === s.id);
+  const lastRun = RUNS.find(r => Object.keys(r.results).some(k => cases.some(c => c.id === k)));
+  return head + `<div class="split left">
+    <nav class="panel" aria-label="Suites"><ul class="suite-list">${PROJECTS.map(p => `<li class="proj">${esc(p.name)}</li>${SUITES.filter(x => x.project === p.id).map(x => `<li><a href="#" data-action="pick-suite" data-id="${x.id}" aria-current="${x.id === selSuite}"><b>${esc(x.name)}</b><span class="xs muted">${CASES.filter(c => c.suite === x.id).length} cases</span></a></li>`).join('')}`).join('')}</ul></nav>
+    <section class="panel"><div class="panel-head"><div style="flex:1"><h2>${esc(s.name)}</h2><p class="small muted">${esc(s.desc)} Component ${esc(s.comp)}.${lastRun ? ` Last run ${passRate([lastRun])}% pass.` : ''}</p></div>${can('test.manage') ? `<a class="btn sm" href="${o('/tests/cases/new')}">${ic.spark}Generate cases</a>` : ''}</div>
+      <div class="table-wrap"><table class="t stackable"><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Priority</th><th>Steps</th><th>Tags</th></tr></thead><tbody>
+      ${cases.map(c => `<tr><td data-label="ID" class="no-label"><span class="mono muted">${c.id}</span></td><td class="title-cell"><a href="${o('/tests/cases/' + c.id)}">${esc(c.title)}</a></td><td data-label="Type"><span class="type-tag">${c.type[0].toUpperCase() + c.type.slice(1)}</span></td><td data-label="Priority">${priTag(c.pri)}</td><td data-label="Steps">${c.steps.length}</td><td data-label="Tags">${c.tags.map(t => `<span class="label-chip">${t}</span>`).join(' ')}</td></tr>`).join('')}
+      </tbody></table></div></section></div>`;
+}
+function scrCaseEditor(id) {
+  const isNew = id === 'new'; const c = isNew ? CASES[2] : CASES.find(x => x.id === id); if (!c) return scrNotFound();
+  const editable = can('test.manage');
+  const head = pageHead(isNew ? 'New test case' : `<span class="mono muted" style="font-size:16px">${c.id}</span> ${esc(c.title)}`, isNew ? 'Write the case, or describe the story and let AI suggest cases.' : `In suite ${esc(SUITES.find(s => s.id === c.suite).name)}`, editable ? `<button class="btn primary" data-action="toast" data-msg="Test case saved">Save case</button>` : '', `<a href="${o('/tests')}">Test suites</a> / ${isNew ? 'New case' : c.id}`);
+  const g = stateGate('detail', 'this test case'); if (g) return head + g;
+  const ai = S.state === 'ai';
+  const val = isNew && !ai ? { title: '', pre: '', steps: [st('', '')] } : { title: c.title, pre: c.pre, steps: c.steps };
+  const dis = editable ? '' : 'disabled';
+  return head + `<div class="split">
+    <section class="panel"><div class="panel-body stack">
+      <div class="field"><label for="c-title">Title</label><input class="input" id="c-title" value="${esc(val.title)}" ${dis}></div>
+      <div class="grid g3"><div class="field"><label for="c-suite">Suite</label><select class="select" id="c-suite" ${dis}>${SUITES.map(s => `<option ${s.id === c.suite ? 'selected' : ''}>${s.name}</option>`).join('')}</select></div>
+        <div class="field"><label for="c-type">Type</label><select class="select" id="c-type" ${dis}><option ${c.type === 'positive' ? 'selected' : ''}>Positive</option><option ${c.type === 'negative' ? 'selected' : ''}>Negative</option><option ${c.type === 'edge' ? 'selected' : ''}>Edge</option></select></div>
+        <div class="field"><label for="c-pri">Priority</label><select class="select" id="c-pri" ${dis}>${['p1', 'p2', 'p3', 'p4'].map(p => `<option ${p === c.pri ? 'selected' : ''}>${p.toUpperCase()}</option>`).join('')}</select></div></div>
+      <div class="field"><label for="c-pre">Preconditions</label><textarea class="textarea" id="c-pre" style="min-height:64px" ${dis}>${esc(val.pre)}</textarea></div>
+      <div class="field"><span class="label">Steps</span><div class="step-ed" style="border-bottom:1px solid var(--line);padding-top:0" aria-hidden="true"><span></span><span class="xs muted">Action</span><span class="xs muted exp-col">Expected result</span><span></span></div>
+        ${val.steps.map((s, i) => `<div class="step-ed"><span class="n">${i + 1}</span><textarea class="textarea" aria-label="Step ${i + 1} action" ${dis}>${esc(s.a)}</textarea><textarea class="textarea exp-col" aria-label="Step ${i + 1} expected result" ${dis}>${esc(s.e)}</textarea>${editable ? `<div class="stack" style="gap:2px"><button class="btn ghost sm icon-btn" style="width:28px;height:28px" aria-label="Move step ${i + 1} up" data-action="toast" data-msg="Step moved">${ic.up}</button><button class="btn ghost sm icon-btn" style="width:28px;height:28px" aria-label="Move step ${i + 1} down" data-action="toast" data-msg="Step moved">${ic.down}</button><button class="btn ghost sm icon-btn" style="width:28px;height:28px" aria-label="Remove step ${i + 1}" data-action="toast" data-msg="Step removed">${ic.trash}</button></div>` : '<span></span>'}</div>`).join('')}
+        ${editable ? `<div style="margin-top:8px"><button class="btn sm" data-action="toast" data-msg="Step added">${ic.plus}Add step</button></div>` : ''}</div>
+      <div class="field"><label for="c-tags">Tags</label><input class="input" id="c-tags" value="${isNew && !ai ? '' : c.tags.join(', ')}" ${dis}></div>
+    </div></section>
+    <aside class="stack">${can('ai.cases') ? genPanel(ai) : `<section class="panel panel-body small muted">Only QA roles can edit test cases.</section>`}</aside></div>`;
+}
+function genPanel(ai) {
+  const gen = [['positive', 'Recalculate total with discount after address change', 4], ['positive', 'Keep two stacked discount codes after address change', 4], ['negative', 'Expired code is removed when the address changes', 3], ['negative', 'Address outside the delivery area shows an error and keeps the cart', 3], ['edge', 'Change address 10 times in a row', 3], ['edge', 'Discount that makes shipping free crosses back over the threshold', 4]];
+  return `<section class="ai-panel"><div class="panel-head">${ic.spark}<h3>Test Case Generator</h3></div><div class="panel-body stack">
+    <div class="field"><label for="g-story">User story or acceptance criteria</label><textarea class="textarea" id="g-story" placeholder="As a shipper I want...">${ai ? 'As a shipper I want my discount to stay applied when I change the delivery address, so the price I saw is the price I pay.\n- Discount stays after address change\n- Total shows new shipping cost\n- Expired codes are removed' : ''}</textarea></div>
+    <div class="field"><label for="g-count">How many cases</label><select class="select" id="g-count"><option>6</option><option>8</option><option>12</option></select></div>
+    ${ai ? `<div class="suggest"><div class="suggest-tag">${ic.spark}6 suggested cases, not saved</div>
+      ${gen.map(([t, title, n], i) => `<label class="gen-case"><input type="checkbox" checked aria-label="Include ${esc(title)}" style="width:16px;height:16px;accent-color:var(--primary);margin-top:3px"><span><span class="type-tag">${t[0].toUpperCase() + t.slice(1)}</span> <b class="small">${esc(title)}</b><span class="xs muted" style="display:block">${n} steps with expected results</span></span></label>`).join('')}
+      <div class="suggest-actions"><button class="btn primary sm" data-action="ai-accept" data-msg="6 test cases added to Checkout">${ic.check}Add 6 to Checkout</button><button class="btn sm" data-action="ai-edit">Edit first</button><button class="btn ghost sm" data-action="ai-discard">Discard</button></div></div>`
+    : `<button class="btn" data-action="ai-run" data-state="ai">${ic.spark}Generate cases</button>`}
+    <p class="ai-note">Covers positive, negative and edge cases. You choose which ones to add.</p></div></section>`;
+}
+
+/* ==========================================================================
+   Test runs and execution
+   ========================================================================== */
+function scrRuns() {
+  const head = pageHead('Test runs', 'Execute cases against an environment and track results.', can('test.manage') ? `<button class="btn primary" data-action="new-run">${ic.plus}New test run</button>` : '');
+  const g = stateGate('table', 'test runs'); if (g) return head + g;
+  if (S.state === 'empty') return head + emptyBox(ic.run, 'No test runs yet', 'Start a run from one or more suites. Each run keeps a snapshot of the cases so results stay accurate.', can('test.manage') ? `<button class="btn primary" data-action="new-run">${ic.plus}New test run</button>` : '');
+  return head + `<div class="panel"><div class="filters"><div class="legend">${['pass', 'fail', 'blocked', 'skipped', 'untested'].map(k => `<span><i style="background:var(--res-${k})"></i>${k[0].toUpperCase() + k.slice(1)}</span>`).join('')}</div></div>
+    <div class="table-wrap"><table class="t stackable"><thead><tr><th>Run</th><th>Status</th><th>Environment</th><th>Release</th><th style="width:24%">Progress</th><th>Pass rate</th><th>Started</th></tr></thead><tbody>
+    ${RUNS.map(r => { const c = runCounts(r); const rel = RELEASES.find(x => x.id === r.release); return `<tr><td class="title-cell"><a href="${o('/runs/' + r.id)}">${esc(r.name)}</a><div class="xs muted mono">${r.id}</div></td><td data-label="Status"><span class="badge ${r.status === 'completed' ? 'st-verified' : 'st-in_progress'}">${r.status === 'completed' ? 'Completed' : 'In progress'}</span></td><td data-label="Environment"><span class="mono small">${r.env}</span></td><td data-label="Release">${rel ? esc(rel.name) : '<span class="muted">None</span>'}</td><td data-label="Progress">${progressBar(c)}<div class="xs muted" style="margin-top:4px">${c.pass + c.fail + c.blocked + c.skipped} of ${Object.keys(r.results).length} executed</div></td><td data-label="Pass rate"><b>${passRate([r])}%</b></td><td data-label="Started" class="small">${ago(r.started)} by ${esc(user(r.by).name.split(' ')[0])}</td></tr>`; }).join('')}
+    </tbody></table></div></div>`;
+}
+function scrRun(id) {
+  const r = RUNS.find(x => x.id === id); if (!r) return scrNotFound();
+  const failedState = S.state === 'failed';
+  const results = { ...r.results };
+  if (failedState) results['TC-114'] = 'untested';
+  const c = { pass: 0, fail: 0, blocked: 0, skipped: 0, untested: 0 }; Object.values(results).forEach(x => c[x]++);
+  const canRun = can('test.manage') && r.status === 'in_progress';
+  const head = pageHead(esc(r.name), `${r.status === 'completed' ? 'Completed' : 'In progress'} on <span class="mono">${r.env}</span>. ${RELEASES.find(x => x.id === r.release) ? 'Linked to ' + esc(RELEASES.find(x => x.id === r.release).name) + '.' : ''}`, canRun ? `<button class="btn" data-action="toast" data-msg="Run completed. Results are now read only.">Complete run</button>` : '', `<a href="${o('/runs')}">Test runs</a> / <span class="mono">${r.id}</span>`);
+  const g = stateGate('detail', 'this run'); if (g) return head + g;
+  const caseIds = Object.keys(results);
+  const expanded = failedState ? 'TC-103' : (tabState.run || 'TC-103');
+  return head + `<section class="readout" aria-label="Run progress">
+      <div><div class="num">${passRate([{ results }])}%</div><div class="cap">Pass rate</div></div>
+      <div><div class="num">${c.pass}</div><div class="cap">Pass</div></div>
+      <div class="${c.fail ? 'alert' : ''}"><div class="num">${c.fail}</div><div class="cap">Fail</div></div>
+      <div><div class="num">${c.untested}</div><div class="cap">Not run yet</div><div class="sub">${c.blocked} blocked, ${c.skipped} skipped</div></div></section>
+    <div style="margin-bottom:16px">${progressBar(c)}</div>
+    <section class="panel">${caseIds.map(cid => { const cs = CASES.find(x => x.id === cid); const res = results[cid]; const open = cid === expanded;
+      const failedStep = cid === 'TC-103' ? 2 : cid === 'TC-104' ? 1 : -1;
+      return `<div class="case-row"><div class="case-head"><button class="expander" data-action="expand-case" data-id="${cid}" aria-expanded="${open}">${(open ? ic.chev : ic.chevr).replace('<svg', '<svg width="16" height="16"')}<span class="mono muted small">${cid}</span><span>${esc(cs.title)}</span></button>
+        <div class="row" style="gap:8px"><span class="res res-${res}">${res === 'untested' ? 'Not run' : res[0].toUpperCase() + res.slice(1)}</span>${canRun ? `<div class="result-btns" role="group" aria-label="Result for ${cid}">${['pass', 'fail', 'blocked', 'skipped'].map(k => `<button class="${k}" aria-pressed="${res === k}" data-action="set-result" data-id="${cid}" data-res="${k}">${k === 'skipped' ? 'Skip' : k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>` : ''}</div></div>
+        ${open ? `<div class="case-detail">${cs.pre ? `<p class="small muted" style="margin-bottom:8px"><b>Preconditions:</b> ${esc(cs.pre)}</p>` : ''}
+          <div class="table-wrap"><table class="steps-t"><thead><tr><th style="width:36px">#</th><th>Action</th><th>Expected result</th></tr></thead><tbody>${cs.steps.map((s, i) => `<tr class="${res === 'fail' && i === failedStep ? 'failed' : ''}"><td class="mono">${i + 1}</td><td>${esc(s.a)}</td><td>${esc(s.e)}${res === 'fail' && i === failedStep ? `<div class="err" style="margin-top:4px">Failed at this step</div>` : ''}</td></tr>`).join('')}</tbody></table></div>
+          ${res === 'fail' ? `<div class="failbox stack"><div class="grid g2"><div class="field"><label for="fs-${cid}">Failed at step</label><select class="select" id="fs-${cid}" ${canRun ? '' : 'disabled'}>${cs.steps.map((s, i) => `<option ${i === failedStep ? 'selected' : ''}>Step ${i + 1}</option>`).join('')}</select></div><div class="field"><label for="fa-${cid}">Actual result</label><input class="input" id="fa-${cid}" value="Total went up by 4.20 and SAVE10 disappeared" ${canRun ? '' : 'disabled'}></div></div>
+            ${cid === 'TC-104' ? `<p class="small">Linked bug: <a href="${o('/bugs/WEB-137')}" class="mono">WEB-137</a></p>` : can('test.manage') ? `<div class="row"><a class="btn primary" href="${o('/bugs/new?from=run')}">${ic.bug}Create bug from failed step</a><span class="small muted">Prefills title, steps up to step ${failedStep + 1}, expected and actual results, environment and component.</span></div>` : ''}</div>` : ''}
+        </div>` : ''}</div>`; }).join('')}</section>`;
+}
+
+/* ==========================================================================
+   Releases
+   ========================================================================== */
+function scrReleases() {
+  const head = pageHead('Releases', 'Readiness is calculated from linked bugs and test runs.', can('release.manage') ? `<button class="btn primary" data-action="toast" data-msg="Release created">${ic.plus}New release</button>` : '');
+  const g = stateGate('table', 'releases'); if (g) return head + g;
+  if (S.state === 'empty') return head + emptyBox(ic.release, 'No releases planned', 'Create a release, link the bugs and test runs that belong to it, and QA Pilot tells you if it is ready.', can('release.manage') ? `<button class="btn primary" data-action="toast" data-msg="Release created">${ic.plus}New release</button>` : '');
+  return head + `<div class="panel"><div class="table-wrap"><table class="t stackable"><thead><tr><th>Release</th><th>Project</th><th>Target date</th><th>Status</th><th>Readiness</th><th>Why</th></tr></thead><tbody>
+    ${RELEASES.map(r => { const rd = readiness(r); return `<tr><td class="title-cell"><a href="${o('/releases/' + r.id)}">${esc(r.name)}</a><div class="xs muted">${esc(r.desc)}</div></td><td data-label="Project">${esc(PROJECTS.find(p => p.id === r.project).name)}</td><td data-label="Target date">${fmtDate(r.target)}</td><td data-label="Status">${({ planned: 'Planned', in_progress: 'In progress', released: 'Released' })[r.status]}</td><td data-label="Readiness">${readyBadge(rd.status)}</td><td data-label="Why" class="small muted">${esc(rd.reasons.join('. '))}</td></tr>`; }).join('')}
+  </tbody></table></div></div>`;
+}
+function scrRelease(id) {
+  const r = RELEASES.find(x => x.id === id); if (!r) return scrNotFound();
+  const rd = readiness(r);
+  const head = pageHead(`${esc(r.name)} ${readyBadge(rd.status)}`, `${esc(r.desc)} Target ${fmtDate(r.target)}.`, can('release.manage') ? `<button class="btn" data-action="toast" data-msg="Bugs linked">${ic.plus}Link bugs</button><button class="btn" data-action="toast" data-msg="Run linked">${ic.plus}Link run</button>${r.status !== 'released' ? `<button class="btn primary" data-action="toast" data-msg="Marked as released">Mark released</button>` : ''}` : '', `<a href="${o('/releases')}">Releases</a> / ${esc(r.name)}`);
+  const g = stateGate('detail', 'this release'); if (g) return head + g;
+  const ai = S.state === 'ai';
+  const bugs = BUGS.filter(b => b.release === r.id);
+  return head + `<div class="split"><div class="stack">
+      <section class="panel"><div class="panel-head"><h2>Why it is ${readinessName[rd.status].toLowerCase()}</h2></div><div class="panel-body"><ul style="margin:0;padding-left:20px">${rd.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        <p class="xs muted" style="margin-top:12px">Blocked: any open Critical bug, or pass rate under 80%. At risk: open High bugs, pass rate under 95%, runs in progress, or no runs.</p></div></section>
+      <section class="panel"><div class="panel-head"><h2>Linked bugs</h2><span class="small muted">${rd.open} open of ${bugs.length}</span></div>${bugs.length ? bugTable(bugs, false) : '<div class="panel-body muted">No bugs linked.</div>'}</section>
+      <section class="panel"><div class="panel-head"><h2>Linked test runs</h2></div>${rd.runs.length ? `<div class="table-wrap"><table class="t stackable"><tbody>${rd.runs.map(x => `<tr><td class="title-cell"><a href="${o('/runs/' + x.id)}">${esc(x.name)}</a></td><td data-label="Status">${x.status === 'completed' ? 'Completed' : 'In progress'}</td><td data-label="Progress" style="width:36%">${progressBar(runCounts(x))}</td><td data-label="Pass rate"><b>${passRate([x])}%</b></td></tr>`).join('')}</tbody></table></div>` : '<div class="panel-body muted">No runs linked.</div>'}</section>
+    </div>
+    <aside class="stack">${summaryPanel(r, rd, ai)}</aside></div>`;
+}
+function summaryPanel(r, rd, ai) {
+  if (r.summary && !ai) return `<section class="panel"><div class="panel-head"><h3>Release summary</h3></div><div class="panel-body"><p><b>${esc(r.summary.headline)}</b></p><p class="small" style="margin-top:8px">${esc(r.summary.text)}</p><p class="xs muted" style="margin-top:12px">Accepted by ${esc(user(r.summary.by).name)} on ${r.summary.at}. Drafted with AI.</p></div></section>`;
+  if (!can('ai.release')) return `<section class="panel"><div class="panel-head"><h3>Release summary</h3></div><div class="panel-body small muted">No summary yet. A QA lead publishes one before the release.</div></section>`;
+  return `<section class="ai-panel"><div class="panel-head">${ic.spark}<h3>Release Readiness Summary</h3></div><div class="panel-body">
+    ${ai ? `<div class="suggest"><div class="suggest-tag">${ic.spark}AI suggestion, not saved</div>
+      <p><b><mark>Do not ship yet: two Critical checkout bugs are open</mark></b></p>
+      <p class="small" style="margin-top:8px">WEB 2.4.0 has 5 linked bugs, 4 of them still open. Two are Critical and both affect what customers pay at checkout: discounts lost after an address change (WEB-142) and 3D Secure payments failing on retry (WEB-137). The regression run is 63% passed with one case not run yet.</p>
+      <p class="label" style="margin-top:12px">Top risks</p><ul class="small" style="margin:4px 0 0;padding-left:18px"><li>Customers may be overcharged when they change address.</li><li>Card payments with 3D Secure can fail on the second attempt.</li><li>Checkout with large carts is blocked and untested.</li></ul>
+      <p class="small" style="margin-top:12px">Recommendation: <b>Do not ship</b></p>
+      <div class="suggest-actions"><button class="btn primary sm" data-action="ai-accept" data-msg="Summary published to the release page">${ic.check}Accept and publish</button><button class="btn sm" data-action="ai-edit">Edit</button><button class="btn ghost sm" data-action="ai-discard">Discard</button></div></div>`
+    : `<p class="small muted">Draft a plain English risk summary for stakeholders from the readiness data above. Only the numbers shown here are used.</p><button class="btn" style="margin-top:12px" data-action="ai-run" data-state="ai">${ic.spark}Draft summary</button>`}
+    <p class="ai-note" style="margin-top:12px">Viewers see the summary only after a lead accepts it.</p></div></section>`;
+}
+
+/* ==========================================================================
+   Reports
+   ========================================================================== */
+function scrReports() {
+  const head = pageHead('Reports', 'Trends and workload for the period you choose.', `<button class="btn" data-action="toast" data-msg="Exported to CSV">${ic.download}Export CSV</button>`);
+  const g = stateGate('readout', 'reports'); if (g) return head + g;
+  const filters = `<div class="panel" style="margin-bottom:16px"><div class="filters" style="border:0"><label class="sr-only" for="rp-p">Project</label><select class="select" id="rp-p"><option>All projects</option>${PROJECTS.map(p => `<option>${p.name}</option>`).join('')}</select><label class="sr-only" for="rp-r">Date range</label><select class="select" id="rp-r"><option>Last 30 days</option><option>Last 7 days</option><option>Last 90 days</option><option>Custom range</option></select><span class="small muted">17 Oct to 16 Nov 2026</span></div></div>`;
+  if (S.state === 'empty') return head + filters + emptyBox(ic.report, 'No activity in this range', 'No bugs were opened or closed and no runs were executed between these dates. Pick a wider range.', `<button class="btn" data-action="toast" data-msg="Range set to last 90 days">Show last 90 days</button>`);
+  const open = BUGS.filter(b => OPEN(b.status));
+  const devs = USERS.filter(u => u.role === 'developer');
+  return head + filters + `<div class="grid g2">
+    <section class="panel"><div class="panel-head"><h2>Opened and closed per day</h2>${trendLegend}</div><div class="panel-body">${lineChart(trendSeries())}</div></section>
+    <section class="panel"><div class="panel-head"><h2>Pass rate per run</h2></div><div class="panel-body">${vbars(RUNS.slice().reverse().map(r => ({ label: r.name, short: r.id, v: passRate([r]) })))}</div></section>
+    <section class="panel"><div class="panel-head"><h2>Bugs by status</h2></div><div class="panel-body">${hbars(STATUSES.map(([k, v]) => ({ label: v, labelHtml: stBadge(k), v: BUGS.filter(b => b.status === k).length })))}</div></section>
+    <section class="panel"><div class="panel-head"><h2>Open bugs per developer</h2></div><div class="table-wrap"><table class="t"><thead><tr><th>Developer</th><th>Open</th><th>Critical</th><th>Past SLA</th></tr></thead><tbody>${devs.map(u => { const m = open.filter(b => b.assignee === u.id); return `<tr><td>${who(u.id)}</td><td>${m.length}</td><td>${m.filter(b => b.sev === 'critical').length}</td><td>${m.filter(slaBreached).length}</td></tr>`; }).join('')}<tr><td><span class="muted">Unassigned</span></td><td>${open.filter(b => !b.assignee).length}</td><td>${open.filter(b => !b.assignee && b.sev === 'critical').length}</td><td>${open.filter(b => !b.assignee && slaBreached(b)).length}</td></tr></tbody></table></div></section>
+  </div>`;
+}
+
+/* ==========================================================================
+   Members, settings, AI usage, 404
+   ========================================================================== */
+function scrMembers() {
+  if (!can('member.view')) return scrForbidden('Members');
+  const manage = can('member.manage');
+  const head = pageHead('Members and roles', manage ? 'Invite people and choose what each person can do.' : 'People in this workspace. Only an Org Admin can change roles.', manage ? `<button class="btn primary" data-action="invite">${ic.plus}Invite people</button>` : '');
+  const g = stateGate('table', 'members'); if (g) return head + g;
+  const body = head + `<section class="panel"><div class="filters"><label class="sr-only" for="m-q">Search members</label><input class="input search-f" id="m-q" placeholder="Search by name or email"><label class="sr-only" for="m-r">Role</label><select class="select" id="m-r"><option>All roles</option>${Object.values(ROLES).map(r => `<option>${r}</option>`).join('')}</select></div>
+    <div class="table-wrap"><table class="t stackable"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+    ${USERS.map(u => `<tr><td class="title-cell">${who(u.id)}</td><td data-label="Email" class="small">${esc(u.email)}</td><td data-label="Role">${manage ? `<label class="sr-only" for="role-${u.id}">Role for ${esc(u.name)}</label><select class="select" id="role-${u.id}" style="width:auto;min-width:150px" data-action="role-change" ${u.id === 'u1' ? 'disabled title="The last Org Admin cannot be demoted"' : ''}>${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${k === u.role ? 'selected' : ''}>${v}</option>`).join('')}</select>` : ROLES[u.role]}</td><td data-label="Joined" class="small">${fmtDate(u.joined)}</td><td class="no-label">${manage && u.id !== 'u1' ? `<button class="btn ghost sm danger" data-action="toast" data-msg="${esc(u.name)} removed">Remove</button>` : ''}</td></tr>`).join('')}
+    </tbody></table></div></section>
+    <section class="panel" style="margin-top:16px"><div class="panel-head"><h2>Pending invitations</h2></div><div class="table-wrap"><table class="t stackable"><tbody>
+      <tr><td class="title-cell">tomas.silva@lumenfreight.test</td><td data-label="Role">QA Engineer</td><td data-label="Expires" class="small">Expires 23 Nov 2026</td><td class="no-label">${manage ? `<button class="btn ghost sm" data-action="toast" data-msg="Invitation revoked">Revoke</button>` : ''}</td></tr>
+      <tr><td class="title-cell">nadia.haddad@lumenfreight.test</td><td data-label="Role">Developer</td><td data-label="Expires" class="small">Expires 19 Nov 2026</td><td class="no-label">${manage ? `<button class="btn ghost sm" data-action="toast" data-msg="Invitation revoked">Revoke</button>` : ''}</td></tr>
+    </tbody></table></div></section>`;
+  return body + (S.state === 'invite' && manage ? inviteDialog(true) : '');
+}
+function inviteDialog(withLink) {
+  return `<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="inv-h" data-stop><div class="modal-head"><h2 id="inv-h">Invite people</h2><button class="btn ghost icon-btn" data-action="close-modal" aria-label="Close">${ic.x}</button></div>
+    <div class="modal-body"><div class="field"><label for="inv-email">Email</label><input class="input" id="inv-email" type="email" value="${withLink ? 'nadia.haddad@lumenfreight.test' : ''}"></div>
+      <div class="field"><label for="inv-role">Role</label><select class="select" id="inv-role">${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${k === 'developer' ? 'selected' : ''}>${v}</option>`).join('')}</select><div class="hint">You can change the role later.</div></div>
+      ${withLink ? `<div class="banner ok">${ic.check}<div>Invitation created. Copy the link and send it yourself. It works once and expires in 7 days. This is the only time the link is shown.</div></div><div class="copy-row"><label class="sr-only" for="inv-link">Invite link</label><input class="input" id="inv-link" readonly value="https://qapilot.app/invite/k7Qm2vX9pL4w"><button class="btn" data-action="toast" data-msg="Link copied">${ic.copy}Copy</button></div>` : ''}
+    </div><div class="modal-foot"><button class="btn" data-action="close-modal">${withLink ? 'Done' : 'Cancel'}</button>${withLink ? '' : `<button class="btn primary" data-action="create-invite">Create invite link</button>`}</div></div></div>`;
+}
+function scrSettings() {
+  const tabs = [['org', 'Organization', can('settings.org')], ['labels', 'Labels', can('label.manage')], ['audit', 'Audit log', can('audit.read')], ['profile', 'My profile', true]].filter(t => t[2]);
+  let active = S.state === 'profile' ? 'profile' : (tabState.settings && tabs.some(t => t[0] === tabState.settings) ? tabState.settings : tabs[0][0]);
+  const head = pageHead('Settings', can('settings.org') ? 'Workspace settings, labels, audit log and your profile.' : 'Your profile and the settings your role can manage.');
+  const g = stateGate('detail', 'settings'); if (g && S.state !== 'profile') return head + g;
+  const tabBar = `<div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab" role="tab" aria-selected="${k === active}" data-action="tab" data-group="settings" data-tab="${k}">${l}</button>`).join('')}</div>`;
+  let body = '';
+  if (active === 'org') body = `<div class="grid g2" style="align-items:start"><section class="panel"><div class="panel-head"><h2>Workspace</h2></div><div class="panel-body stack">
+      <div class="field"><label for="s-name">Organization name</label><input class="input" id="s-name" value="Lumen Freight"></div>
+      <div class="field"><label for="s-slug">Workspace address</label><input class="input mono" id="s-slug" value="lumen" disabled><div class="hint">The address cannot be changed after setup.</div></div>
+      <div><button class="btn primary" data-action="toast" data-msg="Settings saved">Save changes</button></div></div></section>
+    <section class="panel"><div class="panel-head"><h2>AI features</h2></div><div class="panel-body stack">
+      <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><label class="switch"><input type="checkbox" checked id="s-ai" aria-describedby="s-ai-h"><span></span></label><div><label for="s-ai" class="label">Use AI features in this workspace</label><p class="hint" id="s-ai-h">Bug Writer, triage, duplicate check, test case generator and release summaries. When off, AI buttons are hidden for everyone.</p></div></div>
+      <div class="field"><label for="s-lim">Daily AI request limit for the workspace</label><input class="input" id="s-lim" type="number" value="500" style="max-width:160px"><div class="hint">Each person can also make up to 20 requests per minute.</div></div>
+      <div class="banner info small">${ic.info}<div>Provider: mock (offline). Add an Anthropic API key to the server environment to use the real model. Prompt text is never stored.</div></div>
+      <div><button class="btn primary" data-action="toast" data-msg="AI settings saved">Save AI settings</button></div></div></section></div>`;
+  if (active === 'labels') body = `<section class="panel"><div class="panel-head"><h2>Labels</h2><button class="btn sm" data-action="toast" data-msg="Label added">${ic.plus}New label</button></div><div class="table-wrap"><table class="t"><tbody>${Object.entries(LABELS).map(([k, v]) => `<tr><td><span class="label-chip">${v}</span></td><td class="small muted">${BUGS.filter(b => b.labels.includes(k)).length} bugs</td><td style="text-align:right"><button class="btn ghost sm" data-action="toast" data-msg="Label deleted" aria-label="Delete label ${v}">${ic.trash}</button></td></tr>`).join('')}</tbody></table></div></section>`;
+  if (active === 'audit') body = `<section class="panel"><div class="filters"><select class="select" aria-label="Action"><option>All actions</option><option>Access changes</option><option>Bugs</option><option>AI controls</option></select></div><div class="table-wrap"><table class="t stackable"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Details</th></tr></thead><tbody>
+      ${[['10 min ago', 'u2', 'bug.status_changed', 'WEB-142 triaged to in progress'], ['1 h ago', 'u1', 'invitation.created', 'nadia.haddad@... as Developer'], ['3 h ago', 'u2', 'bug.updated', 'WEB-142 severity High to Critical'], ['1 d ago', 'u1', 'member.role_changed', 'Arjun Mehta QA Engineer to QA Lead'], ['2 d ago', 'u1', 'ai.limit_changed', 'Daily limit 300 to 500'], ['5 d ago', 'u2', 'release.summary_accepted', 'WEB 2.3.2']].map(([t, u, a, d]) => `<tr><td data-label="When" class="small">${t}</td><td data-label="Who">${who(u)}</td><td data-label="Action"><span class="mono small">${a}</span></td><td data-label="Details" class="small">${esc(d)}</td></tr>`).join('')}</tbody></table></div></section>`;
+  if (active === 'profile') body = `<div class="grid g2" style="align-items:start"><section class="panel"><div class="panel-head"><h2>Profile</h2></div><div class="panel-body stack">
+      <div class="row">${avatar(me(), 48)}<div><b>${esc(user(me()).name)}</b><div class="small muted">${ROLES[S.role]} in Lumen Freight</div></div></div>
+      <div class="field"><label for="p-name">Full name</label><input class="input" id="p-name" value="${esc(user(me()).name)}"></div>
+      <div class="field"><label for="p-email">Email</label><input class="input" id="p-email" value="${esc(user(me()).email)}" disabled><div class="hint">Email cannot be changed in this version.</div></div>
+      <div><button class="btn primary" data-action="toast" data-msg="Profile saved">Save profile</button></div></div></section>
+    <section class="panel"><div class="panel-head"><h2>Change password</h2></div><div class="panel-body stack">
+      <div class="field"><label for="p-cur">Current password</label><input class="input" id="p-cur" type="password"></div>
+      <div class="field"><label for="p-new">New password</label><input class="input" id="p-new" type="password" aria-describedby="p-new-h"><div class="hint" id="p-new-h">At least 10 characters with a letter and a number. Other sessions are signed out.</div></div>
+      <div><button class="btn" data-action="toast" data-msg="Password changed">Change password</button></div></div></section></div>`;
+  return head + tabBar + body;
+}
+function scrAIUsage() {
+  if (!can('ai.usage')) return scrForbidden('AI usage');
+  const head = pageHead('AI usage', 'Every AI request in this workspace. Only metadata is kept, never the text.', `<label class="sr-only" for="ai-r">Range</label><select class="select" id="ai-r" style="width:auto"><option>Last 30 days</option><option>Last 7 days</option></select>`);
+  const g = stateGate('readout', 'AI usage'); if (g) return head + g;
+  if (S.state === 'empty') return head + emptyBox(ic.meter, 'No AI requests yet', 'When people use the Bug Writer, triage, duplicate check, test case generator or release summary, each request appears here.', `<a class="btn" href="${o('/bugs/new')}">${ic.spark}Try the Bug Writer</a>`);
+  const feats = [['Bug Writer', 214, 182000, 61000, 1900, 78], ['Explain log', 41, 39000, 9000, 1400, 64], ['Triage', 166, 98000, 22000, 1100, 71], ['Duplicate check', 402, 0, 0, 90, 0], ['Test case generator', 58, 61000, 88000, 4200, 83], ['Release summary', 12, 14000, 7000, 2300, 92]];
+  return head + `<section class="readout"><div><div class="num">37</div><div class="cap">Requests today</div><div class="sub">Limit 500 per day</div></div><div><div class="num">893</div><div class="cap">Requests, 30 days</div></div><div><div class="num">76%</div><div class="cap">Suggestions accepted</div><div class="sub">Accepted or edited, excluding duplicate checks</div></div><div><div class="num">1.6 s</div><div class="cap">Median response time</div></div></section>
+    <div class="banner info" style="margin-bottom:16px">${ic.info}<div>Provider <b>mock (offline)</b>, model <span class="mono">mock-1</span>. Token counts are estimates while the mock provider is active.</div></div>
+    <section class="panel"><div class="panel-head"><h2>By feature</h2></div><div class="table-wrap"><table class="t stackable"><thead><tr><th>Feature</th><th>Requests</th><th>Input tokens</th><th>Output tokens</th><th>Avg time</th><th>Accepted</th></tr></thead><tbody>
+      ${feats.map(([f, n, i, ou, l, a]) => `<tr><td class="title-cell"><b>${f}</b></td><td data-label="Requests">${n}</td><td data-label="Input tokens">${i.toLocaleString('en-US')}</td><td data-label="Output tokens">${ou.toLocaleString('en-US')}</td><td data-label="Avg time">${(l / 1000).toFixed(1)} s</td><td data-label="Accepted">${f === 'Duplicate check' ? '<span class="muted">Not tracked</span>' : a + '%'}</td></tr>`).join('')}
+    </tbody></table></div></section>
+    <section class="panel" style="margin-top:16px"><div class="panel-head"><h2>Recent requests</h2></div><div class="table-wrap"><table class="t stackable"><thead><tr><th>When</th><th>Person</th><th>Feature</th><th>Result</th><th>Tokens</th><th>Time</th><th>Outcome</th></tr></thead><tbody>
+      ${[['2 min ago', 'u3', 'Bug Writer', 'ok', '1,240', '1.8 s', 'Accepted'], ['9 min ago', 'u2', 'Triage', 'ok', '610', '1.1 s', 'Edited'], ['22 min ago', 'u6', 'Test case generator', 'ok', '3,820', '4.4 s', 'Accepted'], ['31 min ago', 'u4', 'Explain log', 'fallback', '880', '2.9 s', 'Discarded'], ['1 h ago', 'u3', 'Duplicate check', 'ok', '0', '0.1 s', ''], ['2 h ago', 'u2', 'Release summary', 'ok', '1,050', '2.2 s', 'Accepted']].map(([t, u, f, s, tok, l, out]) => `<tr><td data-label="When" class="small">${t}</td><td data-label="Person">${who(u)}</td><td data-label="Feature">${f}</td><td data-label="Result"><span class="badge ${s === 'ok' ? 'ready' : 'at_risk'}">${s === 'ok' ? 'OK' : 'Fallback used'}</span></td><td data-label="Tokens">${tok}</td><td data-label="Time">${l}</td><td data-label="Outcome" class="small">${out || '<span class="muted">None</span>'}</td></tr>`).join('')}
+    </tbody></table></div><div class="pager"><span class="grow">Showing 1 to 6 of 893</span><button class="btn sm" disabled>Previous</button><button class="btn sm">Next</button></div></section>`;
+}
+function scrForbidden(what) {
+  return emptyBox(ic.lock, `You do not have access to ${what}`, `Your role is ${ROLES[S.role]}. Ask an Org Admin if you need access.`, `<a class="btn" href="${o('/dashboard')}">Go to dashboard</a>`);
+}
+function scrNotFound() {
+  return `<div class="panel"><div class="state-box">${ic.compass.replace('<svg', '<svg class="big"')}<h2>Page not found</h2><p>The page you asked for does not exist, or the link is out of date.</p><div class="row" style="justify-content:center"><a class="btn primary" href="${o('/dashboard')}">Go to dashboard</a><a class="btn" href="${o('/bugs')}">Browse bugs</a></div><div class="err-code">Error 404</div></div></div>`;
+}
+
+/* ==========================================================================
+   Interactions
+   ========================================================================== */
+function toast(msg, kind = '') {
+  const t = document.createElement('div'); t.className = `toast ${kind}`; t.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  t.innerHTML = (kind === 'error' ? ic.alert : ic.check).replace('<svg', '<svg width="16" height="16"') + `<span>${esc(msg)}</span>`;
+  document.getElementById('toasts').appendChild(t); setTimeout(() => t.remove(), 3200);
+}
+function setState(s) { const { path, params } = parse(); params.set('state', s); if (s === 'default') params.delete('state'); const q = params.toString(); location.hash = path + (q ? '?' + q : ''); }
+function openMenu(anchor, html) {
+  closeMenus(); const m = document.createElement('div'); m.className = 'menu'; m.setAttribute('role', 'menu'); m.innerHTML = html; document.body.appendChild(m);
+  const r = anchor.getBoundingClientRect(); m.style.top = `${r.bottom + window.scrollY + 4}px`; m.style.left = `${Math.min(r.left + window.scrollX, window.innerWidth - m.offsetWidth - 8)}px`;
+  const first = m.querySelector('button:not([disabled]), a'); if (first) first.focus();
+}
+function closeMenus() { document.querySelectorAll('.menu').forEach(m => m.remove()); }
+function openModal(html) { const d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d.firstElementChild); const f = document.querySelector('.modal input, .modal select'); if (f) f.focus(); }
+function closeModal() { document.querySelectorAll('.modal-back').forEach(m => m.remove()); if (S.state === 'invite') setState('default'); }
+function moveBug(key, to) {
+  const b = BUGS.find(x => x.key === key);
+  if (!allowedTargets(b).includes(to)) {
+    const why = S.role === 'viewer' ? 'Viewers cannot change bugs.' : S.role === 'developer' && b.assignee && b.assignee !== me() ? `${key} is assigned to ${user(b.assignee).name}. Only the assignee can move it.` : `${STATUS_NAME[b.status]} cannot move to ${STATUS_NAME[to]} for your role.`;
+    toast(why, 'error'); return false;
+  }
+  const from = b.status; b.status = to; b.h = 0;
+  if (to === 'in_progress' && !b.assignee && S.role === 'developer') b.assignee = me();
+  toast(`${key} moved from ${STATUS_NAME[from]} to ${STATUS_NAME[to]}`); return true;
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!e.target.closest('.menu') && !e.target.closest('[data-action="move-menu"],[data-action="org-menu"],[data-action="user-menu"]')) closeMenus();
+  if (!el) return;
+  const a = el.dataset.action;
+  if (a === 'close-modal' && e.target.closest('[data-stop]') && el.classList.contains('modal-back')) return;
+  const acts = {
+    'open-nav': () => document.body.classList.add('nav-open'),
+    'close-nav': () => document.body.classList.remove('nav-open'),
+    retry: () => setState('default'),
+    toast: () => toast(el.dataset.msg),
+    'ai-run': () => { setState('loading'); setTimeout(() => setState(el.dataset.state || 'ai'), 900); },
+    'ai-accept': () => { toast(el.dataset.msg || 'Suggestion accepted'); setState('default'); },
+    'ai-edit': () => { toast('Suggestion copied into the form for editing'); },
+    'ai-discard': () => { toast('Suggestion discarded'); setState('default'); },
+    'org-menu': () => openMenu(el, `<div class="menu-label">Your workspaces</div>${ORGS.map(x => `<a href="#/o/${x.slug}/dashboard" role="menuitem">${x.name}${x.slug === S.org ? ' (current)' : ''}</a>`).join('')}<a href="#/onboarding/org" role="menuitem">${ic.plus.replace('<svg', '<svg width="14" height="14"')}Create workspace</a>`),
+    'user-menu': () => openMenu(el, `<div class="menu-label">${esc(user(me()).name)}, ${ROLES[S.role]}</div><a href="${o('/settings?state=profile')}" role="menuitem">${ic.user.replace('<svg', '<svg width="14" height="14"')}My profile</a><a href="#/login" role="menuitem">${ic.logout.replace('<svg', '<svg width="14" height="14"')}Sign out</a>`),
+    'move-menu': () => { const b = BUGS.find(x => x.key === el.dataset.key); const ok = allowedTargets(b); openMenu(el, `<div class="menu-label">Move ${b.key} to</div>${STATUSES.filter(([k]) => k !== b.status).map(([k, v]) => `<button role="menuitem" data-action="move-to" data-key="${b.key}" data-to="${k}" ${ok.includes(k) ? '' : 'disabled aria-disabled="true"'}>${v}${ok.includes(k) ? '' : ' (not allowed)'}</button>`).join('')}`); },
+    'move-to': () => { if (moveBug(el.dataset.key, el.dataset.to)) render(); closeMenus(); },
+    transition: () => { if (moveBug(el.dataset.key, el.dataset.to)) render(); },
+    'self-assign': () => { const b = BUGS.find(x => x.key === el.dataset.key); b.assignee = me(); toast(`${b.key} assigned to you`); render(); },
+    'confirm-delete': () => openModal(`<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="del-h" data-stop><div class="modal-head"><h2 id="del-h">Delete this bug?</h2></div><div class="modal-body"><p>The bug disappears from lists and boards. It stays in the audit log.</p></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" style="background:var(--danger);border-color:var(--danger)" data-action="deleted">Delete bug</button></div></div></div>`),
+    deleted: () => { closeModal(); toast('Bug deleted'); go(o('/bugs')); },
+    'close-modal': () => closeModal(),
+    invite: () => openModal(inviteDialog(false)),
+    'create-invite': () => { closeModal(); openModal(inviteDialog(true)); },
+    'new-project': () => openModal(`<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="np-h" data-stop><div class="modal-head"><h2 id="np-h">New project</h2><button class="btn ghost icon-btn" data-action="close-modal" aria-label="Close">${ic.x}</button></div><div class="modal-body"><div class="field"><label for="np-n">Name</label><input class="input" id="np-n" placeholder="Warehouse scanner"></div><div class="field"><label for="np-k">Key</label><input class="input mono" id="np-k" placeholder="WHS" maxlength="6"><div class="hint">2 to 6 capital letters. Used in bug ids like WHS-1.</div></div><p class="hint">Environments dev, staging and prod are added for you.</p></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="close-modal">Create project</button></div></div></div>`),
+    'new-run': () => openModal(`<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="nr-h" data-stop><div class="modal-head"><h2 id="nr-h">New test run</h2><button class="btn ghost icon-btn" data-action="close-modal" aria-label="Close">${ic.x}</button></div><div class="modal-body"><div class="field"><label for="nr-n">Name</label><input class="input" id="nr-n" value="WEB 2.4.0 regression, round 2"></div><div class="grid g2"><div class="field"><label for="nr-e">Environment</label><select class="select" id="nr-e"><option>staging</option><option>prod</option><option>dev</option></select></div><div class="field"><label for="nr-r">Release</label><select class="select" id="nr-r"><option>WEB 2.4.0</option><option>None</option></select></div></div><fieldset class="field" style="border:0;padding:0;margin:0"><legend class="label">Suites to include</legend>${SUITES.filter(s => s.project === 'p1').map(s => `<label class="checkbox"><input type="checkbox" checked>${s.name} (${CASES.filter(c => c.suite === s.id).length} cases)</label>`).join('')}</fieldset></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="start-run">Start run with 9 cases</button></div></div></div>`),
+    'start-run': () => { closeModal(); toast('Run started'); go(o('/runs/R-31')); },
+    view: () => { F.view = el.dataset.view; refreshBugs(); },
+    sort: () => { F.sort = el.dataset.sort; refreshBugs(); },
+    'clear-filters': () => { Object.assign(F, { q: '', project: '', status: '', sev: '', assignee: '' }); if (S.state === 'empty') setState('default'); else refreshBugs(); },
+    'save-view': () => toast('View saved as "My filters"'),
+    'filter-sla': () => { F.view = 'sla'; },
+    'pick-suite': () => { e.preventDefault(); selSuite = el.dataset.id; render(); },
+    tab: () => { tabState[el.dataset.group] = el.dataset.tab; if (S.state === 'profile') setState('default'); else render(); },
+    'expand-case': () => { tabState.run = tabState.run === el.dataset.id ? '' : el.dataset.id; render(); },
+    'set-result': () => { const r = RUNS.find(x => location.hash.includes(x.id)); r.results[el.dataset.id] = el.dataset.res; tabState.run = el.dataset.id; render(); toast(`${el.dataset.id} marked ${el.dataset.res}`); },
+  };
+  if (acts[a]) acts[a]();
+});
+document.addEventListener('submit', e => {
+  e.preventDefault(); const a = e.target.dataset.action;
+  if (a === 'login') go(o('/dashboard'));
+  if (a === 'register') go('#/onboarding/org');
+  if (a === 'org-setup') go(o('/dashboard'));
+  if (a === 'accept-invite') go(o('/dashboard'));
+  if (a === 'comment') { toast('Comment posted'); e.target.reset(); }
+  if (a === 'submit-bug') { toast('WEB-143 saved'); go(o('/bugs/WEB-142')); }
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.action === 'filter' && el.tagName === 'INPUT') { F[el.dataset.f] = el.value; refreshBugs(el.id); }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'role-select') { S.role = el.value; try { localStorage.setItem('qap-role', S.role); } catch (err) {} const { path, params } = parse(); params.delete('role'); const q = params.toString(); history.replaceState(null, '', '#' + path + (q ? '?' + q : '')); render(); toast(`Viewing as ${ROLES[S.role]}`); }
+  if (el.id === 'dev-state') setState(el.value);
+  if (el.dataset.action === 'filter' && el.tagName === 'SELECT') { F[el.dataset.f] = el.value; refreshBugs(); }
+  if (el.dataset.action === 'field-change') toast(`${el.dataset.label} updated`);
+  if (el.dataset.action === 'role-change') toast('Role updated');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeMenus(); closeModal(); document.body.classList.remove('nav-open'); }
+  if (e.key === 'Enter' && e.target.id === 'gsearch') { F.q = e.target.value; F.view = 'all'; go(o('/bugs')); }
+  if (e.key === 'Tab' && document.querySelector('.modal')) {
+    const f = [...document.querySelectorAll('.modal button, .modal input, .modal select, .modal textarea, .modal a')].filter(x => !x.disabled);
+    if (!f.length) return; const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+function refreshBugs(focusId) {
+  const p = document.getElementById('bug-panel'); if (!p) { render(); return; }
+  p.innerHTML = bugListInner();
+  if (focusId) { const f = document.getElementById(focusId); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }
+}
+/* Tooltip for chart marks */
+const tip = document.getElementById('tip');
+document.addEventListener('mousemove', e => {
+  const t = e.target.closest('[data-tip]');
+  if (!t) { tip.style.display = 'none'; return; }
+  tip.textContent = t.getAttribute('data-tip'); tip.style.display = 'block';
+  tip.style.left = `${Math.min(e.clientX + 12, window.innerWidth - tip.offsetWidth - 8)}px`; tip.style.top = `${e.clientY + 14}px`;
+});
+/* Kanban drag and drop */
+function afterRender(slug) {
+  if (slug !== 'board') return;
+  document.querySelectorAll('.card[draggable="true"]').forEach(c => {
+    c.addEventListener('dragstart', ev => { dragKey = c.dataset.key; c.classList.add('dragging'); ev.dataTransfer.setData('text/plain', dragKey); ev.dataTransfer.effectAllowed = 'move';
+      const ok = allowedTargets(BUGS.find(x => x.key === dragKey)); document.querySelectorAll('.col').forEach(col => col.dataset.ok = ok.includes(col.dataset.col) ? '1' : '0'); });
+    c.addEventListener('dragend', () => { c.classList.remove('dragging'); document.querySelectorAll('.col').forEach(col => col.classList.remove('drop-ok', 'drop-no')); });
+  });
+  document.querySelectorAll('.col').forEach(col => {
+    col.addEventListener('dragover', ev => { ev.preventDefault(); col.classList.toggle('drop-ok', col.dataset.ok === '1'); col.classList.toggle('drop-no', col.dataset.ok !== '1'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drop-ok', 'drop-no'));
+    col.addEventListener('drop', ev => { ev.preventDefault(); const b = BUGS.find(x => x.key === dragKey); if (b && b.status !== col.dataset.col && moveBug(dragKey, col.dataset.col)) render(); else document.querySelectorAll('.col').forEach(x => x.classList.remove('drop-ok', 'drop-no')); });
+  });
+}
+window.addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>

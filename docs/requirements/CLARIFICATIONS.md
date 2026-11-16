@@ -12,7 +12,7 @@ Questions a client meeting would raise, answered autonomously for the 3 day MVP.
 | C-06 | Can stakeholders comment? | Yes. Viewers can comment but change nothing else (confirmed at the Stage 1 gate). | D-007, D-033 |
 | C-07 | What do bug ids look like? | Project key plus number, for example `WEB-42`. | D-008 |
 | C-08 | Which files can be attached and how big? | Images, PDF, text, logs, JSON, CSV, ZIP, MP4 and WEBM up to 10 MB each, 10 per bug. | D-009 |
-| C-09 | Is the workflow or SLA configurable per team? | Not in v1. Fixed workflow. SLA thresholds are fixed per severity, Critical in hours and the rest in days; the product owner will confirm the numbers, and working values are used until then. | D-005, D-019, D-033 |
+| C-09 | Is the workflow or SLA configurable per team? | Not in v1. Fixed workflow. SLA is time from creation to Fixed, in calendar time: Critical 24 hours, High 3 days, Medium 14 days, Low 30 days (confirmed at the Stage 2 gate). | D-005, D-019, D-033, D-036 |
 | C-10 | How is release readiness decided? | Server rules: Critical open bugs or pass rate under 80% means Blocked; High open bugs, pass rate under 95%, runs in progress or no runs means At risk; otherwise Ready. | D-014 |
 | C-11 | Can a bug belong to more than one release? | No. One target release per bug and per run. | D-015 |
 | C-12 | Does AI ever change data by itself? | Never. Every AI output is a suggestion the user accepts, edits or discards. | D-028, REQ-049 |

@@ -1,19 +1,23 @@
 # Progress
 
-**Current stage:** 1 Requirements, clarification and architecture (at review gate)
-**Branch:** stage/1-requirements
-**Status:** Waiting for human review of `docs/reviews/STAGE_1_REVIEW.md`
+**Current stage:** 2 HTML first prototype and design lock (at review gate)
+**Branch:** stage/2-prototype (pushed via scripts/safe-push.sh; PR #1 open into main)
+**Remote:** origin = github.com/Bilex95/qa-pilot (private). Gate flow per D-034.
 
 ## Done
-* Stage 0: git init, `.gitignore`, `.gitattributes`, kit committed on `main`, prerequisites recorded in `docs/ENVIRONMENT.md`, tracking docs created, branch `stage/1-requirements` created.
-* Stage 1: REQUIREMENTS, PERSONAS_AND_ROLES, SCREEN_INVENTORY, DOMAIN_MODEL, API_INVENTORY, AI_SPEC, NFR_AND_RISKS, CLARIFICATIONS; DECISIONS D-001 to D-032; `scripts/check_traceability.py` passing; review file written.
+* Stage 0 and Stage 1 approved; Stage 1 feedback applied (D-033); merged, tagged `stage-1-approved`, pushed.
+* GitHub private repo and PR flow (D-034).
+* Stage 2: `design/reference/approved.html` (22 screens, roles, states), `design/TOKENS.md`, 100 screenshots plus `design/screenshots/INDEX.md`, SCREEN_INVENTORY section 4, phone size support and checks (D-035), `scripts/validate-design.ps1` passing, review file written.
 
 ## In progress
-* Nothing. Stopped at the Stage 1 gate.
+* Applying Stage 2 approval: merge PR #1, tag, start Stage 3.
 
 ## Next
-* On APPROVED: merge `stage/1-requirements` into `main` with `--no-ff`, tag `stage-1-approved`, create `stage/2-prototype`, start Stage 2 (load `references/prototype.md` and `references/handoff.md`).
-* On feedback: apply on `stage/1-requirements`, rerun `python scripts/check_traceability.py`, add "Changes after feedback" to the review file.
+* On APPROVED: `gh pr merge 1 --merge`, `git checkout main; git pull`, tag `stage-2-approved` and push it, create `stage/3-foundations`, start Stage 3 (load `references/engineering.md`, `references/github.md`, `references/testing.md`). Design is locked from then on.
+* On feedback: fix on `stage/2-prototype`, rerun `scripts/validate-design.ps1` and `node e2e/scripts/capture-design.mjs`, add "Changes after feedback" to the review, push.
+
+## Open questions for the product owner
+* None open. D-019 confirmed at the Stage 2 gate.
 
 ## Blockers
-* None. Note: Docker is used through WSL Ubuntu (D-001).
+* None.

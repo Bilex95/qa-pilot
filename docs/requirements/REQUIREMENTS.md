@@ -104,7 +104,7 @@ Jira or GitHub sync, SSO, billing, native mobile apps, real email delivery (invi
 | REQ-038 | A dashboard shows open bugs by severity, bug trend (opened vs closed per day, last 30 days), test run pass rate, top components by open bugs, and release readiness. | BP 1.6 | Must | Viewer | All numbers come from one server endpoint filtered by org and optional project; numbers match seeded data in the manifest. | API, E2E |
 | REQ-039 | A reports screen shows the same metrics with project and date range filters plus status distribution and per assignee workload. | BP 1.6 | Must | QA Lead | Changing filters updates every chart; empty ranges show an empty state. | API, E2E |
 | REQ-040 | Reports can be exported to CSV. | MP S2 | Could | QA Lead | CSV of the filtered bug list with the visible columns. | API |
-| REQ-041 | Bugs that breach the SLA are counted and filterable. | D-019 | Should | QA Lead | Dashboard tile counts breaching bugs; bug list filter `sla_breached=true` matches the rule. | API |
+| REQ-041 | Bugs that breach the SLA are counted and filterable. | D-019 | Should | QA Lead | SLA is time from creation to Fixed in calendar time: Critical 24 hours, High 3 days, Medium 14 days, Low 30 days (confirmed); dashboard tile counts unfixed bugs past their SLA; bug list filter `sla_breached=true` matches the rule; bugs fixed late are flagged. | UNIT, API |
 
 ### 5.7 AI layer (BP 1.7)
 

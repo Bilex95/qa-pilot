@@ -70,3 +70,36 @@ Default at both viewports for every screen, extra states at desktop:
 | `not-found` | `not-found-default-desktop.png`, `not-found-default-mobile.png` |
 
 Total planned: 100 files. Final mapping is confirmed in Stage 2.
+
+## 4. Final mapping after Stage 2 (prototype and screenshots)
+
+Confirmed against `design/reference/approved.html` and the 100 files in `design/screenshots/` (contact sheet: `design/screenshots/INDEX.md`). Open any row in the prototype with `approved.html#<prototype route>?role=<role>&state=<state>`.
+
+| Slug | Screen | Prototype route | Captured as | States in prototype | Requirements |
+|---|---|---|---|---|---|
+| `login` | SCR-01 | `/login` | any | default, error, loading | REQ-002, REQ-003, REQ-010 |
+| `register` | SCR-02 | `/register` | any | default, error | REQ-001, REQ-010 |
+| `org-setup` | SCR-03 | `/onboarding/org` | any | default, error | REQ-004 |
+| `invite` | SCR-04 | `/invite/{token}` | any | default, error | REQ-006 |
+| `dashboard` | SCR-05 | `/o/lumen/dashboard` | QA Lead | default, empty, loading, error | REQ-005, REQ-038, REQ-041 |
+| `projects` | SCR-06 | `/o/lumen/projects` | QA Lead | default, empty, loading, error | REQ-013 |
+| `project-overview` | SCR-07 | `/o/lumen/projects/WEB` | QA Lead | default, empty, loading, error | REQ-013 to REQ-016 |
+| `bug-list` | SCR-08 | `/o/lumen/bugs` | QA Lead | default, empty, loading, error | REQ-020, REQ-026, REQ-027, REQ-041, REQ-062 |
+| `board` | SCR-09 | `/o/lumen/board` | QA Lead | default, empty, loading, error | REQ-019, REQ-028 |
+| `bug-detail` | SCR-10 | `/o/lumen/bugs/WEB-142` | QA Lead | default, ai, loading, error | REQ-018 to REQ-025, REQ-029, REQ-045, REQ-049 |
+| `bug-new` | SCR-11 | `/o/lumen/bugs/new` (`?from=run` for the run prefill) | QA Engineer | default, ai, loading, error | REQ-017, REQ-021, REQ-022, REQ-024, REQ-034, REQ-043, REQ-044, REQ-046, REQ-049 |
+| `test-suites` | SCR-12 | `/o/lumen/tests` | QA Lead | default, empty, loading, error | REQ-030 |
+| `test-case-editor` | SCR-13 | `/o/lumen/tests/cases/TC-103`; ai state on `/o/lumen/tests/cases/new` | QA Lead | default, ai, loading, error | REQ-031, REQ-047, REQ-049 |
+| `test-runs` | SCR-14 | `/o/lumen/runs` | QA Lead | default, empty, loading, error | REQ-032 |
+| `test-run` | SCR-15 | `/o/lumen/runs/R-31` | QA Lead | default, failed, loading, error | REQ-033, REQ-034 |
+| `releases` | SCR-16 | `/o/lumen/releases` | QA Lead | default, empty, loading, error | REQ-035, REQ-037 |
+| `release-detail` | SCR-17 | `/o/lumen/releases/r1` (r4 shows an accepted summary) | QA Lead | default, ai, loading, error | REQ-035 to REQ-037, REQ-048, REQ-049 |
+| `reports` | SCR-18 | `/o/lumen/reports` | QA Lead | default, empty, loading, error | REQ-039, REQ-040 |
+| `members` | SCR-19 | `/o/lumen/members` | Org Admin | default, invite, loading, error | REQ-006, REQ-009 |
+| `settings` | SCR-20 | `/o/lumen/settings` | Org Admin | default, profile, loading, error | REQ-011, REQ-012, REQ-022, REQ-052, REQ-053 |
+| `ai-usage` | SCR-21 | `/o/lumen/ai-usage` | Org Admin | default, empty, loading, error | REQ-042, REQ-051, REQ-052 |
+| `not-found` | SCR-22 | any unknown route | any | default | REQ-058 |
+
+Role views are switched with **View as** in the prototype header; every screen above can be opened as each of the 5 roles. A second org (`/o/harbor/...`) exists in the org switcher to show multi org membership (REQ-005).
+
+Mobile support covers 320 to 1024 px as well as the 390 px screenshots (D-035).
