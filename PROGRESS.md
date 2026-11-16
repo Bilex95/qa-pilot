@@ -13,7 +13,7 @@
 - [x] T2 Docker Compose (db, backend, frontend), Dockerfiles dev and prod, `.env.example`, `.env`, `scripts/*.ps1`
 - [x] T3 Backend core: app factory, settings, DB, Alembic, error envelope, pagination, request id, logging, CORS, headers, health
 - [x] T4 Auth, orgs, memberships, invitations, RBAC policies, audit log, tests
-- [ ] T5 Seed CLI and `docs/SEED_MANIFEST.md`
+- [x] T5 Seed CLI and `docs/SEED_MANIFEST.md`
 - [ ] T6 Frontend: Next.js, tokens, shadcn/ui, TanStack Query, typed API client, auth flow, app shell
 - [ ] T7 Postman collection and environment
 - [ ] T8 CI workflow
@@ -21,7 +21,7 @@
 - [ ] T10 Gate checks, review file, push, PR
 
 ## Next
-* T5 seed CLI, then T6 frontend.
+* T6 frontend.
 
 ## Blockers
 * None.

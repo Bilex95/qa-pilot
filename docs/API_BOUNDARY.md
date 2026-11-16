@@ -46,3 +46,5 @@ Browser            Next.js /api/session/*            FastAPI /api/v1/auth/*
 * `tests`: module tests.
 
 No module imports another module's `infrastructure` (CLAUDE.md). Shared code lives in `backend/app/core`.
+
+One controlled exception: when a query must join another module's table to search or sort (for example the member list sorted by user name), the module uses a read only projection from `backend/app/core/readviews.py` (today `users_view`: id, email, full name, active). Writes always go through the owning module's `application` service. The request dependencies in `backend/app/core/deps.py` call the auth and orgs application services, never their repositories.
