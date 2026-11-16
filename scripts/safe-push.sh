@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Safe push gate used at the end of every stage (D-034).
-# Pushes ONE branch to origin only if every check passes:
-#   1. branch is not main (main changes only through an approved PR merge)
+# Pushes ONE branch or ONE tag to origin only if every check passes:
+#   1. branch mode: branch is not main (main changes only through an approved PR merge)
+#      tag mode: tag exists locally, points at a commit already on origin/main (approved work only),
+#      and does not exist on origin yet (tags are never moved or overwritten)
 #   2. origin is the PRIVATE repo Bilex95/qa-pilot
 #   3. git config user.email is a verified email on the GitHub account
 #      (public profile email, or the verified list from gh api user/emails when the email is private)
@@ -10,27 +12,45 @@
 # Never force pushes.
 #
 # Usage:  bash scripts/safe-push.sh [branch] [--dry-run]
+#         bash scripts/safe-push.sh --tag <tag> [--dry-run]
 #   branch     defaults to the current branch
+#   --tag      push one tag instead of a branch
 #   --dry-run  run every check, skip the push
 set -euo pipefail
 
 REPO="Bilex95/qa-pilot"
 DRY_RUN=0
 BRANCH=""
-for arg in "$@"; do
-  case "$arg" in
-    --dry-run) DRY_RUN=1 ;;
-    -*) echo "BLOCKED: unknown option $arg"; exit 2 ;;
-    *) BRANCH="$arg" ;;
-  esac
-done
-BRANCH="${BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
+TAG=""
 fail() { echo "BLOCKED: $*"; exit 1; }
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY_RUN=1 ;;
+    --tag) shift; [ $# -gt 0 ] || fail "--tag needs a tag name"; TAG="$1" ;;
+    -*) fail "unknown option $1" ;;
+    *) BRANCH="$1" ;;
+  esac
+  shift
+done
+[ -z "$TAG" ] || [ -z "$BRANCH" ] || fail "give a branch or --tag, not both"
 
-# 1. never push main directly
-[ "$BRANCH" != "main" ] || fail "refusing to push main directly; merge an approved PR instead"
-git rev-parse --verify --quiet "refs/heads/$BRANCH" >/dev/null || fail "local branch $BRANCH does not exist"
-echo "ok   branch $BRANCH"
+# 1. what is being pushed
+if [ -n "$TAG" ]; then
+  git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null || fail "local tag $TAG does not exist"
+  git fetch --quiet origin main || fail "could not fetch origin/main"
+  TAG_COMMIT="$(git rev-parse "refs/tags/$TAG^{commit}")"
+  git merge-base --is-ancestor "$TAG_COMMIT" origin/main || fail "tag $TAG points at ${TAG_COMMIT:0:7}, which is not on origin/main; tag only approved, merged work"
+  set +e; git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; RC=$?; set -e
+  [ "$RC" -eq 2 ] || { [ "$RC" -eq 0 ] && fail "tag $TAG already exists on origin; tags are never moved"; fail "could not list remote tags (exit $RC)"; }
+  REF="refs/tags/$TAG"
+  echo "ok   tag $TAG -> ${TAG_COMMIT:0:7} is on origin/main and new on origin"
+else
+  BRANCH="${BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
+  [ "$BRANCH" != "main" ] || fail "refusing to push main directly; merge an approved PR instead"
+  git rev-parse --verify --quiet "refs/heads/$BRANCH" >/dev/null || fail "local branch $BRANCH does not exist"
+  REF="refs/heads/$BRANCH"
+  echo "ok   branch $BRANCH"
+fi
 
 # 2. origin must be the private repo
 ORIGIN_URL="$(git remote get-url origin 2>/dev/null)" || fail "no origin remote"
@@ -79,5 +99,10 @@ echo "ok   no secret patterns in $(git rev-list --all | wc -l | tr -d ' ') commi
 
 # all gates passed
 if [ "$DRY_RUN" -eq 1 ]; then echo "DRY RUN: all checks passed, push skipped"; exit 0; fi
-git push -u origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
-echo "PUSHED $BRANCH"
+if [ -n "$TAG" ]; then
+  git push origin "$REF:$REF"
+  echo "PUSHED tag $TAG"
+else
+  git push -u origin "$REF:$REF"
+  echo "PUSHED $BRANCH"
+fi
