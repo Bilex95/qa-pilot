@@ -1,0 +1,22 @@
+# Production style images (non root), for local verification only. No deployment is configured (out of scope).
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  backend:
+    build:
+      context: ./backend
+      target: prod
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers"]
+    volumes: !reset
+      - uploads:/data/uploads
+    environment:
+      APP_ENV: production
+
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    volumes: !reset []
+    environment:
+      APP_ENV: production
