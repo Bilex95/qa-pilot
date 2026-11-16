@@ -9,7 +9,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.core.request_context import client_ip_var, org_id_var, request_id_var, user_id_var
+from app.core.request_context import RequestInfo, start_request
 
 log = logging.getLogger("app.access")
 _SAFE_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
@@ -23,10 +23,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         incoming = request.headers.get("x-request-id", "")
         rid = incoming if _SAFE_ID.match(incoming) else uuid.uuid4().hex
-        request_id_var.set(rid)
-        user_id_var.set("-")
-        org_id_var.set("-")
-        client_ip_var.set(request.client.host if request.client else "-")
+        start_request(RequestInfo(request_id=rid, client_ip=request.client.host if request.client else "-"))
         start = time.perf_counter()
         response = await call_next(request)
         latency = round((time.perf_counter() - start) * 1000, 1)

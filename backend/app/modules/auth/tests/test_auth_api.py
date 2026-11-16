@@ -1,8 +1,11 @@
 """API-010 to API-016: register, login, refresh, logout, me, profile, password (REQ-001 to REQ-003, REQ-010, REQ-011)."""
 
+from datetime import timedelta
+
 from sqlalchemy import select
 
 from app.modules.audit.infrastructure.models import AuditEvent
+from app.modules.auth.infrastructure.models import RefreshToken
 from conftest import PASSWORD, add_member, auth, make_org, make_user
 
 URL = "/api/v1/auth"
@@ -99,12 +102,29 @@ def test_refresh_rotates_the_token(client, db) -> None:
     assert again.status_code == 401 and code(again) == "invalid_refresh_token"
 
 
+def _age_rotation(db, seconds: int) -> None:  # type: ignore[no-untyped-def]
+    for rt in db.scalars(select(RefreshToken).where(RefreshToken.revoked_at.is_not(None))):
+        rt.revoked_at = rt.revoked_at - timedelta(seconds=seconds)
+    db.flush()
+
+
 def test_refresh_reuse_revokes_every_session(client, db) -> None:
     first = _login(client, db)
     second = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]}).json()
+    _age_rotation(db, 60)  # past the 30 second grace window
     client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]})  # reuse of a rotated token
     assert client.post(f"{URL}/refresh", json={"refresh_token": second["refresh_token"]}).status_code == 401
     assert db.scalar(select(AuditEvent).where(AuditEvent.action == "auth.refresh_reuse_detected"))
+
+
+def test_concurrent_refresh_inside_grace_window_is_not_treated_as_theft(client, db) -> None:
+    """Two tabs refreshing at once: the loser gets 401 and retries with the new cookie; nobody is signed out."""
+    first = _login(client, db)
+    second = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]}).json()
+    loser = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]})
+    assert loser.status_code == 401 and code(loser) == "invalid_refresh_token"
+    assert client.post(f"{URL}/refresh", json={"refresh_token": second["refresh_token"]}).status_code == 200
+    assert not db.scalar(select(AuditEvent).where(AuditEvent.action == "auth.refresh_reuse_detected"))
 
 
 def test_refresh_with_garbage_token(client) -> None:

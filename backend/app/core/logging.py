@@ -5,19 +5,20 @@ import logging
 import sys
 from datetime import UTC, datetime
 
-from app.core.request_context import org_id_var, request_id_var, user_id_var
+from app.core.request_context import current as request_info
 
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
+        info = request_info()
         data = {
             "ts": datetime.now(UTC).isoformat(timespec="milliseconds"),
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),
-            "request_id": request_id_var.get(),
-            "user_id": user_id_var.get(),
-            "org_id": org_id_var.get(),
+            "request_id": info.request_id,
+            "user_id": info.user_id,
+            "org_id": info.org_id,
         }
         for key in ("method", "path", "status", "latency_ms"):
             if hasattr(record, key):

@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.request_context import request_id_var
+from app.core.request_context import current as request_info
 
 log = logging.getLogger("app.errors")
 
@@ -89,6 +89,6 @@ def install_error_handlers(app: FastAPI) -> None:
     async def _unexpected(_: Request, exc: Exception) -> JSONResponse:
         log.exception("unhandled error", exc_info=exc)
         return JSONResponse(
-            envelope("internal_error", "Something went wrong on our side.", {"request_id": request_id_var.get()}),
+            envelope("internal_error", "Something went wrong on our side.", {"request_id": request_info().request_id}),
             status_code=500,
         )

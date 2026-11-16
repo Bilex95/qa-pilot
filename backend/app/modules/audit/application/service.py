@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import utcnow
 from app.core.pagination import PageParams, paginate
-from app.core.request_context import client_ip_var, request_id_var
+from app.core.request_context import current as request_info
 from app.modules.audit.infrastructure.models import AuditEvent
 
 _SECRET_KEYS = {"password", "token", "refresh_token", "access_token", "secret", "password_hash"}
@@ -29,7 +29,7 @@ def record(
     event = AuditEvent(
         action=action, actor_id=actor_id, org_id=org_id, entity_type=entity_type,
         entity_id=str(entity_id) if entity_id is not None else None, data=clean,
-        ip=client_ip_var.get(), request_id=request_id_var.get(),
+        ip=request_info().client_ip, request_id=request_info().request_id,
     )
     db.add(event)
     return event

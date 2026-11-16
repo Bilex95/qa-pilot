@@ -127,3 +127,28 @@ def test_unknown_action_is_an_error() -> None:
     with pytest.raises(KeyError):
         can(Role.ORG_ADMIN, "bug.teleport")
     assert len(PERMISSIONS) >= 50
+
+
+def test_access_log_carries_user_and_org(client, world) -> None:
+    """Sync dependencies run in a thread; the user and org they resolve must still reach the access log."""
+    import logging
+
+    from app.core.logging import JsonFormatter
+
+    lines: list[str] = []
+
+    class Capture(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            lines.append(JsonFormatter().format(record))  # formatted at emit time, like the real handler
+
+    logger = logging.getLogger("app.access")
+    handler, old_level = Capture(), logger.level
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    try:
+        client.get(f"/api/v1/orgs/{world.a.org.id}", headers=world.a.h("viewer"))
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(old_level)
+    viewer = world.a.users[Role.VIEWER].id
+    assert any(f'"user_id": "{viewer}"' in ln and f'"org_id": "{world.a.org.id}"' in ln for ln in lines), lines

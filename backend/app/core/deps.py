@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.errors import Forbidden, NotFound, Unauthorized
 from app.core.permissions import Role, can
-from app.core.request_context import org_id_var, user_id_var
+from app.core.request_context import current as request_info
 from app.core.security import decode_access_token
 from app.modules.auth.application import service as auth
 from app.modules.auth.infrastructure.models import User
@@ -37,7 +37,7 @@ def get_current_user(db: DB, creds: Annotated[HTTPAuthorizationCredentials | Non
     user = auth.get_active_user(db, user_id)
     if user is None:
         raise Unauthorized("Sign in to continue.")
-    user_id_var.set(str(user.id))
+    request_info().user_id = str(user.id)
     return user
 
 
@@ -73,7 +73,7 @@ def get_org_context(db: DB, user: CurrentUser,
     if membership is None or org is None:
         # Same answer whether the org exists or not (D-003)
         raise NotFound("Workspace not found.", code="org_not_found")
-    org_id_var.set(str(org.id))
+    request_info().org_id = str(org.id)
     return OrgContext(org=org, membership=membership, user=user)
 
 

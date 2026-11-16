@@ -23,6 +23,8 @@ from app.modules.audit.application import service as audit
 from app.modules.auth.infrastructure import repository as repo
 from app.modules.auth.infrastructure.models import RefreshToken, User
 
+REUSE_GRACE_SECONDS = 30
+
 
 @dataclass(frozen=True)
 class TokenPair:
@@ -110,7 +112,10 @@ def refresh(db: Session, *, refresh_token: str, user_agent: str | None) -> Token
         raise invalid
     now = utcnow()
     if current.revoked_at is not None:
-        if current.replaced_by_id is not None:
+        # Two tabs, or a double mount, can refresh at the same moment with the same cookie. A reuse within the
+        # grace window is a benign race: answer 401 so the client retries with the newer cookie (D-039).
+        recently_rotated = now - current.revoked_at < timedelta(seconds=REUSE_GRACE_SECONDS)
+        if current.replaced_by_id is not None and not recently_rotated:
             # A rotated token was used again: treat as theft and end every session of the user (D-010)
             repo.revoke_all_for_user(db, current.user_id, now)
             audit.record(db, "auth.refresh_reuse_detected", actor_id=current.user_id, entity_type="user",
