@@ -14,14 +14,14 @@
 - [x] T3 Backend core: app factory, settings, DB, Alembic, error envelope, pagination, request id, logging, CORS, headers, health
 - [x] T4 Auth, orgs, memberships, invitations, RBAC policies, audit log, tests
 - [x] T5 Seed CLI and `docs/SEED_MANIFEST.md`
-- [ ] T6 Frontend: Next.js, tokens, shadcn/ui, TanStack Query, typed API client, auth flow, app shell
-- [ ] T7 Postman collection and environment
-- [ ] T8 CI workflow
+- [x] T6 Frontend: Next.js, tokens, shadcn/ui, TanStack Query, typed API client, auth flow, app shell
+- [x] T7 Postman collection and environment
+- [x] T8 CI workflow
 - [ ] T9 Issue plan `docs/issues/` and `DAG.md`
 - [ ] T10 Gate checks, review file, push, PR
 
 ## Next
-* T6 frontend.
+* T9 issue plan, then T10 gate.
 
 ## Blockers
 * None.
