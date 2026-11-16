@@ -1,19 +1,22 @@
 # Progress
 
-**Current stage:** 1 Requirements, clarification and architecture (at review gate)
-**Branch:** stage/1-requirements
-**Status:** Waiting for human review of `docs/reviews/STAGE_1_REVIEW.md`
+**Current stage:** 2 HTML first prototype and design lock
+**Branch:** stage/2-prototype
+**Remote:** origin = github.com/Bilex95/qa-pilot (private). Gate flow per D-034: push stage branch, open PR into main, merge with a merge commit on APPROVED.
 
 ## Done
-* Stage 0: git init, `.gitignore`, `.gitattributes`, kit committed on `main`, prerequisites recorded in `docs/ENVIRONMENT.md`, tracking docs created, branch `stage/1-requirements` created.
-* Stage 1: REQUIREMENTS, PERSONAS_AND_ROLES, SCREEN_INVENTORY, DOMAIN_MODEL, API_INVENTORY, AI_SPEC, NFR_AND_RISKS, CLARIFICATIONS; DECISIONS D-001 to D-032; `scripts/check_traceability.py` passing; review file written.
+* Stage 0 and Stage 1 approved; Stage 1 feedback applied (D-033); merged to `main`, tagged `stage-1-approved`.
+* GitHub: private repo created; `main`, `stage/1-requirements` and the tag pushed (D-034).
+* Stage 2 design plan: palette, type, AI "proof mark" treatment; chart palette validated with the dataviz validator (light `#C2410C,#2563C9` on white; dark `#E0703F,#5B8FE6` on `#1C2633`, all checks pass).
 
 ## In progress
-* Nothing. Stopped at the Stage 1 gate.
+* `design/reference/approved.html` (single file prototype, hash routing, role switcher, state toolbar).
 
 ## Next
-* On APPROVED: merge `stage/1-requirements` into `main` with `--no-ff`, tag `stage-1-approved`, create `stage/2-prototype`, start Stage 2 (load `references/prototype.md` and `references/handoff.md`).
-* On feedback: apply on `stage/1-requirements`, rerun `python scripts/check_traceability.py`, add "Changes after feedback" to the review file.
+* `design/TOKENS.md`; Playwright screenshot script; 100 screenshots; validator PASS; `design/screenshots/INDEX.md`; update SCREEN_INVENTORY; review file; push branch and open PR.
+
+## Open questions for the product owner
+* D-019 SLA numbers still needed (working values in use).
 
 ## Blockers
-* None. Note: Docker is used through WSL Ubuntu (D-001).
+* None.
