@@ -61,6 +61,7 @@ services:
       APP_ENV: ${APP_ENV:-development}
       WATCHPACK_POLLING: "true"
       NEXT_TELEMETRY_DISABLED: "1"
+    command: ["npm", "run", "dev:docker"]
     ports:
       - "3000:3000"
     volumes:
