@@ -196,10 +196,12 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 ## D-038 Dependency versions
 * **Decision:** Pin exact versions. Backend: FastAPI 0.163.1, Uvicorn 0.54.0, SQLAlchemy 2.1.8, Alembic 1.20.1, psycopg 3.3.9, Pydantic 2.14.3, pydantic-settings 2.16.3, argon2-cffi 25.1.0, PyJWT 2.15.1. Frontend: Next 16.4.6, React 19.3.1, Tailwind 4.3.5, TanStack Query 5.107.1, Zod 4.6.7, openapi-typescript 7.13.0, openapi-fetch 0.17.0. **TypeScript 5.9.3 and ESLint 9.39.5** instead of the newest TypeScript 7 and ESLint 10.
 * **Reason:** Current releases where the ecosystem supports them. TypeScript 7 (new native compiler) and ESLint 10 are new major lines; Next 16 and its ESLint config declare support for ESLint 9 and do not name TypeScript 7, so the mature lines avoid toolchain breakage in a 3 day build.
+* **Checked in Stage 3:** npm marks ESLint 9 as no longer supported. ESLint 10.15.0 was tried: rules still load, but `eslint-plugin-import`, `eslint-plugin-jsx-a11y` and `eslint-plugin-react` (bundled by `eslint-config-next` 16.4.6) declare peer support only up to ESLint 9, so npm reports an invalid tree and `npm ci` could fail in Docker and CI. ESLint 9.39.5 stays for now; it is a development tool and never ships to users. Revisit when those plugins declare ESLint 10 (logged in `docs/BACKLOG.md`).
 
 ## D-039 Where the refresh token lives
 * **Decision:** The browser never talks to FastAPI for auth directly. Next.js route handlers under `/api/session/*` call the backend, put the refresh token in an httpOnly, SameSite=Lax cookie (Secure in production) and return only the access token, which the client keeps in memory. All other API calls go from the browser straight to FastAPI with the bearer token (CORS limited to the frontend origin).
 * **Reason:** Implements D-010 without exposing the refresh token to scripts, and keeps FastAPI a pure bearer token API that Postman can call.
+* **Concurrent refresh:** two tabs, or React's double mount in development, can refresh with the same cookie at the same moment. The client shares one refresh request per page, and the backend treats reuse of a token rotated less than 30 seconds ago as a race (401 without revoking every session); the client then retries once with the newer cookie. Reuse after 30 seconds is still treated as theft (D-010).
 
 ## D-040 Test database
 * **Decision:** Tests run against a real PostgreSQL 16 database `qapilot_test` in the same `db` service (created by an init script). The schema is built with Alembic once per session; each test runs in a transaction rolled back afterwards. CI uses a Postgres service container.
@@ -211,4 +213,10 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 
 ## D-042 Ports and Docker on WSL
 * **Decision:** Host ports: frontend 3000, backend 8000, Postgres 5433 (5432 inside the network, 5433 on the host to avoid clashing with a local Postgres). Dev containers bind mount the source and use polling file watchers (`WATCHFILES_FORCE_POLLING`, `WATCHPACK_POLLING`) because file events from `/mnt/c` do not reach containers reliably (RISK-01). `node_modules` lives in a named volume, not on the bind mount.
+* **Found in Stage 3:** Next 16 runs `next dev` on Turbopack, which ignores `WATCHPACK_POLLING` and missed edits on the bind mount, so the container served stale code. The container now runs `npm run dev:docker` (`next dev --webpack`), which polls. `npm run dev` outside Docker keeps Turbopack.
 * **Reason:** Works with Docker Engine in WSL (D-001) and with Docker Desktop.
+
+## D-043 How the frontend reproduces the locked design
+* **Question:** Rebuild the prototype styles as Tailwind utilities, or reuse its CSS?
+* **Decision:** The design tokens become CSS variables in `frontend/src/app/globals.css` and are exposed to Tailwind 4 through `@theme inline` (for example `bg-primary`, `text-ink-3`). The prototype's component classes (buttons, inputs, panels, badges, tables, shell, auth layout, states, AI proof mark) are copied unchanged into the same file as `@layer components`, so the app matches the locked screens exactly. shadcn/ui components are written in shadcn's pattern (`components/ui`, `class-variance-authority`, Radix primitives) and render those classes; `components.json` is present so the shadcn CLI can add more later. Fonts are self hosted with `next/font`.
+* **Reason:** Design parity with the locked prototype is a hard requirement; copying the reviewed CSS is the lowest risk way to get it, and Tailwind utilities remain available for layout.

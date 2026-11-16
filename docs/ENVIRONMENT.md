@@ -23,3 +23,12 @@ wsl -d Ubuntu --cd /mnt/c/Users/HP/qa-pilot -- docker compose ps
 ```
 
 Helper scripts in `scripts/*.ps1` (added in Stage 3) wrap this. On a machine with Docker Desktop the plain `docker compose ...` commands in `CLAUDE.md` work unchanged. See D-001.
+
+## WSL idle shutdown (found in Stage 3)
+
+WSL stops its virtual machine when no WSL process has run for a while, and Docker inside it stops too. The next `wsl` command starts it again and `restart: unless-stopped` brings the containers back, but anything talking to them in between fails (seen as "connection closed" on `localhost:8000`).
+
+Options, from least to most invasive:
+1. Keep any WSL terminal open while working (during the build a background `wsl -d Ubuntu -- sleep` keeps it alive and is stopped at the end of each stage).
+2. Run `powershell -File scripts/dc.ps1 up -d` again after a pause; it waits for healthchecks.
+3. Set `vmIdleTimeout=-1` under `[wsl2]` in `%USERPROFILE%\.wslconfig` (machine wide setting; not changed by this project).

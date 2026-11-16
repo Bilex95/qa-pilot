@@ -10,3 +10,4 @@ Ideas outside v1 scope. Each item notes where it came from.
 | BL-004 | Native mobile apps | BUILD_PLAN out of scope |
 | BL-005 | Real email delivery for invites and notifications | BUILD_PLAN out of scope |
 | BL-006 | Cloud file storage (S3 compatible) for attachments | BUILD_PLAN out of scope |
+| BL-007 | Move to ESLint 10 once eslint-config-next's plugins declare support (D-038) | Stage 3 dependency check |
