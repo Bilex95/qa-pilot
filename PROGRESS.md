@@ -1,7 +1,7 @@
 # Progress
 
 **Current stage:** 2 HTML first prototype and design lock (at review gate)
-**Branch:** stage/2-prototype (pushed; PR open into main)
+**Branch:** stage/2-prototype (pushed via scripts/safe-push.sh; PR #1 open into main)
 **Remote:** origin = github.com/Bilex95/qa-pilot (private). Gate flow per D-034.
 
 ## Done
@@ -13,7 +13,7 @@
 * Nothing. Stopped at the Stage 2 gate.
 
 ## Next
-* On APPROVED: `gh pr merge <n> --merge`, `git checkout main; git pull`, tag `stage-2-approved` and push it, create `stage/3-foundations`, start Stage 3 (load `references/engineering.md`, `references/github.md`, `references/testing.md`). Design is locked from then on.
+* On APPROVED: `gh pr merge 1 --merge`, `git checkout main; git pull`, tag `stage-2-approved` and push it, create `stage/3-foundations`, start Stage 3 (load `references/engineering.md`, `references/github.md`, `references/testing.md`). Design is locked from then on.
 * On feedback: fix on `stage/2-prototype`, rerun `scripts/validate-design.ps1` and `node e2e/scripts/capture-design.mjs`, add "Changes after feedback" to the review, push.
 
 ## Open questions for the product owner
