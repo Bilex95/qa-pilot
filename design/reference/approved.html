@@ -20,7 +20,7 @@
   --ink-2: #435061;          /* secondary text */
   --ink-3: #5F6B7A;          /* muted text, meets 4.5:1 on paper */
   --line: #D9DDD8;           /* borders */
-  --line-strong: #858E87;    /* input and control borders, 3.4:1 on white, 3.1:1 on paper (WCAG 1.4.11) */
+  --line-strong: #828B84;    /* input and control borders: 3.51:1 on white, 3.27:1 on paper, 3.07:1 on the grey disabled fill (WCAG 1.4.11) */
   --primary: #0C6B67;        /* instrument teal: primary actions, links, focus */
   --primary-hover: #095753;
   --primary-wash: #E3F1EF;
@@ -646,8 +646,12 @@ const STATUS_NAME = Object.fromEntries(STATUSES);
 const OPEN = s => !['verified', 'closed', 'wont_fix'].includes(s);
 const SEVS = [['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']];
 const SEV_NAME = Object.fromEntries(SEVS);
-const SLA_HOURS = { critical: 48, high: 120, medium: 336, low: 720 }; // D-019 working values
-const slaBreached = b => OPEN(b.status) && b.h > SLA_HOURS[b.sev];
+// D-019 (confirmed): calendar time from creation until Fixed. Won't fix also stops the clock; Reopened restarts it from creation.
+const SLA_HOURS = { critical: 24, high: 72, medium: 336, low: 720 };
+const SLA_TEXT = { critical: '24 hours', high: '3 days', medium: '14 days', low: '30 days' };
+const createdHoursAgo = b => b.h + 30; // the prototype reports every bug 30 hours before its last update
+const NOT_FIXED = s => ['new', 'triaged', 'in_progress', 'reopened'].includes(s);
+const slaBreached = b => NOT_FIXED(b.status) && createdHoursAgo(b) > SLA_HOURS[b.sev];
 
 // Workflow (DOMAIN_MODEL section 4). roles beyond admin and lead.
 const TRANSITIONS = [
@@ -1131,7 +1135,7 @@ function filteredBugs() {
 function bugTable(list, sortable = true) {
   const sortBtn = (k, label) => sortable ? `<button data-action="sort" data-sort="${k}" aria-label="Sort by ${label}">${label}${F.sort === k ? ic.down.replace('<svg', '<svg width="12" height="12"') : ''}</button>` : label;
   return `<div class="table-wrap"><table class="t stackable"><thead><tr><th>Key</th><th>Title</th><th>Status</th><th>${sortBtn('severity', 'Severity')}</th><th>${sortBtn('priority', 'Priority')}</th><th>Assignee</th><th>${sortBtn('updated', 'Updated')}</th></tr></thead><tbody>
-    ${list.map(b => `<tr><td data-label="Key" class="no-label"><span class="mono muted">${b.key}</span></td><td class="title-cell"><a href="${o('/bugs/' + b.key)}">${esc(b.title)}</a><div class="xs muted">${esc(b.comp)}, ${b.env}${b.labels.length ? ' ' + labelChips(b.labels) : ''}</div></td><td data-label="Status">${stBadge(b.status)}</td><td data-label="Severity">${sevBadge(b.sev)}</td><td data-label="Priority">${priTag(b.pri)}</td><td data-label="Assignee">${who(b.assignee)}</td><td data-label="Updated"><span class="small">${ago(b.h)}</span>${slaBreached(b) ? ` <span class="badge sla" title="Not updated within the SLA for ${SEV_NAME[b.sev]} bugs (working value, D-019)">Past SLA</span>` : ''}</td></tr>`).join('')}
+    ${list.map(b => `<tr><td data-label="Key" class="no-label"><span class="mono muted">${b.key}</span></td><td class="title-cell"><a href="${o('/bugs/' + b.key)}">${esc(b.title)}</a><div class="xs muted">${esc(b.comp)}, ${b.env}${b.labels.length ? ' ' + labelChips(b.labels) : ''}</div></td><td data-label="Status">${stBadge(b.status)}</td><td data-label="Severity">${sevBadge(b.sev)}</td><td data-label="Priority">${priTag(b.pri)}</td><td data-label="Assignee">${who(b.assignee)}</td><td data-label="Updated"><span class="small">${ago(b.h)}</span>${slaBreached(b) ? ` <span class="badge sla" title="Not fixed within ${SLA_TEXT[b.sev]} of being reported (SLA for ${SEV_NAME[b.sev]} bugs)">Past SLA</span>` : ''}</td></tr>`).join('')}
   </tbody></table></div>`;
 }
 function scrBugList() {
@@ -1185,7 +1189,7 @@ function scrBugDetail(key) {
   const devSelf = S.role === 'developer' && !b.assignee;
   const assigneeOpts = [['', 'Unassigned'], ...USERS.filter(u => u.role !== 'viewer').map(u => [u.id, u.name])];
   return `<div class="crumbs">${crumbs}</div>
-  <div class="page-head"><div class="grow"><div class="row small" style="margin-bottom:8px"><span class="mono muted">${b.key}</span>${stBadge(b.status)}${sevBadge(b.sev)}${priTag(b.pri)}${slaBreached(b) ? '<span class="badge sla">Past SLA</span>' : ''}</div><h1>${esc(b.title)}</h1><p>Reported by ${esc(user(b.reporter).name)} ${ago(b.h + 30)}. Updated ${ago(b.h)}.</p></div>
+  <div class="page-head"><div class="grow"><div class="row small" style="margin-bottom:8px"><span class="mono muted">${b.key}</span>${stBadge(b.status)}${sevBadge(b.sev)}${priTag(b.pri)}${slaBreached(b) ? '<span class="badge sla">Past SLA</span>' : ''}</div><h1>${esc(b.title)}</h1><p>Reported by ${esc(user(b.reporter).name)} ${ago(createdHoursAgo(b))}. Updated ${ago(b.h)}.</p></div>
     <div class="actions">${targets.length ? targets.map((t, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-action="transition" data-key="${b.key}" data-to="${t}">${transitionLabel(t)}</button>`).join('') : `<span class="small muted">${S.role === 'viewer' ? 'Viewers can comment but cannot change bugs.' : S.role === 'developer' ? 'Only the assignee can move this bug.' : 'No status changes available.'}</span>`}
       ${can('bug.delete') ? `<button class="btn ghost icon-btn" data-action="confirm-delete" aria-label="Delete bug">${ic.trash}</button>` : ''}</div></div>
   <div class="split">

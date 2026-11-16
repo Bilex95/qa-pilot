@@ -87,9 +87,17 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 * **Reason:** Bug content can be sensitive; metadata is enough for cost tracking.
 
 ## D-019 SLA definition for the sla-breach seed scenario and dashboard
-* **Decision:** A bug breaches SLA when it is open and not updated for longer than its severity threshold. Critical is measured in hours; the others in days. Shown as a dashboard count. Not configurable in v1. The thresholds live in one constant so they can be changed in one place.
-* **Status:** Product owner will supply the confirmed values. At the Stage 1 gate the feedback gave the format ("Critical X hours, High X days, Medium X days, Low X days") but the numbers were still placeholders. Until the numbers arrive, these **working values** are used: Critical 48 hours, High 5 days, Medium 14 days, Low 30 days. They will be marked confirmed once the numbers are given.
-* **Reason:** Avoids recording guessed numbers as confirmed.
+* **Status:** **Confirmed** by the product owner at the Stage 2 gate.
+* **Thresholds (time to fix):** Critical 24 hours, High 3 days (72 hours), Medium 14 days, Low 30 days. Calendar time: nights, weekends and holidays count.
+* **Clock:** starts when the bug is created and stops when the bug reaches **Fixed**. A bug breaches SLA when the time from creation to Fixed is longer than the threshold for its severity.
+* **Interpretation of cases the confirmation did not cover** (can be changed at any gate):
+  * Bugs that move on past Fixed (Ready for retest, Verified, Closed) keep the clock stopped at the moment they reached Fixed.
+  * **Won't fix** also stops the clock (the bug is resolved without a fix).
+  * **Reopened** restarts the clock from the original creation time; time spent while Fixed counts, so a reopened bug is usually already past its SLA.
+  * The bug's **current** severity sets the threshold; raising severity can make a bug breach immediately.
+* **Where it shows:** "Past SLA" on the dashboard counts bugs not yet fixed whose age exceeds the threshold; the bug list filter `sla_breached=true` uses the same rule; bugs fixed late keep a "Fixed late" flag for reports. Not configurable in v1; thresholds live in one constant.
+* **Implementation note:** computed from `created_at` and `resolved_at` (set on entering Fixed or Won't fix, cleared on Reopened, see DOMAIN_MODEL section 4).
+* **History:** Stage 1 used "open and not updated" with assumed values; at the Stage 1 gate the format was set (Critical in hours) with placeholder numbers; confirmed values and the creation to Fixed clock arrived at the Stage 2 gate (D-036).
 
 ## D-020 Password policy and hashing
 * **Decision:** Minimum 10 characters, at least one letter and one number. Hashed with argon2id (`argon2-cffi`). Login is throttled to 10 failed attempts per email per 15 minutes.
@@ -155,7 +163,7 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
   * Remote `origin` is the private repo `github.com/Bilex95/qa-pilot`, created with `gh repo create Bilex95/qa-pilot --private`. It must never be made public.
   * Before any push, `git config user.email` must match an email verified on the GitHub account; if not, stop and tell the product owner first. Check done on 2026-11-16: the local email matches the account's public profile email, and GitHub only allows a verified address as the profile email. The direct `user/emails` API needs the `user` scope, which the current token does not have (`gh auth refresh -h github.com -s user` would grant it).
   * End of every stage: push the stage branch and open a pull request into `main`. On APPROVED: merge the PR with a normal merge commit (`gh pr merge --merge`), never squash or rebase, so every commit lands on `main`; then tag `stage-<n>-approved`, push the tag, and branch the next stage from the updated `main`.
-  * Every push goes through `scripts/safe-push.sh` (added at the Stage 2 gate after the product owner pointed out that an `a && echo found || echo clean` scan could not block a push). Each check exits non zero and the push is the last step, so it runs only when all checks pass: branch is not `main`, origin is the private repo, the git email matches the verified public profile email or, when the email is private, the verified list from `gh api user/emails`, no `.env` in any commit, no secret pattern in any commit. `--dry-run` runs the checks without pushing.
+  * Every push goes through `scripts/safe-push.sh` (added at the Stage 2 gate after the product owner pointed out that an `a && echo found || echo clean` scan could not block a push). Each check exits non zero and the push is the last step, so it runs only when all checks pass: branch is not `main`, origin is the private repo, the git email matches the verified public profile email or, when the email is private, the verified list from `gh api user/emails`, no `.env` in any commit, no secret pattern in any commit. `--dry-run` runs the checks without pushing. Tags go through the same script with `--tag` (D-036).
   * Still forbidden: force push, pushing to `main` directly outside an approved merge, committing secrets. `.env` stays in `.gitignore`; history is scanned for secrets before each push.
 * **Reason (D-034):** Product owner instruction. Stage 1 predates the rule, so `main` and `stage/1-requirements` were pushed as they were (Stage 1 had already been merged locally with `--no-ff`, which is the same result as a merge commit PR).
 
@@ -170,3 +178,12 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
   * Overlap is checked automatically for the direct children of toolbars and rows (header, page heads, action groups, filters, readouts, card meta, tab strips); clipped text is checked for every element that hides overflow.
   * The screenshot set stays as planned: desktop 1440x900 and one mobile size, 390x844. Size specific fixes are listed in the Stage 2 review.
 * **Reason:** Product owner instruction; 320 px is the hardest common case and catches most layout bugs.
+
+## D-036 Stage 2 gate feedback
+* **Notes received:** (1) SLA confirmed: timed from creation until Fixed, calendar time, Critical 24 hours, High 3 days, Medium 14 days, Low 30 days; (2) confirm no input or select sits on `--surface-sunk` with a 2.95:1 border; (3) route tag pushes through `safe-push.sh` before Stage 6; (4) merge PR #1 with a normal merge and continue.
+* **Decision:**
+  * (1) D-019 rewritten and marked confirmed, with the interpretation of uncovered cases (Won't fix stops the clock, Reopened restarts it from creation, current severity applies). Prototype rule and counts updated (7 seeded bugs past SLA instead of 4).
+  * (2) Audit added to `e2e/scripts/check-prototype.mjs`: no control sits on `--surface-sunk`, but disabled controls use it as their fill, giving a 2.95:1 border. A white fill was proposed and rejected by the product owner, because the grey fill is the main disabled signal and touch screens have no not allowed cursor. Instead `--line-strong` became `#828B84` (3.51:1 on white, 3.27:1 on paper, 3.07:1 on the grey disabled fill). The checker now holds disabled controls to 3:1 too.
+  * (3) Done now rather than before Stage 6: `safe-push.sh --tag <name>` runs the same gates and also requires the tag to point at a commit already on `origin/main` and not to exist on origin, so tags are never moved.
+  * (4) PR #1 merged with a merge commit.
+* **Reason:** Product owner instructions.

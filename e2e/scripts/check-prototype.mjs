@@ -31,15 +31,53 @@ const open = async (route, role = 'qa_lead', state = 'default') => {
   await page.goto(`${html}#${route}?${p}`); await page.waitForTimeout(30);
 };
 
+// Border contrast of form controls (WCAG 1.4.11, Stage 2 gate note): the border must reach 3:1 against
+// the background around the control and against the control's own fill. Disabled controls are held to
+// the same rule even though WCAG exempts them.
+const borderAudit = () => {
+  const rgb = c => { const m = c.match(/[\d.]+/g).map(Number); return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1 }; };
+  const lum = ({ r, g, b }) => [r, g, b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const hex = ({ r, g, b }) => '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const bgOf = e => { for (let p = e; p; p = p.parentElement) { const c = rgb(getComputedStyle(p).backgroundColor); if (c.a > 0.5) return c; } return { r: 255, g: 255, b: 255, a: 1 }; };
+  const out = [];
+  for (const e of document.querySelectorAll('input, select, textarea')) {
+    if (['checkbox', 'radio', 'hidden'].includes(e.type) || e.closest('.sr-only')) continue;
+    const s = getComputedStyle(e); const r = e.getBoundingClientRect();
+    if (s.display === 'none' || s.visibility === 'hidden' || !r.width || parseFloat(s.borderTopWidth) === 0) continue;
+    const border = rgb(s.borderTopColor), fill = bgOf(e), around = bgOf(e.parentElement);
+    out.push({ id: e.id || e.getAttribute('aria-label') || e.tagName, disabled: e.disabled, border: hex(border), fill: hex(fill), around: hex(around),
+      vsAround: +cr(border, around).toFixed(2), vsFill: +cr(border, fill).toFixed(2) });
+  }
+  return out;
+};
+const controls = new Map();
+
 // 1. render matrix
 let renders = 0;
 for (const role of ROLES) for (const route of ROUTES) for (const state of STATES) {
   errors = [];
   await open(route, role, state); renders++;
+  for (const c of await page.evaluate(borderAudit)) {
+    const key = `${c.id} on ${route}${state !== 'default' ? ' ' + state : ''}`;
+    controls.set(key, c);
+    if (c.vsAround < 3 || c.vsFill < 3) failures.push(`border contrast: ${key} border ${c.border} is ${c.vsAround}:1 against ${c.around} around it and ${c.vsFill}:1 against its fill ${c.fill}`);
+  }
   const text = await page.locator('#app').innerText();
   ok(text.trim().length > 20, `${role} ${route} ${state}: blank page`);
   ok(!/undefined|NaN|\[object Object\]/.test(text), `${role} ${route} ${state}: rendered undefined, NaN or [object Object]`);
   ok(errors.length === 0, `${role} ${route} ${state}: script error ${errors.join('; ')}`);
+}
+
+{
+  const all = [...controls.values()];
+  const onSunk = [...controls.entries()].filter(([, c]) => c.around === '#EEF0ED');
+  const disabledLow = [...controls.entries()].filter(([, c]) => c.disabled && (c.vsAround < 3 || c.vsFill < 3));
+  const minAround = Math.min(...all.map(c => c.vsAround)), minFill = Math.min(...all.map(c => c.vsFill));
+  console.log(`Form controls audited: ${controls.size} (control x screen), ${all.filter(c => c.disabled).length} disabled; lowest border contrast ${minAround}:1 against surroundings, ${minFill}:1 against own fill`);
+  console.log(`Controls sitting on --surface-sunk (#EEF0ED): ${onSunk.length}${onSunk.length ? ': ' + onSunk.map(([k]) => k).join('; ') : ''}`);
+  console.log(`Disabled controls under 3:1: ${disabledLow.length}${disabledLow.length ? ', e.g. ' + disabledLow.slice(0, 3).map(([k, c]) => `${k} (${c.vsFill}:1 vs its ${c.fill} fill)`).join('; ') : ''}`);
+  if (onSunk.length) failures.push(`${onSunk.length} form control(s) sit on --surface-sunk; give them a white fill`);
 }
 
 // 2. role rules

@@ -145,3 +145,33 @@ Design choices recorded in `design/TOKENS.md`: palette, type, proof mark treatme
 Stage 3: foundations. Docker Compose v2 (db, backend, frontend with healthchecks, run through WSL per D-001), FastAPI app with auth, tenancy, RBAC and audit, Alembic, Next.js app shell matching this design with the tokens above, seed CLI with the 5 scenarios, Postman collection, CI workflow, AGENTS.md, and the issue plan with its dependency graph for Stages 4 to 6.
 
 **After you approve, the design is locked:** no redesign without your written permission.
+
+## 9. Changes after feedback (Stage 2 gate, D-036)
+
+| Note | What changed |
+|---|---|
+| SLAs confirmed: creation until Fixed, calendar time, Critical 24 h, High 3 d, Medium 14 d, Low 30 d | D-019 rewritten and marked **confirmed**. Cases the note did not cover were decided and written down: moving past Fixed keeps the clock stopped, Won't fix stops it, Reopened restarts it from creation, current severity applies. REQ-041, C-09 and RISK-11 updated. Prototype rule and tooltip updated; the seeded data now has 7 bugs past SLA instead of 4. `docs/BUILD_PLAN.md` still says the `sla-breach` scenario holds "old untouched critical bugs"; I left your plan unchanged and the Stage 3 seed will follow D-019. |
+| No input or select on `--surface-sunk` with a 2.95:1 border | New audit in `check-prototype.mjs` covering 769 control and screen pairs. No control sits on `--surface-sunk`, but the 265 disabled pairs use it as their own fill, so their border was 2.95:1. You rejected a white fill (the grey fill is the disabled signal; touch screens have no cursor). Instead `--line-strong` is now `#828B84`: 3.51:1 on white, 3.27:1 on paper, 3.07:1 on the grey disabled fill. The checker holds disabled controls to 3:1 as well. `design/TOKENS.md` updated. |
+| Route tag pushes through `safe-push.sh` | Done now instead of before Stage 6: `bash scripts/safe-push.sh --tag <name>` runs the same gates plus "tag is on origin/main" and "tag does not exist on origin yet". `CLAUDE.md` updated. |
+| Merge PR #1 with a normal merge | Done after these changes were pushed (merge commit, not squash). |
+
+Rerun after the changes (real output):
+
+```
+== Traceability
+Requirements: 63 (Must 52, Should 9, Could 2)
+Screens: 22  Endpoints: 97  Artifacts: 5  Decisions: 36
+PASS: every screen maps to a REQ, every Must REQ maps to a screen, endpoint or artifact, no orphan ids, prose rule holds
+== Prototype (roles, layout at 320 to 1440 px, tap targets, axe)
+Form controls audited: 769 (control x screen), 265 disabled; lowest border contrast 3.27:1 against surroundings, 3.07:1 against own fill
+Controls sitting on --surface-sunk (#EEF0ED): 0
+Disabled controls under 3:1: 0
+Layout checked: 39 screens and states at 320, 360, 375, 390, 412, 430, 768, 1024, 1440 px
+Rendered 1000 route x role x state combinations; 10 axe scans
+PASS: no script errors, role rules hold, no element wider than the screen, no clipped or overlapping text, 44 px tap targets up to 1024 px, no serious or critical axe violations
+== Screenshot files
+PASS: 100 valid local screenshots; GitHub links not checked
+DESIGN VALIDATION PASSED
+```
+
+Negative tests: with the old border colour injected, the border audit failed with 14 problems on one screen (for example `n-proj border #B9C0BA is 1.86:1`). The tag gate blocked a tag not on main, a tag that already exists on origin, a missing tag, and branch plus tag given together; a new tag on main passed the dry run.

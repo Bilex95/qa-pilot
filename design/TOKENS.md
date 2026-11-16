@@ -14,12 +14,12 @@ QA Pilot is an inspection instrument for people who scan dense lists all day. Qu
 |---|---|---|
 | `--paper` | `#F6F7F5` | App background (cool off white, not cream) |
 | `--surface` | `#FFFFFF` | Panels, tables, inputs |
-| `--surface-sunk` | `#EEF0ED` | Table headers, sunken areas, hover |
+| `--surface-sunk` | `#EEF0ED` | Table headers, sunken areas, hover, and the fill of disabled controls (the main disabled signal; it works without a mouse cursor on touch screens) |
 | `--ink` | `#18222F` | Primary text, sidebar background |
 | `--ink-2` | `#435061` | Secondary text |
 | `--ink-3` | `#5F6B7A` | Muted text (5.05:1 on paper, 5.4:1 on white) |
 | `--line` | `#D9DDD8` | Borders and dividers |
-| `--line-strong` | `#858E87` | Input and button borders (3.4:1 on white, 3.1:1 on paper, meets WCAG 1.4.11) |
+| `--line-strong` | `#828B84` | Input and button borders: 3.51:1 on white, 3.27:1 on paper, 3.07:1 on `--surface-sunk`, so enabled and disabled controls both meet WCAG 1.4.11 |
 | `--primary` | `#0C6B67` | Instrument teal: primary actions, links, focus ring (6.3:1 on white) |
 | `--primary-hover` | `#095753` | Hover and pressed |
 | `--primary-wash` | `#E3F1EF` | Selected rows, active tabs |
