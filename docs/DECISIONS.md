@@ -187,3 +187,28 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
   * (3) Done now rather than before Stage 6: `safe-push.sh --tag <name>` runs the same gates and also requires the tag to point at a commit already on `origin/main` and not to exist on origin, so tags are never moved.
   * (4) PR #1 merged with a merge commit.
 * **Reason:** Product owner instructions.
+
+## D-037 SQLAlchemy sync or async
+* **Options:** async SQLAlchemy with asyncpg; sync SQLAlchemy 2 with psycopg 3.
+* **Decision:** Sync SQLAlchemy 2.1 with psycopg 3. FastAPI runs sync endpoints in its thread pool. One session per request through a dependency; tests wrap each test in a transaction that is rolled back.
+* **Reason:** Simpler code, simpler tests and Alembic, no async pitfalls; load in v1 is small. AI calls, the only slow I/O, run in the thread pool too.
+
+## D-038 Dependency versions
+* **Decision:** Pin exact versions. Backend: FastAPI 0.163.1, Uvicorn 0.54.0, SQLAlchemy 2.1.8, Alembic 1.20.1, psycopg 3.3.9, Pydantic 2.14.3, pydantic-settings 2.16.3, argon2-cffi 25.1.0, PyJWT 2.15.1. Frontend: Next 16.4.6, React 19.3.1, Tailwind 4.3.5, TanStack Query 5.107.1, Zod 4.6.7, openapi-typescript 7.13.0, openapi-fetch 0.17.0. **TypeScript 5.9.3 and ESLint 9.39.5** instead of the newest TypeScript 7 and ESLint 10.
+* **Reason:** Current releases where the ecosystem supports them. TypeScript 7 (new native compiler) and ESLint 10 are new major lines; Next 16 and its ESLint config declare support for ESLint 9 and do not name TypeScript 7, so the mature lines avoid toolchain breakage in a 3 day build.
+
+## D-039 Where the refresh token lives
+* **Decision:** The browser never talks to FastAPI for auth directly. Next.js route handlers under `/api/session/*` call the backend, put the refresh token in an httpOnly, SameSite=Lax cookie (Secure in production) and return only the access token, which the client keeps in memory. All other API calls go from the browser straight to FastAPI with the bearer token (CORS limited to the frontend origin).
+* **Reason:** Implements D-010 without exposing the refresh token to scripts, and keeps FastAPI a pure bearer token API that Postman can call.
+
+## D-040 Test database
+* **Decision:** Tests run against a real PostgreSQL 16 database `qapilot_test` in the same `db` service (created by an init script). The schema is built with Alembic once per session; each test runs in a transaction rolled back afterwards. CI uses a Postgres service container.
+* **Reason:** Tenancy and constraint behaviour must be tested on the real engine; SQLite would hide differences.
+
+## D-041 Seed passwords
+* **Decision:** All seeded personas share one password read from `SEED_USER_PASSWORD` in `.env`. The seed refuses to run when it is empty or when `APP_ENV=production`. `.env.example` leaves it empty; `docs/SEED_MANIFEST.md` lists logins but never the password.
+* **Reason:** CLAUDE.md: passwords come from `.env`, never committed.
+
+## D-042 Ports and Docker on WSL
+* **Decision:** Host ports: frontend 3000, backend 8000, Postgres 5433 (5432 inside the network, 5433 on the host to avoid clashing with a local Postgres). Dev containers bind mount the source and use polling file watchers (`WATCHFILES_FORCE_POLLING`, `WATCHPACK_POLLING`) because file events from `/mnt/c` do not reach containers reliably (RISK-01). `node_modules` lives in a named volume, not on the bind mount.
+* **Reason:** Works with Docker Engine in WSL (D-001) and with Docker Desktop.

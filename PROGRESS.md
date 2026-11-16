@@ -1,23 +1,27 @@
 # Progress
 
-**Current stage:** 2 HTML first prototype and design lock (at review gate)
-**Branch:** stage/2-prototype (pushed via scripts/safe-push.sh; PR #1 open into main)
-**Remote:** origin = github.com/Bilex95/qa-pilot (private). Gate flow per D-034.
+**Current stage:** 3 Foundations (repo, Docker, scaffolding, auth, data, issue plan)
+**Branch:** stage/3-foundations
+**Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
 ## Done
-* Stage 0 and Stage 1 approved; Stage 1 feedback applied (D-033); merged, tagged `stage-1-approved`, pushed.
-* GitHub private repo and PR flow (D-034).
-* Stage 2: `design/reference/approved.html` (22 screens, roles, states), `design/TOKENS.md`, 100 screenshots plus `design/screenshots/INDEX.md`, SCREEN_INVENTORY section 4, phone size support and checks (D-035), `scripts/validate-design.ps1` passing, review file written.
+* Stages 0 to 2 approved. Stage 2 merged as PR #1 (merge commit 73d7fcc), tagged `stage-2-approved`. Design locked.
+* D-019 SLA confirmed (D-036).
 
-## In progress
-* Applying Stage 2 approval: merge PR #1, tag, start Stage 3.
+## Stage 3 tasks
+- [x] T1 Repo layout, `docs/API_BOUNDARY.md`, `AGENTS.md`
+- [x] T2 Docker Compose (db, backend, frontend), Dockerfiles dev and prod, `.env.example`, `.env`, `scripts/*.ps1`
+- [x] T3 Backend core: app factory, settings, DB, Alembic, error envelope, pagination, request id, logging, CORS, headers, health
+- [x] T4 Auth, orgs, memberships, invitations, RBAC policies, audit log, tests
+- [ ] T5 Seed CLI and `docs/SEED_MANIFEST.md`
+- [ ] T6 Frontend: Next.js, tokens, shadcn/ui, TanStack Query, typed API client, auth flow, app shell
+- [ ] T7 Postman collection and environment
+- [ ] T8 CI workflow
+- [ ] T9 Issue plan `docs/issues/` and `DAG.md`
+- [ ] T10 Gate checks, review file, push, PR
 
 ## Next
-* On APPROVED: `gh pr merge 1 --merge`, `git checkout main; git pull`, tag `stage-2-approved` and push it, create `stage/3-foundations`, start Stage 3 (load `references/engineering.md`, `references/github.md`, `references/testing.md`). Design is locked from then on.
-* On feedback: fix on `stage/2-prototype`, rerun `scripts/validate-design.ps1` and `node e2e/scripts/capture-design.mjs`, add "Changes after feedback" to the review, push.
-
-## Open questions for the product owner
-* None open. D-019 confirmed at the Stage 2 gate.
+* T5 seed CLI, then T6 frontend.
 
 ## Blockers
 * None.
