@@ -1,0 +1,13 @@
+{
+  "name": "qa-pilot-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "design:capture": "node scripts/capture-design.mjs",
+    "design:check": "node scripts/check-prototype.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
+    "playwright": "1.56.1"
+  }
+}
