@@ -1,0 +1,2 @@
+# Quality and release gates
+Check HTML fidelity, responsiveness, accessibility, error/empty states, contract compatibility, DB migrations, seeded Postman, security, tenant isolation, audit, concurrency, performance and CI. Review stacked PRs against correct base. Distinguish verified evidence from assumptions. Post review comments, approve, assign or merge only as requested. Production requires explicit authorization and secret/environment readiness. Report risk and follow-ups.

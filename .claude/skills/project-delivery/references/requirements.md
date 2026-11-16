@@ -1,0 +1,2 @@
+# Requirements and discovery
+Capture product goals/non-goals; roles and personas; screen/action matrix; business rules and exception paths; customer/location permissions; data retention; integrations; existing systems; migration; audit; deployment; nonfunctional targets; acceptance criteria. Maintain numbered requirements with source, priority, owner, acceptance and verification status. Mark SLA or contractual claims unverified until source checked. Seek approval before prototyping.

@@ -1,0 +1,2 @@
+# HTML-first prototype
+Create complete navigable HTML/CSS/JS covering every approved experience, routes and critical workflows. Use realistic synthetic data, dialogs, search/filter, forms, empty/loading/error and mobile states. Maintain screen inventory mapping requirement -> route -> role -> screenshot. Stakeholder review and explicit design lock are mandatory before implementation; preserve approved layout, tokens and interaction patterns.
