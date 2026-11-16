@@ -4,9 +4,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const dir = resolve(root, 'docs/requirements');
-const blocks = readdirSync(dir).filter(f => f.endsWith('.md')).flatMap(f =>
-  [...readFileSync(resolve(dir, f), 'utf8').matchAll(/```mermaid\n([\s\S]*?)```/g)].map((m, i) => ({ id: `${f}#${i + 1}`, code: m[1] })));
+const dirs = ['docs/requirements', 'docs/issues'].map((d) => resolve(root, d));
+const blocks = dirs.flatMap((dir) => readdirSync(dir).filter(f => f.endsWith('.md')).flatMap(f =>
+  [...readFileSync(resolve(dir, f), 'utf8').matchAll(/```mermaid\r?\n([\s\S]*?)```/g)].map((m, i) => ({ id: `${f}#${i + 1}`, code: m[1] }))));
 const browser = await chromium.launch(); const page = await browser.newPage();
 await page.setContent('<html><body></body></html>');
 await page.addScriptTag({ url: 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js' });

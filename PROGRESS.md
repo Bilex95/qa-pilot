@@ -17,11 +17,11 @@
 - [x] T6 Frontend: Next.js, tokens, shadcn/ui, TanStack Query, typed API client, auth flow, app shell
 - [x] T7 Postman collection and environment
 - [x] T8 CI workflow
-- [ ] T9 Issue plan `docs/issues/` and `DAG.md`
+- [x] T9 Issue plan `docs/issues/` and `DAG.md`
 - [ ] T10 Gate checks, review file, push, PR
 
 ## Next
-* T9 issue plan, then T10 gate.
+* T10 gate checks, review, push, PR.
 
 ## Blockers
 * None.

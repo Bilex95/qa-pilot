@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/feedback";
 import { can } from "@/lib/permissions";
 import { useOrg } from "@/modules/shell/org-context";
 
-/** SCR-05 Dashboard. Stage 3 shows the locked empty state; Stage 4 issue I-14 adds the metrics (REQ-038). */
+/** SCR-05 Dashboard. Stage 3 shows the locked empty state; Stage 4 issue I-09 adds the metrics (REQ-038). */
 export function DashboardPage() {
   const org = useOrg();
   return (
