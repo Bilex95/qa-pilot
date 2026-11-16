@@ -156,4 +156,16 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
   * Before any push, `git config user.email` must match an email verified on the GitHub account; if not, stop and tell the product owner first. Check done on 2026-11-16: the local email matches the account's public profile email, and GitHub only allows a verified address as the profile email. The direct `user/emails` API needs the `user` scope, which the current token does not have (`gh auth refresh -h github.com -s user` would grant it).
   * End of every stage: push the stage branch and open a pull request into `main`. On APPROVED: merge the PR with a normal merge commit (`gh pr merge --merge`), never squash or rebase, so every commit lands on `main`; then tag `stage-<n>-approved`, push the tag, and branch the next stage from the updated `main`.
   * Still forbidden: force push, pushing to `main` directly outside an approved merge, committing secrets. `.env` stays in `.gitignore`; history is scanned for secrets before each push.
-* **Reason:** Product owner instruction. Stage 1 predates the rule, so `main` and `stage/1-requirements` were pushed as they were (Stage 1 had already been merged locally with `--no-ff`, which is the same result as a merge commit PR).
+* **Reason (D-034):** Product owner instruction. Stage 1 predates the rule, so `main` and `stage/1-requirements` were pushed as they were (Stage 1 had already been merged locally with `--no-ff`, which is the same result as a merge commit PR).
+
+## D-035 Responsive coverage for all common phone and tablet sizes
+* **Question:** Which screen sizes must the prototype (and later the app) support, and how is that proven? (Instruction from the product owner during Stage 2.)
+* **Decision:**
+  * Every screen is checked at 320, 360, 375, 390, 412, 430, 768 and 1024 px, plus 1440 px desktop.
+  * At every one of those widths: no sideways page scrolling; no element wider than the screen unless it sits inside its own horizontal scroll container (tables in `.table-wrap`, the Kanban board, tab strips, saved view strips); no clipped or overlapping text; tables and the board scroll inside their own container.
+  * Tap targets are at least 44 by 44 px at every width up to 1024 px. The 1440 px desktop layout keeps 36 px controls for density with a mouse. Exemption, following WCAG 2.5.8: links that sit inside a sentence of running text (`p`, `li`, hints, banners, error messages). The control's own box or its wrapping label is measured.
+  * The off canvas navigation drawer is `visibility: hidden` while closed, so it is neither measured nor reachable by keyboard.
+  * "The validator" is implemented in `e2e/scripts/check-prototype.mjs` (the playbook's `validate_design_assets.py` only reads PNG files and cannot inspect layout). `scripts/validate-design.ps1` runs both, and fails if any element is wider than the screen.
+  * Overlap is checked automatically for the direct children of toolbars and rows (header, page heads, action groups, filters, readouts, card meta, tab strips); clipped text is checked for every element that hides overflow.
+  * The screenshot set stays as planned: desktop 1440x900 and one mobile size, 390x844. Size specific fixes are listed in the Stage 2 review.
+* **Reason:** Product owner instruction; 320 px is the hardest common case and catches most layout bugs.
