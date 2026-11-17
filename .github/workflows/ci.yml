@@ -81,6 +81,9 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: globals.css matches the locked prototype
+        working-directory: .
+        run: python3 scripts/build_globals_css.py --check
       - run: npm ci --no-audit --no-fund
       - run: npm run lint
       - run: npm run typecheck
@@ -142,6 +145,54 @@ jobs:
       - name: Backend logs on failure
         if: failure()
         run: docker compose logs backend --tail 200
+      - name: Stop
+        if: always()
+        run: docker compose down -v
+
+  responsive:
+    name: Responsive and popup checks (360 to 1920 px, 200% zoom)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .env with throwaway secrets
+        run: |
+          cp .env.example .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
+          sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -hex 32)|" .env
+          PW="Ci$(openssl rand -hex 6)9"
+          sed -i "s|^SEED_USER_PASSWORD=.*|SEED_USER_PASSWORD=${PW}|" .env
+          echo "SEED_USER_PASSWORD=${PW}" >> "$GITHUB_ENV"
+      - name: Start the full stack
+        run: docker compose up -d --build --wait
+      - name: Seed baseline
+        run: docker compose exec -T backend python -m app.seed --scenario baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Install Playwright
+        working-directory: e2e
+        run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Browser login smoke
+        working-directory: e2e
+        run: node scripts/smoke-login.mjs
+      - name: Responsive and popup checks
+        working-directory: e2e
+        run: node scripts/check-app-layout.mjs --shots ci-layout-shots
+      - name: Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-screenshots
+          path: |
+            e2e/ci-layout-shots
+            e2e/parity/stage3-*.png
+          if-no-files-found: ignore
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail 200 backend frontend
       - name: Stop
         if: always()
         run: docker compose down -v
