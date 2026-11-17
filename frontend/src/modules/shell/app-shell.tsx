@@ -91,10 +91,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <DropdownMenu>
             <DropdownMenuTrigger className="org-switch" aria-label={`Switch organization, current ${org.name}`}>
               <span className="org-badge">{initials(org.name)}</span>
-              <span className="hide-sm">{org.name}</span>
+              <span className="hide-sm org-name" title={org.name}>{org.name}</span>
               <IconChevron width={14} height={14} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent align="start">
               <DropdownMenuLabel>Your workspaces</DropdownMenuLabel>
               {me?.memberships.map((m) => (
                 <DropdownMenuItem key={m.org.id} asChild>

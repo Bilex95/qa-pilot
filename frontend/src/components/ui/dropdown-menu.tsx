@@ -9,10 +9,12 @@ import { cn } from "@/lib/utils";
 export const DropdownMenu = Menu.Root;
 export const DropdownMenuTrigger = Menu.Trigger;
 
-export function DropdownMenuContent({ className, sideOffset = 4, align = "start", ...props }: ComponentProps<typeof Menu.Content>) {
+/** Anchored to the trigger edge given by `align`; Radix flips or shifts it to stay 8 px inside the viewport (D-044). */
+export function DropdownMenuContent({ className, sideOffset = 4, align = "start", collisionPadding = 8, ...props }: ComponentProps<typeof Menu.Content>) {
   return (
     <Menu.Portal>
-      <Menu.Content sideOffset={sideOffset} align={align} className={cn("menu", className)} {...props} />
+      <Menu.Content sideOffset={sideOffset} align={align} collisionPadding={collisionPadding} avoidCollisions
+        className={cn("menu", className)} {...props} />
     </Menu.Portal>
   );
 }
