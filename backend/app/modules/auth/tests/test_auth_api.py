@@ -98,6 +98,7 @@ def test_refresh_rotates_the_token(client, db) -> None:
     r = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]})
     assert r.status_code == 200
     assert r.json()["refresh_token"] != first["refresh_token"]
+    _age_rotation(db, 60)  # outside the reuse interval a rotated token is dead
     again = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]})
     assert again.status_code == 401 and code(again) == "invalid_refresh_token"
 
@@ -117,15 +118,33 @@ def test_refresh_reuse_revokes_every_session(client, db) -> None:
     assert db.scalar(select(AuditEvent).where(AuditEvent.action == "auth.refresh_reuse_detected"))
 
 
-def test_concurrent_refresh_inside_grace_window_is_not_treated_as_theft(client, db) -> None:
-    """Two tabs refreshing at once: the loser gets 401 and retries with the new cookie; nobody is signed out."""
+def test_lost_rotation_inside_reuse_interval_keeps_the_session(client, db) -> None:
+    """A reload aborts the response carrying the new cookie, or two tabs refresh at once: the old token may
+    refresh once more within 30 s while its successor is unused, and nobody is signed out (D-039)."""
     first = _login(client, db)
-    second = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]}).json()
-    loser = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]})
-    assert loser.status_code == 401 and code(loser) == "invalid_refresh_token"
-    assert client.post(f"{URL}/refresh", json={"refresh_token": second["refresh_token"]}).status_code == 200
+    lost = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]}).json()  # never stored
+    retry = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]})
+    assert retry.status_code == 200
+    latest = retry.json()["refresh_token"]
+    assert latest not in (first["refresh_token"], lost["refresh_token"])
+    assert client.post(f"{URL}/refresh", json={"refresh_token": latest}).status_code == 200
     assert not db.scalar(select(AuditEvent).where(AuditEvent.action == "auth.refresh_reuse_detected"))
 
+
+def test_reuse_after_the_successor_was_used_is_refused_without_ending_sessions(client, db) -> None:
+    first = _login(client, db)
+    second = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]}).json()
+    third = client.post(f"{URL}/refresh", json={"refresh_token": second["refresh_token"]}).json()  # successor used
+    replay = client.post(f"{URL}/refresh", json={"refresh_token": first["refresh_token"]})
+    assert replay.status_code == 401 and code(replay) == "invalid_refresh_token"
+    assert client.post(f"{URL}/refresh", json={"refresh_token": third["refresh_token"]}).status_code == 200
+
+
+def test_logged_out_token_cannot_use_the_reuse_interval(client, db) -> None:
+    tokens = _login(client, db, "loggedout@example.test")
+    h = {"Authorization": f"Bearer {tokens['access_token']}"}
+    client.post(f"{URL}/logout", json={"refresh_token": tokens["refresh_token"]}, headers=h)
+    assert client.post(f"{URL}/refresh", json={"refresh_token": tokens["refresh_token"]}).status_code == 401
 
 def test_refresh_with_garbage_token(client) -> None:
     r = client.post(f"{URL}/refresh", json={"refresh_token": "x" * 40})

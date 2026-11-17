@@ -112,11 +112,23 @@ def refresh(db: Session, *, refresh_token: str, user_agent: str | None) -> Token
         raise invalid
     now = utcnow()
     if current.revoked_at is not None:
-        # Two tabs, or a double mount, can refresh at the same moment with the same cookie. A reuse within the
-        # grace window is a benign race: answer 401 so the client retries with the newer cookie (D-039).
+        successor = repo.get_refresh_token_by_id(db, current.replaced_by_id) if current.replaced_by_id else None
         recently_rotated = now - current.revoked_at < timedelta(seconds=REUSE_GRACE_SECONDS)
-        if current.replaced_by_id is not None and not recently_rotated:
-            # A rotated token was used again: treat as theft and end every session of the user (D-010)
+        if successor is not None and recently_rotated and successor.revoked_at is None and successor.expires_at > now:
+            # Reuse interval (D-039): the browser never stored the successor (a reload or navigation aborted the
+            # response that carried it) or two tabs refreshed at once. The successor was never used, so continue
+            # the chain from it instead of signing the user out.
+            user = get_active_user(db, current.user_id)
+            if user is None:
+                raise invalid
+            pair, new = _issue(db, user, user_agent)
+            db.flush()
+            successor.revoked_at = now
+            successor.replaced_by_id = new.id
+            db.commit()
+            return pair
+        if successor is not None and not recently_rotated:
+            # A rotated token was used again outside the window: treat as theft and end every session (D-010)
             repo.revoke_all_for_user(db, current.user_id, now)
             audit.record(db, "auth.refresh_reuse_detected", actor_id=current.user_id, entity_type="user",
                          entity_id=current.user_id)

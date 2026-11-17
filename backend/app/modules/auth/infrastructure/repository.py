@@ -25,6 +25,10 @@ def get_refresh_token(db: Session, token_hash: str) -> RefreshToken | None:
     return db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash).with_for_update())
 
 
+def get_refresh_token_by_id(db: Session, token_id: uuid.UUID) -> RefreshToken | None:
+    return db.scalar(select(RefreshToken).where(RefreshToken.id == token_id).with_for_update())
+
+
 def revoke_all_for_user(db: Session, user_id: uuid.UUID, at: datetime) -> None:
     db.execute(
         update(RefreshToken)
