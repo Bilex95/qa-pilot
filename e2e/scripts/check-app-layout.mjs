@@ -226,12 +226,14 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   }
 
   for (const path of ['/o/lumen/projects', '/o/lumen/members', '/o/lumen/bugs/new', '/o/lumen/this-page-does-not-exist', '/onboarding/org']) {
+    step = `open ${path}`;
     await go(page, path);
     await page.waitForSelector('h1, h2');
     await check(path);
   }
 
   // Long names and emails (rule 4)
+  step = 'back to the dashboard to sign out';
   await go(page, '/o/lumen/dashboard');
   await page.waitForSelector('.user-btn');
   await page.click('.user-btn');

@@ -344,4 +344,21 @@ Responsive and popup checks (360 to 1920 px, 200% zoom): success
 
 The new responsive job ran the browser login smoke and the layout check on a clean runner. CI passwords now appear as `***` in the logs (`SEED_PW: ***`, `SEED_USER_PASSWORD: ***`).
 
-Merged with a merge commit after this run, as approved.
+
+### A real sign out bug found by the CI responsive job (fixed)
+
+The next CI run (44086127881, docs only commit) failed once at 1440 px: the screenshot showed the user signed out in the middle of the run. Root cause: every page load refreshes the access token and rotates the refresh token. When a navigation aborts a page after the server rotated the token but before the browser stored the new cookie, the browser keeps the old token; the next refresh presented it inside the 30 second window, got 401, retried with the same old cookie and the user was signed out. A real user could hit this by reloading at the wrong moment.
+
+Fix (D-039 revised): within 30 seconds of a rotation, a token whose successor has never been used may refresh once more; the successor is revoked and the chain continues. Outside the window reuse is still treated as theft; reuse after the successor was used, or after logout, is refused. Tests: 145 backend tests pass, including three new ones for the reuse interval (lost rotation keeps the session, replay after the successor was used is refused, a logged out token cannot use the window). The layout checker now names the exact page in a flow failure.
+
+```
+> backend: ruff, mypy, pytest
+All checks passed!
+Success: no issues found in 91 source files
+145 passed in 19.09s
+> node scripts/smoke-login.mjs
+PASS: 16 login checks
+> node scripts/check-app-layout.mjs
+Checked 131 screen and popup states at 360, 390, 768, 1024, 1280, 1440, 1920, 1280-zoom200, 1920-zoom200
+PASS: nothing outside the screen, no popup cut off, no clipped or tiny text, 44 px targets on touch widths
+```
