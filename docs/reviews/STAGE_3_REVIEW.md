@@ -250,13 +250,18 @@ Feedback: "APPROVE Stage 3, with two UI fixes required before merging PR #2", pl
 * **Fix:** `frontend/src/app/app.css` lets the Radix wrapper position the menu; `DropdownMenuContent` now uses `collisionPadding` 8 px with edge alignment (the user menu is anchored to the avatar's right edge and flips or shifts to stay inside); menus are at most 320 px wide, never wider than the screen less 16 px, and long names wrap inside them.
 * **Other popups checked:** workspace menu, user menu and the mobile navigation drawer at every width. The app has no tooltips or modals yet; the check covers them as they arrive (D-044).
 
-### Bug 2: dashboard empty state narrower than the content area (not changed, your decision needed)
+### Bug 2: dashboard empty state narrower than the content area (changed by your decision)
 
-The locked prototype caps the content area at 1280 px (`--content-max` in `design/TOKENS.md`) and aligns it left. At 1440 px the panel fills the area (1160 px in both); at 1920 px it is 1232 of 1688 px (73%) in both, which is the gap you saw. The app matches the prototype pixel for pixel, so, as you asked, nothing was changed (D-046).
+The locked prototype capped the content area at 1280 px (`--content-max`) and aligned it left, so at 1920 px the panel covered 1232 of 1688 px (73%). The app matched the prototype exactly, so I showed you the comparison first. You chose to **raise the cap to 1600 px** (D-046). The token changed in the prototype, `globals.css` was regenerated, `design/TOKENS.md` updated and the locked screenshots recaptured. At 1920 px the panel now spans 1552 px (the area is 1688 px with 24 px padding on each side); at 1440 px and below nothing changes.
 
-![Prototype and app at 1920 px](../../e2e/parity/stage3-fix/compare/dashboard-empty-1920-prototype-vs-app.png)
+| Width | Before | After |
+|---|---|---|
+| 1920 | 1232 of 1688 px | 1552 of 1688 px (cap 1600) |
+| 1440 | 1160 px (fills) | 1160 px (fills, unchanged) |
 
-Also at [1440 px](../../e2e/parity/stage3-fix/compare/dashboard-empty-1440-prototype-vs-app.png). The red line marks the 1280 px cap. The prototype's "All projects" filter is not built yet (it comes with the metrics in I-09).
+![Prototype and app at 1920 px with the 1600 px cap](../../e2e/parity/stage3-fix/compare/dashboard-empty-1920-prototype-vs-app.png)
+
+Also at [1440 px](../../e2e/parity/stage3-fix/compare/dashboard-empty-1440-prototype-vs-app.png). Before and after app screenshots at every width are in `e2e/parity/stage3-fix/INDEX.md`. The prototype's "All projects" filter is not built yet (it comes with the metrics in I-09).
 
 ### Found by the new checks and fixed
 
@@ -265,6 +270,14 @@ Also at [1440 px](../../e2e/parity/stage3-fix/compare/dashboard-empty-1440-proto
 | Inputs and selects were 37 px tall on touch widths (prototype: 44 px) | My Stage 3 one off generator for `globals.css` dropped every line mentioning the prototype only `.role-switch`, including the shared rule `.input, .select, ..., .role-switch select { height: 44px }` | New committed generator `scripts/build_globals_css.py` strips prototype only selectors one by one; CI fails if `globals.css` drifts from the prototype |
 | Avatar and workspace badge initials were 10 to 11 px | Prototype sizes below the 12 px floor of the new rule | Prototype updated to 12 px (board card avatar 22 to 24 px to fit), CSS regenerated, locked screenshots recaptured; design validation still passes |
 | A long workspace name could stretch the header switcher | No truncation | Name truncates with an ellipsis (full name in a tooltip) in the prototype and the app |
+
+
+### Two more problems the new checks found while being stabilised
+
+| Problem | Fix |
+|---|---|
+| After Sign out, the sign in page could mount twice (the shell and the auth guard both redirected), wiping anything typed in between | Only the auth guard redirects now (`app-shell.tsx`) |
+| The CI runner image `ubuntu-latest` moved to Ubuntu 26.04, where Playwright 1.56 has no Chromium build, and the job printed the throwaway CI seed password in a step header | Every CI job pinned to `ubuntu-24.04`; generated CI passwords masked with `::add-mask::` |
 
 ### Standing rule, automated (D-044)
 
@@ -277,7 +290,7 @@ before: Checked 131 screen and popup states at 360, 390, 768, 1024, 1280, 1440, 
         FAIL: 92 problem(s)    (user menu cut off at all 9 settings, 37 px inputs, 10 to 11 px initials)
 after:  Checked 131 screen and popup states at 360, 390, 768, 1024, 1280, 1440, 1920, 1280-zoom200, 1920-zoom200
         PASS: nothing outside the screen, no popup cut off, no clipped or tiny text, 44 px targets on touch widths
-        (run twice, both passed)
+        (final code including the 1600 px cap: three consecutive runs, all passed; browser login smoke 16 of 16)
 ```
 
 | Width | Problems before | User menu before | Problems after | User menu after | Screenshots |

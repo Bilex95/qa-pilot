@@ -233,6 +233,7 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 * **Decision:** (b) for v1. "Forgot password?" on the sign in page explains how to get a link from a workspace admin. An Org Admin creates a reset link for a member (single use, expires in 1 hour, token stored hashed); opening it lets the person set a new password and revokes all their sessions. Every step is audited. When email delivery arrives (BL-005) the same token flow becomes self service. Planned as issue I-23.
 * **Reason:** secure without email, consistent with invitations, small enough for Stage 4.
 
-## D-046 Dashboard content width at very wide screens (awaiting product owner)
+## D-046 Content width at very wide screens
 * **Finding:** the locked prototype caps the content area at 1280 px (`--content-max`, design/TOKENS.md) and aligns it left, so at 1920 px the empty state spans 1232 of 1688 px (73%). The built app matches the prototype exactly (comparison: `e2e/parity/stage3-fix/compare/`).
-* **Status:** not changed, as instructed, until the product owner chooses: keep the cap, remove it, or raise it.
+* **Decision (product owner, Stage 3 gate):** raise the cap to **1600 px**. `--content-max` changed in the prototype, CSS regenerated, locked screenshots recaptured. At 1920 px the content now spans 1600 of 1688 px; at 1440 px and below nothing changes. Content stays left aligned.
+* **Options offered:** keep 1280, fill the full width, raise to 1600, center a 1280 column.
