@@ -190,7 +190,18 @@ ok   no secret patterns in 23 commits
 DRY RUN: all checks passed, push skipped
 ```
 
-CI runs on GitHub when the branch is pushed; its result is linked on the pull request.
+### CI on GitHub (PR #2, run 44049038922)
+
+```
+conclusion=success
+Backend (ruff, mypy, pytest): success
+Frontend (lint, typecheck, build): success
+OpenAPI contract up to date: success
+Secret scan: success
+Newman smoke (compose, migrate, seed): success
+```
+
+The Newman job builds the Compose stack on a clean runner, migrates, seeds twice and runs the collection, which also confirms a clean checkout starts healthy.
 
 ## 5. Decisions made in this stage
 
@@ -209,7 +220,6 @@ CI runs on GitHub when the branch is pushed; its result is linked on the pull re
 * **Placeholders until Stage 4.** Projects, bugs, board, tests, runs, releases, reports, members, settings and AI usage show an "on its way" state in the locked empty state style. Their issues are I-01 to I-11 and I-19.
 * **Parity differences on built screens:** no "Forgot password?" link (password reset is not in scope); the sidebar does not show the open bug count or "AI provider" footer yet (I-03, I-14); the prototype's "View as" role switcher is intentionally absent; Next's development indicator appears only in dev mode.
 * **Members and invitations** work through the API (and Postman) but their screen arrives with I-10; invitations can be accepted in the app today (`/invite/<token>`).
-* **CI has not run yet**; it runs on the push of this branch. Locally every job's commands were run.
 * **ESLint 9 is end of life** (development tool only, D-038, BL-007).
 * **Fresh clone evidence is partial**: health and probes were re-verified, but the detailed log of that run was lost with the previous session's scratchpad.
 * **Docker on WSL** (RISK-01): WSL stops when idle, which stops the containers; a failed first start can leave a container without a network. Both are documented with fixes in `docs/ENVIRONMENT.md`.
