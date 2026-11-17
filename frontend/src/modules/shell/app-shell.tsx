@@ -50,8 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   async function signOut() {
+    // RequireAuth sends a signed out user to /login exactly once; a second replace here would mount the
+    // sign in page twice and wipe anything typed in between (found by the Stage 3 layout checks)
     await logout();
-    router.replace("/login");
   }
 
   function onSearch(e: FormEvent<HTMLFormElement>) {
