@@ -23,3 +23,24 @@ wsl -d Ubuntu --cd /mnt/c/Users/HP/qa-pilot -- docker compose ps
 ```
 
 Helper scripts in `scripts/*.ps1` (added in Stage 3) wrap this. On a machine with Docker Desktop the plain `docker compose ...` commands in `CLAUDE.md` work unchanged. See D-001.
+
+## WSL idle shutdown (found in Stage 3)
+
+WSL stops its virtual machine when no WSL process has run for a while, and Docker inside it stops too. The next `wsl` command starts it again and `restart: unless-stopped` brings the containers back, but anything talking to them in between fails (seen as "connection closed" on `localhost:8000`).
+
+Options, from least to most invasive:
+1. Keep any WSL terminal open while working (during the build a background `wsl -d Ubuntu -- sleep` keeps it alive and is stopped at the end of each stage).
+2. Run `powershell -File scripts/dc.ps1 up -d` again after a pause; it waits for healthchecks.
+3. Set `vmIdleTimeout=-1` under `[wsl2]` in `%USERPROFILE%\.wslconfig` (machine wide setting; not changed by this project).
+
+## Container left without a network (found in Stage 3)
+
+If a container's first start fails (for example `Bind for 0.0.0.0:5433 failed: port is already allocated`) and the restart policy starts it later, Docker can leave it running with no network attached. Other services then fail with `failed to resolve host 'db'` and restart in a loop. Check with `docker inspect -f '{{.NetworkSettings.Networks}}' qa-pilot-db-1`; fix by recreating the containers, which keeps the data in the named volumes:
+
+```
+docker compose up -d --force-recreate --wait
+```
+
+## Bundler in the dev container (found in Stage 3)
+
+The frontend container runs `next dev --webpack` with polling. Turbopack, the Next 16 default, did not see file changes on the WSL bind mount and served stale code (D-042).

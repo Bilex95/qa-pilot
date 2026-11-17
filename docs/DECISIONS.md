@@ -187,3 +187,53 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
   * (3) Done now rather than before Stage 6: `safe-push.sh --tag <name>` runs the same gates and also requires the tag to point at a commit already on `origin/main` and not to exist on origin, so tags are never moved.
   * (4) PR #1 merged with a merge commit.
 * **Reason:** Product owner instructions.
+
+## D-037 SQLAlchemy sync or async
+* **Options:** async SQLAlchemy with asyncpg; sync SQLAlchemy 2 with psycopg 3.
+* **Decision:** Sync SQLAlchemy 2.1 with psycopg 3. FastAPI runs sync endpoints in its thread pool. One session per request through a dependency; tests wrap each test in a transaction that is rolled back.
+* **Reason:** Simpler code, simpler tests and Alembic, no async pitfalls; load in v1 is small. AI calls, the only slow I/O, run in the thread pool too.
+
+## D-038 Dependency versions
+* **Decision:** Pin exact versions. Backend: FastAPI 0.163.1, Uvicorn 0.54.0, SQLAlchemy 2.1.8, Alembic 1.20.1, psycopg 3.3.9, Pydantic 2.14.3, pydantic-settings 2.16.3, argon2-cffi 25.1.0, PyJWT 2.15.1. Frontend: Next 16.4.6, React 19.3.1, Tailwind 4.3.5, TanStack Query 5.107.1, Zod 4.6.7, openapi-typescript 7.13.0, openapi-fetch 0.17.0. **TypeScript 5.9.3 and ESLint 9.39.5** instead of the newest TypeScript 7 and ESLint 10.
+* **Reason:** Current releases where the ecosystem supports them. TypeScript 7 (new native compiler) and ESLint 10 are new major lines; Next 16 and its ESLint config declare support for ESLint 9 and do not name TypeScript 7, so the mature lines avoid toolchain breakage in a 3 day build.
+* **Checked in Stage 3:** npm marks ESLint 9 as no longer supported. ESLint 10.15.0 was tried: rules still load, but `eslint-plugin-import`, `eslint-plugin-jsx-a11y` and `eslint-plugin-react` (bundled by `eslint-config-next` 16.4.6) declare peer support only up to ESLint 9, so npm reports an invalid tree and `npm ci` could fail in Docker and CI. ESLint 9.39.5 stays for now; it is a development tool and never ships to users. Revisit when those plugins declare ESLint 10 (logged in `docs/BACKLOG.md`).
+
+## D-039 Where the refresh token lives
+* **Decision:** The browser never talks to FastAPI for auth directly. Next.js route handlers under `/api/session/*` call the backend, put the refresh token in an httpOnly, SameSite=Lax cookie (Secure in production) and return only the access token, which the client keeps in memory. All other API calls go from the browser straight to FastAPI with the bearer token (CORS limited to the frontend origin).
+* **Reason:** Implements D-010 without exposing the refresh token to scripts, and keeps FastAPI a pure bearer token API that Postman can call.
+* **Reuse interval (revised at the Stage 3 gate):** a page reload or navigation can abort the response that carries the rotated cookie, and two tabs can refresh at once, so the browser may present a token that was rotated a moment ago. Within 30 seconds of a rotation, if that token's successor has never been used, the refresh succeeds: the successor is revoked and a new pair is issued, so the session continues. Outside the 30 seconds, reuse is treated as theft and every session of the user ends (D-010). Reuse after the successor was used, or of a token ended by logout, is refused without ending other sessions. The first version answered 401 inside the window, which signed users out when a reload interrupted a refresh; the CI responsive job found it.
+
+## D-040 Test database
+* **Decision:** Tests run against a real PostgreSQL 16 database `qapilot_test` in the same `db` service (created by an init script). The schema is built with Alembic once per session; each test runs in a transaction rolled back afterwards. CI uses a Postgres service container.
+* **Reason:** Tenancy and constraint behaviour must be tested on the real engine; SQLite would hide differences.
+
+## D-041 Seed passwords
+* **Decision:** All seeded personas share one password read from `SEED_USER_PASSWORD` in `.env`. The seed refuses to run when it is empty or when `APP_ENV=production`. `.env.example` leaves it empty; `docs/SEED_MANIFEST.md` lists logins but never the password.
+* **Reason:** CLAUDE.md: passwords come from `.env`, never committed.
+
+## D-042 Ports and Docker on WSL
+* **Decision:** Host ports: frontend 3000, backend 8000, Postgres 5433 (5432 inside the network, 5433 on the host to avoid clashing with a local Postgres). Dev containers bind mount the source and use polling file watchers (`WATCHFILES_FORCE_POLLING`, `WATCHPACK_POLLING`) because file events from `/mnt/c` do not reach containers reliably (RISK-01). `node_modules` lives in a named volume, not on the bind mount.
+* **Found in Stage 3:** Next 16 runs `next dev` on Turbopack, which ignores `WATCHPACK_POLLING` and missed edits on the bind mount, so the container served stale code. The container now runs `npm run dev:docker` (`next dev --webpack`), which polls. `npm run dev` outside Docker keeps Turbopack.
+* **Reason:** Works with Docker Engine in WSL (D-001) and with Docker Desktop.
+
+## D-043 How the frontend reproduces the locked design
+* **Question:** Rebuild the prototype styles as Tailwind utilities, or reuse its CSS?
+* **Decision:** The design tokens become CSS variables in `frontend/src/app/globals.css` and are exposed to Tailwind 4 through `@theme inline` (for example `bg-primary`, `text-ink-3`). The prototype's component classes (buttons, inputs, panels, badges, tables, shell, auth layout, states, AI proof mark) are copied unchanged into the same file as `@layer components`, so the app matches the locked screens exactly. shadcn/ui components are written in shadcn's pattern (`components/ui`, `class-variance-authority`, Radix primitives) and render those classes; `components.json` is present so the shadcn CLI can add more later. Fonts are self hosted with `next/font`.
+* **Reason:** Design parity with the locked prototype is a hard requirement; copying the reviewed CSS is the lowest risk way to get it, and Tailwind utilities remain available for layout.
+
+## D-044 Standing responsive rule (Stage 3 gate, product owner)
+* **Rule:** every page, component, icon and popup fits every screen size. Nothing goes outside the screen or past its container and there is no horizontal page scrolling; text stays readable (12 px minimum) and tap targets are at least 44 px on touch screens; menus, popovers, tooltips and modals stay fully inside the viewport; long names, emails and workspace names truncate or wrap cleanly; tested at 360, 390, 768, 1024, 1280, 1440 and 1920 px plus 200% browser zoom.
+* **How it is enforced:** `e2e/scripts/check-app-layout.mjs` runs in CI (job "Responsive and popup checks") against the running stack and fails on any overflow, popup cut off or touching the edge (4 px margin; the navigation drawer may sit flush), clipped text that is not a deliberate ellipsis, text under 12 px, or a tap target under 44 px at 1024 px and below. 200% zoom is emulated as half the CSS width at device scale 2. A long names fixture (user, email and workspace) is part of every run. Every new screen is added to the script's page list in the issue that builds it, and each stage review shows before and after screenshots at each width.
+* **Popups:** Radix positioned with `collisionPadding` 8 px and edge alignment; menus are at most 320 px wide, and never wider than the screen less 16 px; long text wraps inside them.
+* **Reason:** product owner instruction after two layout bugs found by hand.
+
+## D-045 Password reset without email delivery
+* **Question:** how can a user reset a forgotten password when v1 sends no email (BUILD_PLAN out of scope)?
+* **Options:** (a) self service with emailed link (needs email, BL-005); (b) admin issued single use reset link, copied by hand like invitations (D-011); (c) no reset.
+* **Decision:** (b) for v1. "Forgot password?" on the sign in page explains how to get a link from a workspace admin. An Org Admin creates a reset link for a member (single use, expires in 1 hour, token stored hashed); opening it lets the person set a new password and revokes all their sessions. Every step is audited. When email delivery arrives (BL-005) the same token flow becomes self service. Planned as issue I-23.
+* **Reason:** secure without email, consistent with invitations, small enough for Stage 4.
+
+## D-046 Content width at very wide screens
+* **Finding:** the locked prototype caps the content area at 1280 px (`--content-max`, design/TOKENS.md) and aligns it left, so at 1920 px the empty state spans 1232 of 1688 px (73%). The built app matches the prototype exactly (comparison: `e2e/parity/stage3-fix/compare/`).
+* **Decision (product owner, Stage 3 gate):** raise the cap to **1600 px**. `--content-max` changed in the prototype, CSS regenerated, locked screenshots recaptured. At 1920 px the content now spans 1600 of 1688 px; at 1440 px and below nothing changes. Content stays left aligned.
+* **Options offered:** keep 1280, fill the full width, raise to 1600, center a 1280 column.

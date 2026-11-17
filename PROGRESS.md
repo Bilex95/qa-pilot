@@ -1,23 +1,22 @@
 # Progress
 
-**Current stage:** 2 HTML first prototype and design lock (at review gate)
-**Branch:** stage/2-prototype (pushed via scripts/safe-push.sh; PR #1 open into main)
-**Remote:** origin = github.com/Bilex95/qa-pilot (private). Gate flow per D-034.
+**Current stage:** 3 Foundations (at review gate)
+**Branch:** stage/3-foundations (push with `bash scripts/safe-push.sh stage/3-foundations`, then PR into main)
+**Remote:** origin = github.com/Bilex95/qa-pilot (private). Gate flow per D-034, D-036.
 
 ## Done
-* Stage 0 and Stage 1 approved; Stage 1 feedback applied (D-033); merged, tagged `stage-1-approved`, pushed.
-* GitHub private repo and PR flow (D-034).
-* Stage 2: `design/reference/approved.html` (22 screens, roles, states), `design/TOKENS.md`, 100 screenshots plus `design/screenshots/INDEX.md`, SCREEN_INVENTORY section 4, phone size support and checks (D-035), `scripts/validate-design.ps1` passing, review file written.
+* Stages 0 to 2 approved. Stage 2 merged as PR #1 (merge commit 73d7fcc), tagged `stage-2-approved`. Design locked.
+* Stage 3: T1 to T10 done. Review: `docs/reviews/STAGE_3_REVIEW.md`.
 
 ## In progress
-* Applying Stage 2 approval: merge PR #1, tag, start Stage 3.
+* Nothing. Stopped at the Stage 3 gate.
 
 ## Next
-* On APPROVED: `gh pr merge 1 --merge`, `git checkout main; git pull`, tag `stage-2-approved` and push it, create `stage/3-foundations`, start Stage 3 (load `references/engineering.md`, `references/github.md`, `references/testing.md`). Design is locked from then on.
-* On feedback: fix on `stage/2-prototype`, rerun `scripts/validate-design.ps1` and `node e2e/scripts/capture-design.mjs`, add "Changes after feedback" to the review, push.
+* On APPROVED: `gh pr merge <n> --merge`, `git checkout main && git pull --ff-only`, tag `stage-3-approved` on the merge commit, `bash scripts/safe-push.sh --tag stage-3-approved`, branch `stage/4-core-features`, start batch 4A from `docs/issues/DAG.md`.
+* On feedback: fix on `stage/3-foundations`, rerun the gate checks, add "Changes after feedback" to the review, push through the gate.
 
-## Open questions for the product owner
-* None open. D-019 confirmed at the Stage 2 gate.
+## How to resume the stack
+* `powershell -File scripts/dc.ps1 up -d --wait`, then seed baseline. See `docs/ENVIRONMENT.md` for WSL notes.
 
 ## Blockers
 * None.

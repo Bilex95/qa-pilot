@@ -1,0 +1,17 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import { AuthLayout } from "@/modules/auth/components/auth-layout";
+import { RegisterForm } from "@/modules/auth/components/register-form";
+
+export const metadata: Metadata = { title: "Create account" };
+
+export default function RegisterPage() {
+  return (
+    <AuthLayout>
+      <Suspense>
+        <RegisterForm />
+      </Suspense>
+    </AuthLayout>
+  );
+}

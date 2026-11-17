@@ -29,12 +29,18 @@ AI: provider interface in `backend/app/modules/ai`; `AI_PROVIDER=mock|anthropic`
 * Seed CLI is local/test only and refuses to run when `APP_ENV=production`.
 * Git: work on `stage/<n>-<name>` branches, small conventional commits. Remote `origin` is the PRIVATE repo `Bilex95/qa-pilot`; never make it public. Push ONLY with `bash scripts/safe-push.sh <branch>`; it blocks unless origin is private, the commit email is verified on the account, and no `.env` or secret is in history (stop and tell the human if it blocks on the email). At the end of each stage push the stage branch and open a PR into `main`; on APPROVED merge it with `gh pr merge --merge` (merge commit, never squash or rebase), tag `stage-<n>-approved` on the merge commit and push it with `bash scripts/safe-push.sh --tag stage-<n>-approved`. Never force push or push to `main` directly. See D-034.
 * Prose in docs and UI copy: no em dashes and no hyphens used as punctuation.
+* Responsive standing rule (D-044): every page, component and popup fits 360, 390, 768, 1024, 1280, 1440, 1920 px and 200% zoom; nothing outside the screen or its container, no horizontal scroll, text at least 12 px, tap targets 44 px on touch widths, popups fully inside the viewport, long text truncates or wraps. Add each new screen and popup to `e2e/scripts/check-app-layout.mjs` (runs in CI) and put before and after screenshots at each width in the stage review.
+* `frontend/src/app/globals.css` is generated: change `design/reference/approved.html`, then `python scripts/build_globals_css.py` (CI fails on drift).
 
 ## Commands (keep this list verified and updated)
-* `docker compose up -d` / `docker compose down`
+* `docker compose up -d --wait` / `docker compose down` (build machine: `powershell -File scripts/dc.ps1 <args>`, Docker runs in WSL, D-001)
 * Backend tests: `docker compose exec backend pytest -q`
 * Lint/types: `docker compose exec backend ruff check . && docker compose exec backend mypy app`
 * Frontend: `cd frontend && npm run lint && npm run typecheck && npm run build`
 * Seed: `docker compose exec backend python -m app.seed --scenario baseline`
-* Newman: `npx newman run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json`
-* E2E: `cd e2e && npx playwright test`
+* Newman (needs the baseline seed): `npx newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --env-var password=<SEED_USER_PASSWORD>`
+* Postman collection is generated: edit `postman/build_collection.py`, then `python postman/build_collection.py`
+* API contract after backend schema changes: `sh scripts/api-types.sh` (inside WSL on the build machine)
+* Browser login smoke (stack up, baseline seeded): `cd e2e && node scripts/smoke-login.mjs`
+* Design checks: `powershell -File scripts/validate-design.ps1`; issue plan: `python scripts/build_issues.py`
+* E2E: `cd e2e && npx playwright test` (Playwright test suite arrives in Stage 6, issue I-20)

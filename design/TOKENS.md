@@ -97,7 +97,7 @@ Sentence case everywhere. No all caps labels.
 | Spacing | `--sp-1` 4, `--sp-2` 8, `--sp-3` 12, `--sp-4` 16, `--sp-5` 20, `--sp-6` 24, `--sp-8` 32, `--sp-10` 40, `--sp-12` 48 (px) |
 | Radius | `--r-sm` 4 (controls), `--r-md` 8 (panels), `--r-lg` 12 (dialogs), `--r-pill` 999 (badges) |
 | Shadow | `--shadow-float` for menus, dialogs and toasts only; `--shadow-drag` for a card being dragged. Panels use borders, not shadows |
-| Layout | `--sidebar-w` 232, `--header-h` 56, `--content-max` 1280 |
+| Layout | `--sidebar-w` 232, `--header-h` 56, `--content-max` 1600 (raised from 1280 at the Stage 3 gate, D-046: fills 1600 of 1688 px on a 1920 px screen; content stays left aligned) |
 | Focus | 2 px `--primary` outline with 2 px offset; inputs use a 3 px teal ring |
 
 ## 5. Breakpoints and touch sizing (D-035)

@@ -1,0 +1,14 @@
+/* App only additions on top of globals.css (which is generated from the locked prototype).
+   Keep this small: it only adapts library markup to the locked styles. */
+@layer components {
+  /* Radix positions menus through a wrapper; the prototype's absolute .menu would collapse that wrapper to zero
+     width and push the menu past the screen edge (Stage 3 gate, bug 1). Let the wrapper place it. */
+  [data-radix-popper-content-wrapper] > .menu { position: static; max-height: var(--radix-dropdown-menu-content-available-height); overflow-y: auto; }
+  /* Radix menu items look like the prototype's .menu buttons */
+  .menu .menu-item { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--r-sm);
+    cursor: pointer; font-size: var(--fs-sm); color: var(--ink); text-decoration: none; outline: none; }
+  .menu .menu-item[data-highlighted] { background: var(--surface-sunk); }
+  .menu .menu-item[data-disabled] { color: var(--ink-3); cursor: not-allowed; }
+  .menu .menu-item svg { width: 14px; height: 14px; }
+  @media (max-width: 1024px) { .menu .menu-item { min-height: 44px; } }
+}
