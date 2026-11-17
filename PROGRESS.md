@@ -1,22 +1,28 @@
 # Progress
 
-**Current stage:** 3 Foundations (at review gate)
-**Branch:** stage/3-foundations (push with `bash scripts/safe-push.sh stage/3-foundations`, then PR into main)
-**Remote:** origin = github.com/Bilex95/qa-pilot (private). Gate flow per D-034, D-036.
+**Current stage:** 4 Core features
+**Branch:** stage/4-core-features
+**Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
 ## Done
-* Stages 0 to 2 approved. Stage 2 merged as PR #1 (merge commit 73d7fcc), tagged `stage-2-approved`. Design locked.
-* Stage 3: T1 to T10 done. Review: `docs/reviews/STAGE_3_REVIEW.md`.
+* Stages 0 to 3 approved. Stage 3 merged as PR #2 (merge commit 287b4d1, CI run 44095091211 green on 459a371), tagged `stage-3-approved`.
+* Stage 3 gate feedback applied: menus inside the viewport, 44 px inputs restored, content cap 1600 px (D-046), responsive standing rule with CI job (D-044), refresh reuse interval (D-039), password reset planned (I-23, D-045), Docker network root cause planned (I-24).
 
-## In progress
-* Nothing. Stopped at the Stage 3 gate.
+## Stage 4 plan (docs/issues/DAG.md)
+- [ ] 4A: I-01 projects, components, environments; I-02 labels; I-10 members screen; I-24 Docker preflight
+- [ ] 4B: I-03 bugs; I-06 suites and cases; I-11 settings; I-23 password reset
+- [ ] 4C: I-04 workflow and board; I-05 bug detail; I-07 runs
+- [ ] 4D: I-08 releases
+- [ ] 4E: I-09 dashboard and reports; I-12 seed data
+- [ ] 4F: I-13 parity and states pass
+- [ ] Gate: review, before and after screenshots at each width (D-044), push, PR
+
+## Rules to remember
+* Every endpoint: schemas, five kinds of tests, Postman (edit `postman/build_collection.py`), OpenAPI regenerated (`sh scripts/api-types.sh` in WSL).
+* Every screen and popup: add to `e2e/scripts/check-app-layout.mjs`; prototype first for any style change, then `python scripts/build_globals_css.py`.
 
 ## Next
-* On APPROVED: `gh pr merge <n> --merge`, `git checkout main && git pull --ff-only`, tag `stage-3-approved` on the merge commit, `bash scripts/safe-push.sh --tag stage-3-approved`, branch `stage/4-core-features`, start batch 4A from `docs/issues/DAG.md`.
-* On feedback: fix on `stage/3-foundations`, rerun the gate checks, add "Changes after feedback" to the review, push through the gate.
-
-## How to resume the stack
-* `powershell -File scripts/dc.ps1 up -d --wait`, then seed baseline. See `docs/ENVIRONMENT.md` for WSL notes.
+* I-01.
 
 ## Blockers
 * None.
