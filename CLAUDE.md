@@ -31,10 +31,14 @@ AI: provider interface in `backend/app/modules/ai`; `AI_PROVIDER=mock|anthropic`
 * Prose in docs and UI copy: no em dashes and no hyphens used as punctuation.
 
 ## Commands (keep this list verified and updated)
-* `docker compose up -d` / `docker compose down`
+* `docker compose up -d --wait` / `docker compose down` (build machine: `powershell -File scripts/dc.ps1 <args>`, Docker runs in WSL, D-001)
 * Backend tests: `docker compose exec backend pytest -q`
 * Lint/types: `docker compose exec backend ruff check . && docker compose exec backend mypy app`
 * Frontend: `cd frontend && npm run lint && npm run typecheck && npm run build`
 * Seed: `docker compose exec backend python -m app.seed --scenario baseline`
-* Newman: `npx newman run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json`
-* E2E: `cd e2e && npx playwright test`
+* Newman (needs the baseline seed): `npx newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --env-var password=<SEED_USER_PASSWORD>`
+* Postman collection is generated: edit `postman/build_collection.py`, then `python postman/build_collection.py`
+* API contract after backend schema changes: `sh scripts/api-types.sh` (inside WSL on the build machine)
+* Browser login smoke (stack up, baseline seeded): `cd e2e && node scripts/smoke-login.mjs`
+* Design checks: `powershell -File scripts/validate-design.ps1`; issue plan: `python scripts/build_issues.py`
+* E2E: `cd e2e && npx playwright test` (Playwright test suite arrives in Stage 6, issue I-20)

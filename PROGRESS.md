@@ -1,27 +1,22 @@
 # Progress
 
-**Current stage:** 3 Foundations (repo, Docker, scaffolding, auth, data, issue plan)
-**Branch:** stage/3-foundations
-**Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
+**Current stage:** 3 Foundations (at review gate)
+**Branch:** stage/3-foundations (push with `bash scripts/safe-push.sh stage/3-foundations`, then PR into main)
+**Remote:** origin = github.com/Bilex95/qa-pilot (private). Gate flow per D-034, D-036.
 
 ## Done
 * Stages 0 to 2 approved. Stage 2 merged as PR #1 (merge commit 73d7fcc), tagged `stage-2-approved`. Design locked.
-* D-019 SLA confirmed (D-036).
+* Stage 3: T1 to T10 done. Review: `docs/reviews/STAGE_3_REVIEW.md`.
 
-## Stage 3 tasks
-- [x] T1 Repo layout, `docs/API_BOUNDARY.md`, `AGENTS.md`
-- [x] T2 Docker Compose (db, backend, frontend), Dockerfiles dev and prod, `.env.example`, `.env`, `scripts/*.ps1`
-- [x] T3 Backend core: app factory, settings, DB, Alembic, error envelope, pagination, request id, logging, CORS, headers, health
-- [x] T4 Auth, orgs, memberships, invitations, RBAC policies, audit log, tests
-- [x] T5 Seed CLI and `docs/SEED_MANIFEST.md`
-- [x] T6 Frontend: Next.js, tokens, shadcn/ui, TanStack Query, typed API client, auth flow, app shell
-- [x] T7 Postman collection and environment
-- [x] T8 CI workflow
-- [x] T9 Issue plan `docs/issues/` and `DAG.md`
-- [ ] T10 Gate checks, review file, push, PR
+## In progress
+* Nothing. Stopped at the Stage 3 gate.
 
 ## Next
-* T10 gate checks, review, push, PR.
+* On APPROVED: `gh pr merge <n> --merge`, `git checkout main && git pull --ff-only`, tag `stage-3-approved` on the merge commit, `bash scripts/safe-push.sh --tag stage-3-approved`, branch `stage/4-core-features`, start batch 4A from `docs/issues/DAG.md`.
+* On feedback: fix on `stage/3-foundations`, rerun the gate checks, add "Changes after feedback" to the review, push through the gate.
+
+## How to resume the stack
+* `powershell -File scripts/dc.ps1 up -d --wait`, then seed baseline. See `docs/ENVIRONMENT.md` for WSL notes.
 
 ## Blockers
 * None.
