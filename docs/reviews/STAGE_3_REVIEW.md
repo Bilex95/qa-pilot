@@ -239,3 +239,80 @@ The Newman job builds the Compose stack on a clean runner, migrates, seeds twice
 ## 8. Next stage
 
 Stage 4, core features, in the batch order from `docs/issues/DAG.md`: 4A projects, labels, members screen; 4B bugs, test suites, settings; 4C workflow and board, bug detail, test runs; 4D releases; 4E dashboard and reports, full seed data; 4F design parity pass. Each issue ships backend endpoints with the five kinds of tests, Postman requests, seed updates and the screen matching its locked screenshot.
+
+## 9. Changes after feedback (Stage 3 gate)
+
+Feedback: "APPROVE Stage 3, with two UI fixes required before merging PR #2", plus a standing responsive rule (D-044).
+
+### Bug 1: user menu opened off screen (fixed)
+
+* **Root cause:** the prototype's `.menu { position: absolute }` collapsed the Radix positioning wrapper to zero width, so the menu started at the avatar and ran past the right edge (at 1440 px it spanned 1416 to 1616). Every Radix menu was affected; the workspace menu only escaped because it opens from the left.
+* **Fix:** `frontend/src/app/app.css` lets the Radix wrapper position the menu; `DropdownMenuContent` now uses `collisionPadding` 8 px with edge alignment (the user menu is anchored to the avatar's right edge and flips or shifts to stay inside); menus are at most 320 px wide, never wider than the screen less 16 px, and long names wrap inside them.
+* **Other popups checked:** workspace menu, user menu and the mobile navigation drawer at every width. The app has no tooltips or modals yet; the check covers them as they arrive (D-044).
+
+### Bug 2: dashboard empty state narrower than the content area (not changed, your decision needed)
+
+The locked prototype caps the content area at 1280 px (`--content-max` in `design/TOKENS.md`) and aligns it left. At 1440 px the panel fills the area (1160 px in both); at 1920 px it is 1232 of 1688 px (73%) in both, which is the gap you saw. The app matches the prototype pixel for pixel, so, as you asked, nothing was changed (D-046).
+
+![Prototype and app at 1920 px](../../e2e/parity/stage3-fix/compare/dashboard-empty-1920-prototype-vs-app.png)
+
+Also at [1440 px](../../e2e/parity/stage3-fix/compare/dashboard-empty-1440-prototype-vs-app.png). The red line marks the 1280 px cap. The prototype's "All projects" filter is not built yet (it comes with the metrics in I-09).
+
+### Found by the new checks and fixed
+
+| Problem | Root cause | Fix |
+|---|---|---|
+| Inputs and selects were 37 px tall on touch widths (prototype: 44 px) | My Stage 3 one off generator for `globals.css` dropped every line mentioning the prototype only `.role-switch`, including the shared rule `.input, .select, ..., .role-switch select { height: 44px }` | New committed generator `scripts/build_globals_css.py` strips prototype only selectors one by one; CI fails if `globals.css` drifts from the prototype |
+| Avatar and workspace badge initials were 10 to 11 px | Prototype sizes below the 12 px floor of the new rule | Prototype updated to 12 px (board card avatar 22 to 24 px to fit), CSS regenerated, locked screenshots recaptured; design validation still passes |
+| A long workspace name could stretch the header switcher | No truncation | Name truncates with an ellipsis (full name in a tooltip) in the prototype and the app |
+
+### Standing rule, automated (D-044)
+
+`e2e/scripts/check-app-layout.mjs` checks every built page (sign in, register, invitation, workspace setup, dashboard, section placeholders, 404) and every popup at 360, 390, 768, 1024, 1280, 1440, 1920 px and 200% zoom (emulated as half width at device scale 2), signed in as the Org Admin and as a fixture person with a very long name, email and workspace name. It fails on: page sideways scroll; any element outside the screen unless inside its own scroll container; a popup cut off or within 4 px of the edge; clipped text that is not a deliberate ellipsis; text under 12 px; tap targets under 44 px at 1024 px and below. It runs in CI as the new job "Responsive and popup checks", which also runs the browser login smoke and uploads the screenshots.
+
+Before (fixes stashed, same checker) and after:
+
+```
+before: Checked 131 screen and popup states at 360, 390, 768, 1024, 1280, 1440, 1920, 1280-zoom200, 1920-zoom200
+        FAIL: 92 problem(s)    (user menu cut off at all 9 settings, 37 px inputs, 10 to 11 px initials)
+after:  Checked 131 screen and popup states at 360, 390, 768, 1024, 1280, 1440, 1920, 1280-zoom200, 1920-zoom200
+        PASS: nothing outside the screen, no popup cut off, no clipped or tiny text, 44 px targets on touch widths
+        (run twice, both passed)
+```
+
+| Width | Problems before | User menu before | Problems after | User menu after | Screenshots |
+|---|---|---|---|---|---|
+| 360 | 28 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-360.png), [after](../../e2e/parity/stage3-fix/after/user-menu-360.png) |
+| 390 | 28 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-390.png), [after](../../e2e/parity/stage3-fix/after/user-menu-390.png) |
+| 768 | 39 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-768.png), [after](../../e2e/parity/stage3-fix/after/user-menu-768.png) |
+| 1024 | 36 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-1024.png), [after](../../e2e/parity/stage3-fix/after/user-menu-1024.png) |
+| 1280 | 24 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-1280.png), [after](../../e2e/parity/stage3-fix/after/user-menu-1280.png) |
+| 1440 | 24 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-1440.png), [after](../../e2e/parity/stage3-fix/after/user-menu-1440.png) |
+| 1920 | 24 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-1920.png), [after](../../e2e/parity/stage3-fix/after/user-menu-1920.png) |
+| 1280-zoom200 | 28 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-1280-zoom200.png), [after](../../e2e/parity/stage3-fix/after/user-menu-1280-zoom200.png) |
+| 1920-zoom200 | 39 | cut off | 0 | ok | [before](../../e2e/parity/stage3-fix/before/user-menu-1920-zoom200.png), [after](../../e2e/parity/stage3-fix/after/user-menu-1920-zoom200.png) |
+
+All before and after screenshots (user menu, workspace menu, dashboard, sign in, long names, navigation drawer) at every width: `e2e/parity/stage3-fix/INDEX.md`.
+
+### Other checks after the fixes
+
+```
+> scripts/validate-design.ps1
+PASS: every screen maps to a REQ, every Must REQ maps to a screen, endpoint or artifact, no orphan ids, prose rule holds
+PASS: no script errors, role rules hold, no element wider than the screen, no clipped or overlapping text, 44 px tap targets up to 1024 px, no serious or critical axe violations
+PASS: 100 valid local screenshots; GitHub links not checked
+DESIGN VALIDATION PASSED
+> python scripts/build_globals_css.py --check
+globals.css matches the prototype
+```
+
+CI for the updated PR: see section 10.
+
+### Carried into the plan
+
+| Item | Where |
+|---|---|
+| Password reset ("Forgot password?") | D-045 (admin issued single use links, no email in v1), issue I-23 (Stage 4, batch 4B), BL-008 |
+| Root cause fix for a container left without a network | Issue I-24 (Stage 4, batch 4A), BL-009 |
+| ESLint 10 upgrade | BL-007 (already logged, D-038) |
+| Standing responsive rule | D-044, `CLAUDE.md`, every UI issue's test list (`scripts/build_issues.py`) |

@@ -20,7 +20,7 @@ Requirements: REQ-055, REQ-056, REQ-057, REQ-058
 
 * `frontend`
 * `e2e`
-* Depends on: [I-01](I-01-projects-components-and-environments.md), [I-02](I-02-labels.md), [I-03](I-03-bugs-model-create-edit-list-search-and-saved-vie.md), [I-04](I-04-bug-workflow-transitions-and-kanban-board.md), [I-05](I-05-bug-detail-comments-attachments-and-activity.md), [I-06](I-06-test-suites-and-test-cases.md), [I-07](I-07-test-runs-results-and-bug-from-a-failed-step.md), [I-08](I-08-releases-and-readiness.md), [I-09](I-09-dashboard-and-reports.md), [I-10](I-10-members-and-invitations-screen.md), [I-11](I-11-settings-organization-ai-switch-audit-log-and-pr.md), [I-12](I-12-seed-data-for-every-scenario.md)
+* Depends on: [I-01](I-01-projects-components-and-environments.md), [I-02](I-02-labels.md), [I-03](I-03-bugs-model-create-edit-list-search-and-saved-vie.md), [I-04](I-04-bug-workflow-transitions-and-kanban-board.md), [I-05](I-05-bug-detail-comments-attachments-and-activity.md), [I-06](I-06-test-suites-and-test-cases.md), [I-07](I-07-test-runs-results-and-bug-from-a-failed-step.md), [I-08](I-08-releases-and-readiness.md), [I-09](I-09-dashboard-and-reports.md), [I-10](I-10-members-and-invitations-screen.md), [I-11](I-11-settings-organization-ai-switch-audit-log-and-pr.md), [I-12](I-12-seed-data-for-every-scenario.md), [I-23](I-23-password-reset-with-admin-issued-links.md), [I-24](I-24-docker-no-container-left-without-a-network.md)
 
 ## UI states and committed screenshots
 
@@ -52,7 +52,7 @@ Locked design: `design/reference/approved.html`. Screenshots are committed on `m
 ## Tests
 
 * Playwright parity capture into `e2e/parity/` at 1440x900 and 390x844, differences noted in the stage review
-* `e2e/scripts/check-prototype.mjs` style layout check on the built screen at 320 to 1440 px (D-035)
+* Screen added to `e2e/scripts/check-app-layout.mjs`; passes at 360, 390, 768, 1024, 1280, 1440, 1920 px and 200% zoom, including its menus, dialogs and long text (D-044); before and after screenshots in the stage review
 * default, empty, loading and error states match the locked screenshots
 
 ## Acceptance checklist

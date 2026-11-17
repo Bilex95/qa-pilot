@@ -59,7 +59,7 @@ Copied from `docs/requirements/API_INVENTORY.md` (`{O}` = `/api/v1/orgs/{org_id}
 * Postman: requests for the same five cases in the module folder; Newman green
 * OpenAPI regenerated with `scripts/api-types.sh`; CI contract job green
 * Playwright parity capture into `e2e/parity/` at 1440x900 and 390x844, differences noted in the stage review
-* `e2e/scripts/check-prototype.mjs` style layout check on the built screen at 320 to 1440 px (D-035)
+* Screen added to `e2e/scripts/check-app-layout.mjs`; passes at 360, 390, 768, 1024, 1280, 1440, 1920 px and 200% zoom, including its menus, dialogs and long text (D-044); before and after screenshots in the stage review
 * default, empty, loading and error states match the locked screenshots
 
 ## Acceptance checklist

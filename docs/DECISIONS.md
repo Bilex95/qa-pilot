@@ -220,3 +220,19 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 * **Question:** Rebuild the prototype styles as Tailwind utilities, or reuse its CSS?
 * **Decision:** The design tokens become CSS variables in `frontend/src/app/globals.css` and are exposed to Tailwind 4 through `@theme inline` (for example `bg-primary`, `text-ink-3`). The prototype's component classes (buttons, inputs, panels, badges, tables, shell, auth layout, states, AI proof mark) are copied unchanged into the same file as `@layer components`, so the app matches the locked screens exactly. shadcn/ui components are written in shadcn's pattern (`components/ui`, `class-variance-authority`, Radix primitives) and render those classes; `components.json` is present so the shadcn CLI can add more later. Fonts are self hosted with `next/font`.
 * **Reason:** Design parity with the locked prototype is a hard requirement; copying the reviewed CSS is the lowest risk way to get it, and Tailwind utilities remain available for layout.
+
+## D-044 Standing responsive rule (Stage 3 gate, product owner)
+* **Rule:** every page, component, icon and popup fits every screen size. Nothing goes outside the screen or past its container and there is no horizontal page scrolling; text stays readable (12 px minimum) and tap targets are at least 44 px on touch screens; menus, popovers, tooltips and modals stay fully inside the viewport; long names, emails and workspace names truncate or wrap cleanly; tested at 360, 390, 768, 1024, 1280, 1440 and 1920 px plus 200% browser zoom.
+* **How it is enforced:** `e2e/scripts/check-app-layout.mjs` runs in CI (job "Responsive and popup checks") against the running stack and fails on any overflow, popup cut off or touching the edge (4 px margin; the navigation drawer may sit flush), clipped text that is not a deliberate ellipsis, text under 12 px, or a tap target under 44 px at 1024 px and below. 200% zoom is emulated as half the CSS width at device scale 2. A long names fixture (user, email and workspace) is part of every run. Every new screen is added to the script's page list in the issue that builds it, and each stage review shows before and after screenshots at each width.
+* **Popups:** Radix positioned with `collisionPadding` 8 px and edge alignment; menus are at most 320 px wide, and never wider than the screen less 16 px; long text wraps inside them.
+* **Reason:** product owner instruction after two layout bugs found by hand.
+
+## D-045 Password reset without email delivery
+* **Question:** how can a user reset a forgotten password when v1 sends no email (BUILD_PLAN out of scope)?
+* **Options:** (a) self service with emailed link (needs email, BL-005); (b) admin issued single use reset link, copied by hand like invitations (D-011); (c) no reset.
+* **Decision:** (b) for v1. "Forgot password?" on the sign in page explains how to get a link from a workspace admin. An Org Admin creates a reset link for a member (single use, expires in 1 hour, token stored hashed); opening it lets the person set a new password and revokes all their sessions. Every step is audited. When email delivery arrives (BL-005) the same token flow becomes self service. Planned as issue I-23.
+* **Reason:** secure without email, consistent with invitations, small enough for Stage 4.
+
+## D-046 Dashboard content width at very wide screens (awaiting product owner)
+* **Finding:** the locked prototype caps the content area at 1280 px (`--content-max`, design/TOKENS.md) and aligns it left, so at 1920 px the empty state spans 1232 of 1688 px (73%). The built app matches the prototype exactly (comparison: `e2e/parity/stage3-fix/compare/`).
+* **Status:** not changed, as instructed, until the product owner chooses: keep the cap, remove it, or raise it.

@@ -19,6 +19,8 @@ flowchart LR
     I11["I-11 Settings: organization, AI switch, audit log and profile"]
     I12["I-12 Seed data for every scenario"]
     I13["I-13 Stage 4 design parity and states pass"]
+    I23["I-23 Password reset with admin issued links"]
+    I24["I-24 Docker: no container left without a network"]
     I14["I-14 AI provider, guardrails, usage log and limits"]
     I15["I-15 AI Bug Writer, Explain log and Duplicate detector"]
     I16["I-16 AI Triage"]
@@ -60,6 +62,9 @@ flowchart LR
     I10 --> I13
     I11 --> I13
     I12 --> I13
+    I23 --> I13
+    I24 --> I13
+    I10 --> I23
     I14 --> I15
     I03 --> I15
     I14 --> I16
@@ -83,12 +88,12 @@ flowchart LR
 
 | Batch | Stage | Issues (parallel) | Depends on |
 |---|---|---|---|
-| 4A | 4 | [I-01](I-01-projects-components-and-environments.md) Projects, components and environments, [I-02](I-02-labels.md) Labels, [I-10](I-10-members-and-invitations-screen.md) Members and invitations screen | Stage 3 foundations |
-| 4B | 4 | [I-03](I-03-bugs-model-create-edit-list-search-and-saved-vie.md) Bugs: model, create, edit, list, search and saved views, [I-06](I-06-test-suites-and-test-cases.md) Test suites and test cases, [I-11](I-11-settings-organization-ai-switch-audit-log-and-pr.md) Settings: organization, AI switch, audit log and profile | I-01, I-02, I-10 |
+| 4A | 4 | [I-01](I-01-projects-components-and-environments.md) Projects, components and environments, [I-02](I-02-labels.md) Labels, [I-10](I-10-members-and-invitations-screen.md) Members and invitations screen, [I-24](I-24-docker-no-container-left-without-a-network.md) Docker: no container left without a network | Stage 3 foundations |
+| 4B | 4 | [I-03](I-03-bugs-model-create-edit-list-search-and-saved-vie.md) Bugs: model, create, edit, list, search and saved views, [I-06](I-06-test-suites-and-test-cases.md) Test suites and test cases, [I-11](I-11-settings-organization-ai-switch-audit-log-and-pr.md) Settings: organization, AI switch, audit log and profile, [I-23](I-23-password-reset-with-admin-issued-links.md) Password reset with admin issued links | I-01, I-02, I-10 |
 | 4C | 4 | [I-04](I-04-bug-workflow-transitions-and-kanban-board.md) Bug workflow, transitions and Kanban board, [I-05](I-05-bug-detail-comments-attachments-and-activity.md) Bug detail: comments, attachments and activity, [I-07](I-07-test-runs-results-and-bug-from-a-failed-step.md) Test runs, results and bug from a failed step | I-03, I-06 |
 | 4D | 4 | [I-08](I-08-releases-and-readiness.md) Releases and readiness | I-03, I-07 |
 | 4E | 4 | [I-09](I-09-dashboard-and-reports.md) Dashboard and reports, [I-12](I-12-seed-data-for-every-scenario.md) Seed data for every scenario | I-03, I-04, I-05, I-06, I-07, I-08 |
-| 4F | 4 | [I-13](I-13-stage-4-design-parity-and-states-pass.md) Stage 4 design parity and states pass | I-01, I-02, I-03, I-04, I-05, I-06, I-07, I-08, I-09, I-10, I-11, I-12 |
+| 4F | 4 | [I-13](I-13-stage-4-design-parity-and-states-pass.md) Stage 4 design parity and states pass | I-01, I-02, I-03, I-04, I-05, I-06, I-07, I-08, I-09, I-10, I-11, I-12, I-23, I-24 |
 | 5A | 5 | [I-14](I-14-ai-provider-guardrails-usage-log-and-limits.md) AI provider, guardrails, usage log and limits | Stage 3 foundations |
 | 5B | 5 | [I-15](I-15-ai-bug-writer-explain-log-and-duplicate-detector.md) AI Bug Writer, Explain log and Duplicate detector, [I-16](I-16-ai-triage.md) AI Triage, [I-17](I-17-ai-test-case-generator.md) AI Test Case Generator, [I-18](I-18-ai-release-readiness-summary.md) AI Release Readiness Summary, [I-19](I-19-ai-usage-screen.md) AI usage screen | I-03, I-05, I-06, I-08, I-14 |
 | 6A | 6 | [I-20](I-20-end-to-end-tests-accessibility-and-responsive-ch.md) End to end tests, accessibility and responsive checks, [I-21](I-21-security-tenancy-review-and-performance.md) Security, tenancy review and performance | I-13, I-15, I-16, I-17, I-18, I-19 |
@@ -111,6 +116,8 @@ flowchart LR
 | I-11 | Planned | |
 | I-12 | Planned | |
 | I-13 | Planned | |
+| I-23 | Planned | |
+| I-24 | Planned | |
 | I-14 | Planned | |
 | I-15 | Planned | |
 | I-16 | Planned | |
@@ -123,5 +130,5 @@ flowchart LR
 
 ## Requirement coverage
 
-55 requirements are referenced by Stage 4 to 6 issues: REQ-006, REQ-008, REQ-009, REQ-011, REQ-012, REQ-013, REQ-014, REQ-015, REQ-016, REQ-017, REQ-018, REQ-019, REQ-020, REQ-021, REQ-022, REQ-023, REQ-024, REQ-025, REQ-026, REQ-027, REQ-028, REQ-029, REQ-030, REQ-031, REQ-032, REQ-033, REQ-034, REQ-035, REQ-036, REQ-037, REQ-038, REQ-039, REQ-040, REQ-041, REQ-042, REQ-043, REQ-044, REQ-045, REQ-046, REQ-047, REQ-048, REQ-049, REQ-050, REQ-051, REQ-052, REQ-053, REQ-055, REQ-056, REQ-057, REQ-058, REQ-059, REQ-060, REQ-061, REQ-062, REQ-063.
+56 requirements are referenced by Stage 4 to 6 issues: REQ-006, REQ-008, REQ-009, REQ-010, REQ-011, REQ-012, REQ-013, REQ-014, REQ-015, REQ-016, REQ-017, REQ-018, REQ-019, REQ-020, REQ-021, REQ-022, REQ-023, REQ-024, REQ-025, REQ-026, REQ-027, REQ-028, REQ-029, REQ-030, REQ-031, REQ-032, REQ-033, REQ-034, REQ-035, REQ-036, REQ-037, REQ-038, REQ-039, REQ-040, REQ-041, REQ-042, REQ-043, REQ-044, REQ-045, REQ-046, REQ-047, REQ-048, REQ-049, REQ-050, REQ-051, REQ-052, REQ-053, REQ-055, REQ-056, REQ-057, REQ-058, REQ-059, REQ-060, REQ-061, REQ-062, REQ-063.
 Requirements fully delivered in Stage 3 (auth, orgs, invitations API, audit API, platform) are verified in the Stage 3 review.
