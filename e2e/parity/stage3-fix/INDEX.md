@@ -96,7 +96,7 @@ Generated from `e2e/scripts/check-app-layout.mjs --shots`. "Before" is the app w
 | 1280-zoom200 | [before](before/nav-drawer-1280-zoom200.png) | [after](after/nav-drawer-1280-zoom200.png) |
 | 1920-zoom200 | [before](before/nav-drawer-1920-zoom200.png) | [after](after/nav-drawer-1920-zoom200.png) |
 
-## Bug 2: prototype compared with the app
+## Bug 2: prototype compared with the app (content cap raised to 1600 px, D-046)
 
 * [1920 px](compare/dashboard-empty-1920-prototype-vs-app.png)
 * [1440 px](compare/dashboard-empty-1440-prototype-vs-app.png)

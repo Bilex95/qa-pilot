@@ -128,6 +128,17 @@ const audit = ({ checkTargets, popupSelector, margin }) => {
   return out;
 };
 
+// Fill a field and confirm the value stuck: a remount right after navigation can wipe it
+async function fillStable(page, selector, value) {
+  for (let i = 0; i < 3; i++) {
+    await page.fill(selector, value);
+    await page.waitForTimeout(200);
+    if (await page.inputValue(selector) === value) return;
+  }
+  throw new Error(`could not keep a value in ${selector}`);
+}
+
+let step = 'start';
 const problems = new Map();
 const note = (vp, where, list) => list.forEach((p) => {
   const key = `${where}: ${p}`;
@@ -187,21 +198,25 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   // Sign in as the Org Admin (most navigation and controls)
   await go(page, '/login');
   await page.waitForSelector('#l-email');
-  await page.fill('#l-email', 'amara@lumenfreight.test');
-  await page.fill('#l-pass', PW);
+  step = 'sign in as the Org Admin';
+  await fillStable(page, '#l-email', 'amara@lumenfreight.test');
+  await fillStable(page, '#l-pass', PW);
   await page.click('button[type=submit]');
   await page.waitForURL('**/o/lumen/dashboard');
   await page.waitForSelector('h1');
   await check('/o/lumen/dashboard', { shot: 'dashboard' });
 
   // Every popup: org switcher, user menu, mobile navigation drawer
+  step = 'open the workspace menu';
   await page.click('.org-switch');
   await check('org switcher menu', { popup: '.menu', shot: 'org-menu' });
   await page.keyboard.press('Escape');
+  step = 'open the user menu';
   await page.click('.user-btn');
   await check('user menu', { popup: '.menu', shot: 'user-menu' });
   await page.keyboard.press('Escape');
   if (await page.isVisible('.menu-toggle')) {
+    step = 'open the navigation drawer';
     await page.click('.menu-toggle');
     await page.waitForTimeout(300);
     // the drawer is meant to sit flush with the left edge: it must be inside the screen, no margin needed
@@ -220,11 +235,13 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await go(page, '/o/lumen/dashboard');
   await page.waitForSelector('.user-btn');
   await page.click('.user-btn');
+  step = 'sign out';
   await page.click('.menu >> text=Sign out');
   await page.waitForURL((u) => u.pathname === '/login');
   await page.waitForLoadState('networkidle'); // fill only after the sign in page has hydrated
-  await page.fill('#l-email', LONG.email);
-  await page.fill('#l-pass', PW);
+  step = 'sign in as the long names fixture';
+  await fillStable(page, '#l-email', LONG.email);
+  await fillStable(page, '#l-pass', PW);
   await page.click('button[type=submit]');
   await page.waitForURL(`**/o/${LONG.slug}/dashboard`);
   await page.waitForSelector('h1');
@@ -238,7 +255,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
 
   } catch (e) {
     // A step that cannot run is itself a failure: record it and carry on with the next width
-    note(vp, 'flow', [`could not finish the checks: ${String(e.message || e).split(/\r?\n/)[0]}`]);
+    note(vp, 'flow', [`could not finish the checks at step "${step}": ${String(e.message || e).split(/\r?\n/)[0]}`]);
     if (SHOTS) await page.screenshot({ path: resolve(SHOTS, `flow-error-${vp.label}.png`) }).catch(() => {});
   }
   if (errors.length) note(vp, 'page errors', errors);
