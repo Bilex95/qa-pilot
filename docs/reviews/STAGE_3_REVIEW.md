@@ -329,3 +329,19 @@ CI for the updated PR: see section 10.
 | Root cause fix for a container left without a network | Issue I-24 (Stage 4, batch 4A), BL-009 |
 | ESLint 10 upgrade | BL-007 (already logged, D-038) |
 | Standing responsive rule | D-044, `CLAUDE.md`, every UI issue's test list (`scripts/build_issues.py`) |
+
+## 10. CI after the fixes (PR #2, run 44084686414, commit 11d139a)
+
+```
+conclusion=success
+Backend (ruff, mypy, pytest): success
+Secret scan: success
+OpenAPI contract up to date: success
+Frontend (lint, typecheck, build): success
+Newman smoke (compose, migrate, seed): success
+Responsive and popup checks (360 to 1920 px, 200% zoom): success
+```
+
+The new responsive job ran the browser login smoke and the layout check on a clean runner. CI passwords now appear as `***` in the logs (`SEED_PW: ***`, `SEED_USER_PASSWORD: ***`).
+
+Merged with a merge commit after this run, as approved.
