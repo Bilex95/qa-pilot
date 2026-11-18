@@ -152,7 +152,7 @@ jobs:
         run: docker compose down -v
 
   responsive:
-    name: Responsive and popup checks (360 to 1920 px, 200% zoom)
+    name: Responsive and popup checks (360 to 2560 px, 200% zoom)
     runs-on: ubuntu-24.04
     needs: [backend, frontend]
     steps:
@@ -181,6 +181,9 @@ jobs:
       - name: Browser login smoke
         working-directory: e2e
         run: node scripts/smoke-login.mjs
+      - name: Sign out from every signed in page
+        working-directory: e2e
+        run: node scripts/check-signout.mjs
       - name: Responsive and popup checks
         working-directory: e2e
         run: node scripts/check-app-layout.mjs --shots ci-layout-shots

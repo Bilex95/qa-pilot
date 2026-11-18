@@ -32,6 +32,7 @@ const VIEWPORTS = [
   { label: '1280', width: 1280, height: 800, scale: 1 },
   { label: '1440', width: 1440, height: 900, scale: 1 },
   { label: '1920', width: 1920, height: 1080, scale: 1 },
+  { label: '2560', width: 2560, height: 1440, scale: 1 },
   { label: '1280-zoom200', width: 640, height: 400, scale: 2 },
   { label: '1920-zoom200', width: 960, height: 540, scale: 2 },
 ];
@@ -128,12 +129,15 @@ const audit = ({ checkTargets, popupSelector, margin }) => {
   return out;
 };
 
-// Fill a field and confirm the value stuck: a remount right after navigation can wipe it
+// Fill a field and confirm the value stuck. Typed text that disappears (for example a page that mounts twice
+// after a navigation) is a real bug, so every retry is recorded as a problem; the retry only lets the run go on.
+const fillRetries = [];
 async function fillStable(page, selector, value) {
   for (let i = 0; i < 3; i++) {
     await page.fill(selector, value);
     await page.waitForTimeout(200);
     if (await page.inputValue(selector) === value) return;
+    fillRetries.push(`typed text in ${selector} was wiped at step "${step}" (attempt ${i + 1}); the form was replaced after it was filled`);
   }
   throw new Error(`could not keep a value in ${selector}`);
 }
@@ -170,6 +174,15 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.scale, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
   page.setDefaultTimeout(120_000);
+  if (process.env.QA_LAYOUT_INJECT_WIPE === '1') {
+    // Negative test hook only: wipe the sign in email once after it is typed, like a page that mounts twice
+    await page.addInitScript(() => {
+      document.addEventListener('input', (e) => {
+        const t = e.target;
+        if (t && t.id === 'l-email' && !window.__qaWiped) { window.__qaWiped = true; setTimeout(() => { t.value = ''; }, 50); }
+      }, true);
+    });
+  }
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   if (TRACE) page.on('framenavigated', (f) => { if (f === page.mainFrame()) console.log(`  [${vp.label}] navigated ${f.url()}`); });
@@ -260,6 +273,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     note(vp, 'flow', [`could not finish the checks at step "${step}": ${String(e.message || e).split(/\r?\n/)[0]}`]);
     if (SHOTS) await page.screenshot({ path: resolve(SHOTS, `flow-error-${vp.label}.png`) }).catch(() => {});
   }
+  if (fillRetries.length) note(vp, 'form', fillRetries.splice(0));
   if (errors.length) note(vp, 'page errors', errors);
   await ctx.close();
 }
