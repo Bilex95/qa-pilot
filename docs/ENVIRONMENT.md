@@ -11,7 +11,7 @@ Checked on 2026-11-16 during Stage 0.
 | Node.js | v24.14.0 | Windows host |
 | npm | 11.9.0 | Windows host |
 | Python | 3.12.10 | Windows host; Docker is the primary runtime |
-| WSL | Version 2, default distro Ubuntu | |
+| WSL | Version 2, default distro Ubuntu | Limited to 8 GB memory and 4 GB swap by `%USERPROFILE%\.wslconfig` (see below) |
 
 ## How to call Docker on this machine
 
@@ -44,3 +44,25 @@ docker compose up -d --force-recreate --wait
 ## Bundler in the dev container (found in Stage 3)
 
 The frontend container runs `next dev --webpack` with polling. Turbopack, the Next 16 default, did not see file changes on the WSL bind mount and served stale code (D-042).
+
+## Memory limits and working rules (set before Stage 4 work, 2026-11-18)
+
+The laptop has 16 GB of RAM (2 x 8 GB; Windows reports 15.7 GB). With Docker, the Next.js dev server and Playwright running together, Windows ran critically low on memory and Claude Code stopped a background process. WSL is now limited by `C:\Users\HP\.wslconfig` (created on 2026-11-18; no earlier file existed):
+
+```
+[wsl2]
+memory=8GB
+swap=4GB
+
+[experimental]
+autoMemoryReclaim=gradual
+```
+
+Applied with `dc.ps1 stop`, `wsl --shutdown`, `dc.ps1 up -d --wait`. Measured afterwards: WSL total 7.8 GiB, about 2.0 GiB used with the stack running, swap 4 GiB (none used); Windows process `vmmemWSL` about 2.6 GB. Volume data was kept (rows the seed never creates were still present).
+
+Rules for the build from now on:
+
+1. Stop the dev stack when not testing (`powershell -File scripts/dc.ps1 stop`; data stays in the volumes) and start it only when needed with `powershell -File scripts/dc.ps1 up -d --wait`.
+2. Run heavy tasks one after another, never at the same time: the full layout check (`check-app-layout.mjs`), the sign out check, the prototype checks (`validate-design.ps1`), screenshot capture, image builds and CI style runs.
+3. Do not start a WSL keepalive unless the product owner asks. When testing by hand, the product owner keeps a PowerShell window open with `wsl -d Ubuntu`.
+4. If memory still runs short, stop the frontend container first (`dc.ps1 stop frontend`); backend tests and Newman do not need it.
