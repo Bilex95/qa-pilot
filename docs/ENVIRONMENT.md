@@ -31,7 +31,7 @@ WSL stops its virtual machine when no WSL process has run for a while, and Docke
 Options, from least to most invasive:
 1. Keep any WSL terminal open while working (during the build a background `wsl -d Ubuntu -- sleep` keeps it alive and is stopped at the end of each stage).
 2. Run `powershell -File scripts/dc.ps1 up -d` again after a pause; it waits for healthchecks.
-3. Set `vmIdleTimeout=-1` under `[wsl2]` in `%USERPROFILE%\.wslconfig` (machine wide setting; not changed by this project).
+3. Change the machine wide WSL settings in `%USERPROFILE%\.wslconfig`. That file is now managed as described in [Memory limits and working rules](#memory-limits-and-working-rules-set-before-stage-4-work-2026-11-18) below (8 GB memory, 4 GB swap, gradual memory reclaim). It does not set `vmIdleTimeout`, so WSL still stops when idle; add `vmIdleTimeout=-1` under `[wsl2]` only if the product owner decides to.
 
 ## Container left without a network (found in Stage 3)
 
