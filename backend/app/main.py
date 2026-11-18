@@ -11,6 +11,7 @@ from app.core.middleware import RequestContextMiddleware
 from app.modules.audit.api.routes import router as audit_router
 from app.modules.auth.api.routes import router as auth_router
 from app.modules.orgs.api.routes import router as orgs_router
+from app.modules.projects.api.routes import router as projects_router
 
 API_PREFIX = "/api/v1"
 
@@ -42,6 +43,7 @@ def create_app() -> FastAPI:
     api.include_router(health_router)
     api.include_router(auth_router)
     api.include_router(orgs_router)
+    api.include_router(projects_router)
     api.include_router(audit_router)
     app.include_router(api)
     return app
