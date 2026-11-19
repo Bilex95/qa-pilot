@@ -1,6 +1,6 @@
 # I-24 Docker: no container left without a network
 
-**Stage:** 4 | **Batch:** 4A (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4A (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
