@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 OpenBugsByProject = Callable[[Session, uuid.UUID, list[uuid.UUID]], dict[uuid.UUID, int]]
 # (db, org_id, component_ids) -> {component_id: open bug count}
 OpenBugsByComponent = Callable[[Session, uuid.UUID, list[uuid.UUID]], dict[uuid.UUID, int]]
+# (db, org_id, label_ids) -> {label_id: bug count}. Bugs (I-03) registers the real count; until then it is 0
+LabelBugCounts = Callable[[Session, uuid.UUID, list[uuid.UUID]], dict[uuid.UUID, int]]
 # (db, org_id, component_id) -> None, called before a component is deleted
 ComponentDeleted = Callable[[Session, uuid.UUID, uuid.UUID], None]
 # (db, org_id, environment_id) -> True when something still references the environment
@@ -18,11 +20,12 @@ EnvironmentInUse = Callable[[Session, uuid.UUID, uuid.UUID], bool]
 
 open_bugs_by_project: list[OpenBugsByProject] = []
 open_bugs_by_component: list[OpenBugsByComponent] = []
+label_bug_counts: list[LabelBugCounts] = []
 on_component_deleted: list[ComponentDeleted] = []
 environment_in_use: list[EnvironmentInUse] = []
 
 
-def count(hooks: list[OpenBugsByProject] | list[OpenBugsByComponent], db: Session, org_id: uuid.UUID,
+def count(hooks: list[OpenBugsByProject] | list[OpenBugsByComponent] | list[LabelBugCounts], db: Session, org_id: uuid.UUID,
           ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
     totals: dict[uuid.UUID, int] = {}
     for hook in hooks:

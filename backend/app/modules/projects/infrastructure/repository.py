@@ -5,7 +5,20 @@ import uuid
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 
-from app.modules.projects.infrastructure.models import Component, Environment, Project
+from app.modules.projects.infrastructure.models import Component, Environment, Label, Project
+
+
+def labels(db: Session, org_id: uuid.UUID) -> list[Label]:
+    return list(db.scalars(select(Label).where(Label.org_id == org_id).order_by(func.lower(Label.name), Label.id)))
+
+
+def get_label(db: Session, org_id: uuid.UUID, label_id: uuid.UUID) -> Label | None:
+    return db.scalar(select(Label).where(Label.org_id == org_id, Label.id == label_id))
+
+
+def label_name_taken(db: Session, org_id: uuid.UUID, name: str) -> bool:
+    return db.scalar(select(func.count()).select_from(Label).where(
+        Label.org_id == org_id, func.lower(Label.name) == name.lower())) != 0
 
 
 def projects_query(org_id: uuid.UUID, *, include_archived: bool) -> Select[Project]:

@@ -16,7 +16,7 @@ from app.modules.audit.application import service as audit
 from app.modules.projects.application import hooks
 from app.modules.projects.domain.rules import DEFAULT_ENVIRONMENTS, key_problem, normalise_key
 from app.modules.projects.infrastructure import repository as repo
-from app.modules.projects.infrastructure.models import Component, Environment, Project
+from app.modules.projects.infrastructure.models import Component, Environment, Label, Project
 
 # Public contract ----------------------------------------------------------
 
@@ -43,6 +43,52 @@ def get_environment(db: Session, org_id: uuid.UUID, environment_id: uuid.UUID) -
 
 def open_bug_counts(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
     return hooks.count(hooks.open_bugs_by_project, db, org_id, project_ids)
+
+
+# Labels (I-02; REQ-022) ---------------------------------------------------
+
+def get_label(db: Session, org_id: uuid.UUID, label_id: uuid.UUID) -> Label:
+    label = repo.get_label(db, org_id, label_id)
+    if label is None:
+        raise NotFound("Label not found.")
+    return label
+
+
+def list_labels(db: Session, org_id: uuid.UUID) -> list[Label]:
+    return repo.labels(db, org_id)
+
+
+def label_bug_counts(db: Session, org_id: uuid.UUID, label_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    return hooks.count(hooks.label_bug_counts, db, org_id, label_ids)
+
+
+def _label_taken(name: str) -> Conflict:
+    return Conflict(f"A label named {name} already exists.", code="name_taken")
+
+
+def create_label(db: Session, org_id: uuid.UUID, *, actor_id: uuid.UUID, name: str, color: str) -> Label:
+    name = name.strip()  # callers may bypass the schema; trim before the uniqueness check
+    if repo.label_name_taken(db, org_id, name):
+        raise _label_taken(name)
+    label = Label(org_id=org_id, name=name, color=color)
+    db.add(label)
+    try:
+        db.flush()  # the unique index on (org_id, lower(name)) catches a race past the check above
+    except IntegrityError as exc:
+        db.rollback()
+        raise _label_taken(name) from exc
+    audit.record(db, "label.created", actor_id=actor_id, org_id=org_id, entity_type="label", entity_id=label.id,
+                 data={"name": name, "color": color})
+    db.commit()
+    return label
+
+
+def delete_label(db: Session, org_id: uuid.UUID, label_id: uuid.UUID, *, actor_id: uuid.UUID) -> None:
+    label = get_label(db, org_id, label_id)  # 404 for a missing id and for another org's id alike (D-003)
+    audit.record(db, "label.deleted", actor_id=actor_id, org_id=org_id, entity_type="label", entity_id=label.id,
+                 data={"name": label.name})
+    db.delete(label)  # bug_labels rows go with it through the cascading foreign key (I-03)
+    db.commit()
 
 
 # Projects -----------------------------------------------------------------

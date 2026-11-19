@@ -38,6 +38,20 @@ class Component(IdMixin, TimestampMixin, Base):
     description: Mapped[str] = mapped_column(String(500), default="")
 
 
+class Label(IdMixin, TimestampMixin, Base):
+    """Org wide label (I-02, REQ-022). I-03 adds `bug_labels` with a cascading foreign key to this table."""
+
+    __tablename__ = "labels"
+    __table_args__ = (
+        # Case insensitive unique name per org. text() so the index uses the column, not the string "name"
+        Index("uq_labels_org_name_ci", "org_id", text("lower(name)"), unique=True),
+    )
+
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(40))
+    color: Mapped[str] = mapped_column(String(20), default="neutral")
+
+
 class Environment(IdMixin, TimestampMixin, Base):
     __tablename__ = "environments"
     __table_args__ = (

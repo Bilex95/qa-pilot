@@ -1,4 +1,4 @@
-"""Projects, components and environments: API-040 to API-051 (I-01)."""
+"""Projects, components and environments: API-040 to API-051 (I-01). Labels: API-052 to API-054 (I-02)."""
 
 import uuid
 from typing import Annotated
@@ -12,6 +12,7 @@ from app.core.pagination import Page, PageParams, page_params
 from app.core.schemas import errors
 from app.modules.projects.application import service
 from app.modules.projects.infrastructure.models import Component, Project
+from app.modules.projects.schemas.labels import LabelIn, LabelOut
 from app.modules.projects.schemas.projects import (
     ComponentIn,
     ComponentOut,
@@ -28,6 +29,27 @@ from app.modules.projects.schemas.projects import (
 router = APIRouter(tags=["projects"])
 ERR = errors(401, 403, 404, 422)
 Read = Annotated[OrgContext, Depends(require("project.read"))]
+
+
+@router.get("/orgs/{org_id}/labels", response_model=list[LabelOut], responses=errors(401, 403, 404))
+def list_labels(db: DB, ctx: Annotated[OrgContext, Depends(require("org.read"))]) -> list[LabelOut]:
+    items = service.list_labels(db, ctx.org_id)
+    counts = service.label_bug_counts(db, ctx.org_id, [label.id for label in items])
+    return [LabelOut.model_validate(label).model_copy(update={"bug_count": counts.get(label.id, 0)})
+            for label in items]
+
+
+@router.post("/orgs/{org_id}/labels", status_code=status.HTTP_201_CREATED, response_model=LabelOut,
+             responses=errors(401, 403, 404, 409, 422))
+def create_label(body: LabelIn, db: DB, ctx: Annotated[OrgContext, Depends(require("label.manage"))]) -> LabelOut:
+    label = service.create_label(db, ctx.org_id, actor_id=ctx.user.id, name=body.name, color=body.color)
+    return LabelOut.model_validate(label)
+
+
+@router.delete("/orgs/{org_id}/labels/{label_id}", status_code=status.HTTP_204_NO_CONTENT,
+               responses=errors(401, 403, 404))
+def delete_label(label_id: uuid.UUID, db: DB, ctx: Annotated[OrgContext, Depends(require("label.manage"))]) -> None:
+    service.delete_label(db, ctx.org_id, label_id, actor_id=ctx.user.id)
 
 
 def _project_out(db: Session, ctx: OrgContext, project: Project) -> ProjectOut:
