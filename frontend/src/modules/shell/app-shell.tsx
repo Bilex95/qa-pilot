@@ -6,22 +6,15 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { Brand } from "@/components/brand";
 import { IconChevron, IconLogout, IconMenu, IconPlus, IconSearch, IconUser } from "@/components/icons";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { can, ROLE_NAMES } from "@/lib/permissions";
 import { useSession } from "@/lib/session/session-provider";
-import { avatarColour, initials } from "@/lib/utils";
+import { initials } from "@/lib/utils";
 
 import { NAV } from "./nav";
 import { useOrg } from "./org-context";
-
-function Avatar({ id, name, size = 30 }: { id: string; name: string; size?: number }) {
-  return (
-    <span className="avatar" aria-hidden="true" style={{ background: avatarColour(id), width: size, height: size }}>
-      {initials(name)}
-    </span>
-  );
-}
 
 /** App shell from the locked prototype (sidebar, header, org switcher, user menu). Role aware (REQ-007). */
 export function AppShell({ children }: { children: ReactNode }) {
