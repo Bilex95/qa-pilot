@@ -2,8 +2,9 @@
 
 from app.modules.audit.infrastructure.models import AuditEvent
 from app.modules.auth.infrastructure.models import RefreshToken, User
+from app.modules.bugs.infrastructure.models import Bug, BugLabel, SavedView
 from app.modules.orgs.infrastructure.models import Invitation, Membership, Organization
 from app.modules.projects.infrastructure.models import Component, Environment, Label, Project
 
-__all__ = ["AuditEvent", "Component", "Environment", "Invitation", "Label", "Membership", "Organization", "Project",
-           "RefreshToken", "User"]
+__all__ = ["AuditEvent", "Bug", "BugLabel", "Component", "Environment", "Invitation", "Label", "Membership",
+           "Organization", "Project", "RefreshToken", "SavedView", "User"]

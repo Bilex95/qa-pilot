@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm import Session
 
 from app.modules.projects.infrastructure.models import Component, Environment, Label, Project
@@ -14,6 +14,12 @@ def labels(db: Session, org_id: uuid.UUID) -> list[Label]:
 
 def get_label(db: Session, org_id: uuid.UUID, label_id: uuid.UUID) -> Label | None:
     return db.scalar(select(Label).where(Label.org_id == org_id, Label.id == label_id))
+
+
+def labels_by_ids(db: Session, org_id: uuid.UUID, label_ids: list[uuid.UUID]) -> list[Label]:
+    if not label_ids:
+        return []
+    return list(db.scalars(select(Label).where(Label.org_id == org_id, Label.id.in_(label_ids))))
 
 
 def label_name_taken(db: Session, org_id: uuid.UUID, name: str) -> bool:
@@ -31,6 +37,17 @@ def projects_query(org_id: uuid.UUID, *, include_archived: bool) -> Select[Proje
 def get_project(db: Session, org_id: uuid.UUID, project_id: uuid.UUID, *, lock: bool = False) -> Project | None:
     stmt = select(Project).where(Project.org_id == org_id, Project.id == project_id)
     return db.scalar(stmt.with_for_update() if lock else stmt)
+
+
+def take_bug_number(db: Session, org_id: uuid.UUID, project_id: uuid.UUID) -> tuple[str, int] | None:
+    """Reserve the next bug number in one UPDATE ... RETURNING. The row lock it takes is held until the caller commits,
+    so two bugs created at once in one project never get the same number (D-008); numbers are never given back."""
+    row = db.execute(
+        update(Project).where(Project.org_id == org_id, Project.id == project_id)
+        .values(next_bug_number=Project.next_bug_number + 1)
+        .returning(Project.key, Project.next_bug_number)
+        .execution_options(synchronize_session=False)).one_or_none()
+    return (row.key, row.next_bug_number - 1) if row else None
 
 
 def key_exists(db: Session, org_id: uuid.UUID, key: str) -> bool:

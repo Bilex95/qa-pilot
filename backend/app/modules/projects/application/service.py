@@ -1,6 +1,6 @@
 """Projects, components and environments (I-01; REQ-013 to REQ-016).
 
-Public contract for other modules: get_project, get_component, get_environment, project_ids_for_org.
+Public contract for other modules: get_project, get_component, get_environment, get_label, get_labels, take_bug_number.
 """
 
 import uuid
@@ -41,6 +41,14 @@ def get_environment(db: Session, org_id: uuid.UUID, environment_id: uuid.UUID) -
     return environment
 
 
+def take_bug_number(db: Session, org_id: uuid.UUID, project_id: uuid.UUID) -> tuple[str, int]:
+    """(project key, new bug number). Holds the project row lock until the caller commits (see the repository)."""
+    taken = repo.take_bug_number(db, org_id, project_id)
+    if taken is None:
+        raise NotFound("Project not found.")
+    return taken
+
+
 def open_bug_counts(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
     return hooks.count(hooks.open_bugs_by_project, db, org_id, project_ids)
 
@@ -52,6 +60,11 @@ def get_label(db: Session, org_id: uuid.UUID, label_id: uuid.UUID) -> Label:
     if label is None:
         raise NotFound("Label not found.")
     return label
+
+
+def get_labels(db: Session, org_id: uuid.UUID, label_ids: list[uuid.UUID]) -> list[Label]:
+    """The labels of this org among the ids; ids that are unknown or belong to another org are simply missing."""
+    return repo.labels_by_ids(db, org_id, label_ids)
 
 
 def list_labels(db: Session, org_id: uuid.UUID) -> list[Label]:

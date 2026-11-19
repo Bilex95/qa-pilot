@@ -46,6 +46,11 @@ def test_openapi_lists_every_inventory_endpoint_built_so_far() -> None:
         ("DELETE", "/api/v1/orgs/{org_id}/invitations/{invitation_id}"),
         ("GET", "/api/v1/invitations/{token}"), ("POST", "/api/v1/invitations/{token}/accept"),
         ("GET", "/api/v1/orgs/{org_id}/audit-events"),
+        ("GET", "/api/v1/orgs/{org_id}/bugs"), ("POST", "/api/v1/orgs/{org_id}/bugs"),
+        ("GET", "/api/v1/orgs/{org_id}/bugs/{bug_ref}"), ("PATCH", "/api/v1/orgs/{org_id}/bugs/{bug_id}"),
+        ("DELETE", "/api/v1/orgs/{org_id}/bugs/{bug_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/saved-views"), ("POST", "/api/v1/orgs/{org_id}/saved-views"),
+        ("DELETE", "/api/v1/orgs/{org_id}/saved-views/{view_id}"),
     }
     assert expected <= routes, sorted(expected - routes)
 
