@@ -233,14 +233,22 @@ ISSUES = [
           "0010_password_resets"),
     Issue("I-24", "Docker: no container left without a network", 4, "4A", ["REQ-059"],
           "Root cause fix for the Stage 3 incident: a failed first start (port taken) left the db container running without a network.",
-          ["Preflight in scripts/dc.ps1 and a POSIX twin that refuses `up` when a host port is already taken, naming the process",
-           "Reproduce the incident in a test script; confirm whether `restart: unless-stopped` causes the detached restart and switch to "
-           "`on-failure` with healthcheck based dependencies if so",
-           "Compose healthcheck for the backend that fails fast when `db` does not resolve, with a clear log line"],
-          ["Changing the Docker engine itself"], ["docker-compose.yml", "scripts/"], [], [], [],
-          [], ["Two stacks on the same ports; WSL restart in the middle of `up`"],
-          ["Scripted reproduction before and after the fix, output in the stage review"],
-          ["`up` with a taken port stops with a clear message and leaves no half started container"]),
+          ["Preflight in scripts/dc.ps1 and a POSIX twin (scripts/dc-preflight.sh, scripts/dc.sh) that refuses `up` when a host port "
+           "belongs to anything but this Compose project, naming the owner; a port of the same project (qa-pilot) is a no-op (D-048)",
+           "scripts/repro-i24.sh reproduces the incident in its own throwaway Compose project, before and after the fix; the restart "
+           "policy stays `unless-stopped` because it brings the stack back after a WSL idle stop (measured, D-048)",
+           "Backend startup check (`python -m app.core.db_preflight`) that retries resolving `db` for about 30 seconds, then exits with a "
+           "clear message; `depends_on` db with `condition: service_healthy` is already in place",
+           "WSL idle shutdown: scripts/with-wsl.ps1 holds one WSL session for exactly one task (closed in `finally`), scripts/newman.sh "
+           "and scripts/newman.ps1 run Newman@6.2.3 inside Docker as one WSL session, scripts/repro-i24-idle.ps1 measures the effect; "
+           "`instanceIdleTimeout=-1` in .wslconfig is documented as optional only and never changed by the build"],
+          ["Changing the Docker engine itself", "Changing the product owner's .wslconfig"], ["docker-compose.yml", "scripts/", "backend/app/core"], [], [], [],
+          [], ["Two stacks on the same ports; WSL restart in the middle of `up`; a Docker restart that beats the network by a moment"],
+          ["Scripted reproduction before and after the fix, output in the stage review",
+           "pytest for the db resolve retry and the clear failure message",
+           "Idle control (no WSL session, Docker stops) against the held run (Docker stays up); Newman and the layout check green through the wrappers"],
+          ["`up` with a taken port stops with a clear message and leaves no half started container",
+           "Newman and the layout check run green without the stack disappearing in the middle of a run"]),
     Issue("I-14", "AI provider, guardrails, usage log and limits", 5, "5A", ["REQ-042", "REQ-049", "REQ-050", "REQ-051", "REQ-052"],
           "The AI foundation every feature uses (AI_SPEC sections 1, 2 and 4).",
           ["AIProvider protocol, MockProvider (deterministic), AnthropicProvider (model from ANTHROPIC_MODEL)",

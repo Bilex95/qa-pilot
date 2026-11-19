@@ -26,16 +26,21 @@ Helper scripts in `scripts/*.ps1` (added in Stage 3) wrap this. On a machine wit
 
 ## WSL idle shutdown (found in Stage 3)
 
-WSL stops its virtual machine when no WSL process has run for a while, and Docker inside it stops too. The next `wsl` command starts it again and `restart: unless-stopped` brings the containers back, but anything talking to them in between fails (seen as "connection closed" on `localhost:8000`).
+WSL ends the distro, and systemd stops the Docker Engine inside it, a few seconds after the last `wsl` session ends. Measured in Stage 4 (I-24, D-048): with no session open, `docker.service` was stopped 15 seconds after the last `wsl` call (13:15:56 to 13:16:11). The next `wsl` command starts Docker again and `restart: unless-stopped` brings the containers back, but anything talking to them in between fails. Tools that run on Windows (Playwright, the layout check) are not WSL sessions, so a run could lose the stack halfway: Newman showed 503 and 500 responses and then no responses at all (see the Stage 4 review, I-24).
 
-Options, from least to most invasive:
-1. Keep any WSL terminal open while working (during the build a background `wsl -d Ubuntu -- sleep` keeps it alive and is stopped at the end of each stage).
-2. Run `powershell -File scripts/dc.ps1 up -d` again after a pause; it waits for healthchecks.
-3. Change the machine wide WSL settings in `%USERPROFILE%\.wslconfig`. That file is now managed as described in [Memory limits and working rules](#memory-limits-and-working-rules-set-before-stage-4-work-2026-11-18) below (8 GB memory, 4 GB swap, gradual memory reclaim). It does not set `vmIdleTimeout`, so WSL still stops when idle; add `vmIdleTimeout=-1` under `[wsl2]` only if the product owner decides to.
+What to do, in order:
+1. **Use the wrappers.** `powershell -File scripts/with-wsl.ps1 <command>` holds one WSL session for exactly one Windows command and closes it in `finally`, for example `powershell -File scripts/with-wsl.ps1 node scripts/check-app-layout.mjs`. `powershell -File scripts/newman.ps1` runs Newman inside Docker as one WSL session (Node is not installed in WSL), so it needs no hold. `scripts/dc.ps1` and `scripts/repro-i24-idle.ps1 [-Hold]` show the effect.
+2. **Keep a WSL terminal open** while you work by hand (`wsl -d Ubuntu` in a PowerShell window). That is your own session and needs nothing from the build.
+3. **Optional, applied by the product owner only:** WSL has a per distro idle timer. Community reports say it is `instanceIdleTimeout` under `[general]` in `%USERPROFILE%\.wslconfig` (default about 15 seconds, `-1` turns it off, applies to every distro, needs `wsl --shutdown` to take effect); one report also says `vmIdleTimeout=-1` under `[wsl2]` does not keep a distro up, so treat that one as unverified. Check the current Microsoft documentation for WSL 2.6.x before applying either. The build never edits `.wslconfig`.
 
 ## Container left without a network (found in Stage 3)
 
-If a container's first start fails (for example `Bind for 0.0.0.0:5433 failed: port is already allocated`) and the restart policy starts it later, Docker can leave it running with no network attached. Other services then fail with `failed to resolve host 'db'` and restart in a loop. Check with `docker inspect -f '{{.NetworkSettings.Networks}}' qa-pilot-db-1`; fix by recreating the containers, which keeps the data in the named volumes:
+If a container's first start fails (for example `Bind for 0.0.0.0:5433 failed: port is already allocated`) and the restart policy starts it later, Docker can leave it running with no network attached. Other services then fail with `failed to resolve host 'db'` and restart in a loop. Since I-24 (D-048) this is prevented and diagnosed:
+* `scripts/dc.ps1 up` and `sh scripts/dc.sh up` run `scripts/dc-preflight.sh` first. A host port owned by this Compose project (qa-pilot) is fine; a port owned by anything else, including another clone under a different project name, is refused with the owner named, and nothing is started.
+* The backend runs `python -m app.core.db_preflight` before migrations. It retries resolving `db` for about 30 seconds, then exits with a message that says the container has no network and names the fix.
+* `scripts/repro-i24.sh` reproduces the failed start in a throwaway project: the container is left in the `created` state with no network.
+
+If it still happens, check with `docker inspect -f '{{.NetworkSettings.Networks}}' qa-pilot-db-1`; fix by recreating the containers, which keeps the data in the named volumes:
 
 ```
 docker compose up -d --force-recreate --wait
@@ -64,5 +69,5 @@ Rules for the build from now on:
 
 1. Stop the dev stack when not testing (`powershell -File scripts/dc.ps1 stop`; data stays in the volumes) and start it only when needed with `powershell -File scripts/dc.ps1 up -d --wait`.
 2. Run heavy tasks one after another, never at the same time: the full layout check (`check-app-layout.mjs`), the sign out check, the prototype checks (`validate-design.ps1`), screenshot capture, image builds and CI style runs.
-3. Do not start a WSL keepalive unless the product owner asks. When testing by hand, the product owner keeps a PowerShell window open with `wsl -d Ubuntu`.
+3. No free running WSL keepalive. A WSL hold is allowed only inside `scripts/with-wsl.ps1`: scoped to one task, always closed in `finally`, capped at one hour (D-048). When testing by hand, the product owner keeps a PowerShell window open with `wsl -d Ubuntu`.
 4. If memory still runs short, stop the frontend container first (`dc.ps1 stop frontend`); backend tests and Newman do not need it.

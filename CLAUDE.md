@@ -33,12 +33,13 @@ AI: provider interface in `backend/app/modules/ai`; `AI_PROVIDER=mock|anthropic`
 * `frontend/src/app/globals.css` is generated: change `design/reference/approved.html`, then `python scripts/build_globals_css.py` (CI fails on drift).
 
 ## Commands (keep this list verified and updated)
-* `docker compose up -d --wait` / `docker compose down` (build machine: `powershell -File scripts/dc.ps1 <args>`, Docker runs in WSL, D-001)
+* `docker compose up -d --wait` / `docker compose down` (build machine: `powershell -File scripts/dc.ps1 <args>`, Docker runs in WSL, D-001). `up` through `dc.ps1` or `sh scripts/dc.sh` refuses a host port owned by anything but this project (D-048)
+* WSL stops Docker a few seconds after the last `wsl` session ends (D-048): run Windows side long tasks as `powershell -File scripts/with-wsl.ps1 <command>` (one held session, closed in `finally`; no free running keepalives)
 * Backend tests: `docker compose exec backend pytest -q`
 * Lint/types: `docker compose exec backend ruff check . && docker compose exec backend mypy app`
 * Frontend: `cd frontend && npm run lint && npm run typecheck && npm run build`
 * Seed: `docker compose exec backend python -m app.seed --scenario baseline`
-* Newman (needs the baseline seed): `npx newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --env-var password=<SEED_USER_PASSWORD>`
+* Newman (needs the baseline seed; runs inside Docker as one WSL session): `powershell -File scripts/newman.ps1` (or `sh scripts/newman.sh` in WSL). Plain equivalent where Node is on the PATH: `npx newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --env-var password=<SEED_USER_PASSWORD>`
 * Postman collection is generated: edit `postman/build_collection.py`, then `python postman/build_collection.py`
 * API contract after backend schema changes: `sh scripts/api-types.sh` (inside WSL on the build machine)
 * Browser login smoke (stack up, baseline seeded): `cd e2e && node scripts/smoke-login.mjs`
