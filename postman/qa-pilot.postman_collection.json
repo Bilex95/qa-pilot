@@ -5076,6 +5076,3970 @@
       ]
     },
     {
+      "name": "Bugs",
+      "item": [
+        {
+          "name": "My user id as Developer (setup)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.environment.set(\"devUserId\", pm.response.json().user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My user id as QA Lead (setup)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.environment.set(\"leadUserId\", pm.response.json().user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add component for bugs (setup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/projects/{{projectId}}/components",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "projects",
+                "{{projectId}}",
+                "components"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bug component\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"bugComponentId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List environments for bugs (setup)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/projects/{{projectId}}/environments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "projects",
+                "{{projectId}}",
+                "environments"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.environment.set(\"bugEnvId\", pm.response.json()[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create label for bugs (setup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/labels",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "labels"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{bugLabelName}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"bugLabelId\", pm.response.json().id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"bugLabelName\", \"Bug label \" + Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug as QA Engineer (API-061)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: checkout button does nothing\",\n  \"description\": \"Found by the API suite\",\n  \"steps_to_reproduce\": [\n    \"Open the cart\",\n    \"Click Pay\"\n  ],\n  \"expected_result\": \"A receipt\",\n  \"actual_result\": \"Nothing happens\",\n  \"label_ids\": [\n    \"{{bugLabelId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.environment.set(\"bugId\", b.id);",
+                  "pm.environment.set(\"bugKey\", b.key);",
+                  "pm.test(\"key, status and defaults\", () => { pm.expect(b.key).to.match(/^[A-Z]{2,6}-[0-9]+$/); pm.expect(b.number).to.be.a(\"number\"); pm.expect(b.status).to.eql(\"new\"); pm.expect(b.severity).to.eql(\"medium\"); pm.expect(b.priority).to.eql(\"p3\"); pm.expect(b.labels.length).to.eql(1); pm.expect(b.sla_breached).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug as QA Lead with severity, component, environment and assignee (API-061)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: invoice total is wrong\",\n  \"severity\": \"critical\",\n  \"priority\": \"p1\",\n  \"component_id\": \"{{bugComponentId}}\",\n  \"environment_id\": \"{{bugEnvId}}\",\n  \"assignee_id\": \"{{devUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"bugTwoId\", pm.response.json().id);",
+                  "pm.test(\"fields kept\", () => { const b = pm.response.json(); pm.expect(b.severity).to.eql(\"critical\"); pm.expect(b.component_id).to.eql(pm.environment.get(\"bugComponentId\")); pm.expect(b.assignee_id).to.eql(pm.environment.get(\"devUserId\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug as Developer, severity forced (API-061)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: tooltip is cut off\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"bugThreeId\", pm.response.json().id);",
+                  "pm.test(\"medium and P3\", () => { const b = pm.response.json(); pm.expect(b.severity).to.eql(\"medium\"); pm.expect(b.priority).to.eql(\"p3\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug as Developer sending severity (API-061 forbidden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: should not exist\",\n  \"severity\": \"high\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug as Viewer (API-061 forbidden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: should not exist\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug without token (API-061 unauthorized)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: should not exist\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug with a short title (API-061 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug in an unknown project (API-061 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"00000000-0000-4000-8000-000000000000\",\n  \"title\": \"Newman: no such project\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug with an assignee outside the org (API-061 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: no such assignee\",\n  \"assignee_id\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug through other org path (API-061 cross tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: cross tenant\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope org_not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"org_not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create bug as admin of the other org (API-061 cross tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman: cross tenant\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope org_not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"org_not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs (API-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?project_id={{projectId}}&page_size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "project_id",
+                  "value": "{{projectId}}"
+                },
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json();",
+                  "pm.test(\"page shape\", () => pm.expect(p).to.include.keys(\"items\", \"page\", \"page_size\", \"total\"));",
+                  "pm.test(\"lists the three bugs\", () => pm.expect(p.items.map(b => b.id)).to.include.members([pm.environment.get(\"bugId\"), pm.environment.get(\"bugTwoId\"), pm.environment.get(\"bugThreeId\")]));",
+                  "pm.test(\"summaries only\", () => pm.expect(p.items[0]).to.not.have.property(\"description\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs filtered by severity and assignee (API-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?severity=critical&assignee_id={{devUserId}}&project_id={{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "critical"
+                },
+                {
+                  "key": "assignee_id",
+                  "value": "{{devUserId}}"
+                },
+                {
+                  "key": "project_id",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"only the critical one\", () => pm.expect(pm.response.json().items.map(b => b.id)).to.eql([pm.environment.get(\"bugTwoId\")]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs filtered by label (API-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?label_id={{bugLabelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "label_id",
+                  "value": "{{bugLabelId}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"one tagged bug\", () => pm.expect(pm.response.json().items.map(b => b.id)).to.eql([pm.environment.get(\"bugId\")]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search bugs by key in lower case (API-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?q={{bugKey}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{bugKey}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"found by key\", () => pm.expect(pm.response.json().items.map(b => b.key)).to.include(pm.environment.get(\"bugKey\")));"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"bugKeyLower\", pm.environment.get(\"bugKey\").toLowerCase());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search bugs by title word (API-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?q=INVOICE&project_id={{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "INVOICE"
+                },
+                {
+                  "key": "project_id",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"one match\", () => pm.expect(pm.response.json().items.map(b => b.id)).to.eql([pm.environment.get(\"bugTwoId\")]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List open bugs sorted by severity (API-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?open=true&sort=severity&project_id={{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "open",
+                  "value": "true"
+                },
+                {
+                  "key": "sort",
+                  "value": "severity"
+                },
+                {
+                  "key": "project_id",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"critical first\", () => pm.expect(pm.response.json().items[0].id).to.eql(pm.environment.get(\"bugTwoId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs past SLA (API-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?sla_breached=true&project_id={{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "sla_breached",
+                  "value": "true"
+                },
+                {
+                  "key": "project_id",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"none yet\", () => pm.expect(pm.response.json().total).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs page size too large (API-060 invalid)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?page_size=101",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "page_size",
+                  "value": "101"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs unknown status (API-060 invalid)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?status=done",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "done"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs unknown sort (API-060 invalid)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?sort=title",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "title"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs without token (API-060 unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs of other org (API-060 cross tenant)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope org_not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"org_not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get bug by id (API-062)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"detail\", () => { const b = pm.response.json(); pm.expect(b.id).to.eql(pm.environment.get(\"bugId\")); pm.expect(b.steps_to_reproduce).to.eql([\"Open the cart\", \"Click Pay\"]); pm.expect(b.reporter_name).to.be.a(\"string\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get bug by key in lower case (API-062)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugKeyLower}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugKeyLower}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"same bug\", () => pm.expect(pm.response.json().id).to.eql(pm.environment.get(\"bugId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get bug with unknown key (API-062 not found)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/NOPE-999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "NOPE-999999"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get bug through other org path (API-062 cross tenant)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get bug as admin of the other org (API-062 cross tenant)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope org_not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"org_not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get bug without token (API-062 unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit bug title as QA Engineer (API-063)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman: checkout button is dead\",\n  \"description\": \"Edited\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"edited\", () => pm.expect(pm.response.json().title).to.eql(\"Newman: checkout button is dead\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change severity as QA Lead (API-063)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"severity\": \"high\",\n  \"priority\": \"p2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"changed\", () => { const b = pm.response.json(); pm.expect(b.severity).to.eql(\"high\"); pm.expect(b.priority).to.eql(\"p2\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign bug as QA Lead (API-063)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignee_id\": \"{{devUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"assigned\", () => pm.expect(pm.response.json().assignee_id).to.eql(pm.environment.get(\"devUserId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Developer changes severity of own bug (API-063 forbidden)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugThreeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugThreeId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman: must not apply\",\n  \"severity\": \"critical\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Developer title was not applied (API-063 nothing applied)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugThreeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugThreeId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"unchanged\", () => pm.expect(pm.response.json().title).to.eql(\"Newman: tooltip is cut off\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Developer edits a bug they did not report (API-063 forbidden)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman: not mine to edit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Developer assigns a bug to someone else (API-063 forbidden)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugThreeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugThreeId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignee_id\": \"{{leadUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Developer assigns an unassigned bug to self (API-063)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugThreeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugThreeId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignee_id\": \"{{devUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"self assigned\", () => pm.expect(pm.response.json().assignee_id).to.eql(pm.environment.get(\"devUserId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit bug as Viewer (API-063 forbidden)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman: viewer edit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit bug with an empty body (API-063 invalid)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit bug with a null title (API-063 invalid)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign bug to a non member (API-063 invalid)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignee_id\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit unknown bug (API-063 not found)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/00000000-0000-4000-8000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "00000000-0000-4000-8000-000000000000"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman: no such bug\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit bug through other org path (API-063 cross tenant)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman: cross tenant\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edit bug without token (API-063 unauthorized)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman: no token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Label bug count is real (I-02 and I-03)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/labels",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "labels"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"one bug carries the label\", () => { const l = pm.response.json().find(x => x.id === pm.environment.get(\"bugLabelId\")); pm.expect(l.bug_count).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the label, the bug keeps existing (API-054 cascade)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/labels/{{bugLabelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "labels",
+                "{{bugLabelId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bug no longer has the deleted label (cascade)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"no labels\", () => pm.expect(pm.response.json().labels).to.eql([]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete bug as QA Engineer (API-064 forbidden)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete bug without token (API-064 unauthorized)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete bug through other org path (API-064 cross tenant)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete bug with unknown id (API-064 not found)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/00000000-0000-4000-8000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "00000000-0000-4000-8000-000000000000"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete bug with malformed id (API-064 invalid)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/not-a-uuid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "not-a-uuid"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete bug as QA Lead (API-064)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deleted bug is gone (API-064)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deleted bug is not in the list (API-064)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?project_id={{projectId}}&page_size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "project_id",
+                  "value": "{{projectId}}"
+                },
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"gone from the list\", () => pm.expect(pm.response.json().items.map(b => b.id)).to.not.include(pm.environment.get(\"bugId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the bug again (API-064 not found)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the other bugs (cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the developer bug (cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{bugThreeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{bugThreeId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Save a view (API-079)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{viewName}}\",\n  \"filters\": {\n    \"status\": [\n      \"new\",\n      \"triaged\"\n    ],\n    \"severity\": [\n      \"critical\"\n    ],\n    \"open\": true,\n    \"sort\": \"severity\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"viewId\", pm.response.json().id);",
+                  "pm.test(\"stored with a version\", () => { const v = pm.response.json(); pm.expect(v.filters.version).to.eql(1); pm.expect(v.filters.status).to.eql([\"new\", \"triaged\"]); });"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"viewName\", \"Newman view \" + Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Save a view with the same name (API-079 conflict)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{viewName}}\",\n  \"filters\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"error envelope name_taken\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"name_taken\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Save a view with an unknown filter (API-079 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad view\",\n  \"filters\": {\n    \"colour\": \"red\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Save a view with an unknown status (API-079 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad view\",\n  \"filters\": {\n    \"status\": [\n      \"done\"\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Save a view without token (API-079 unauthorized)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"x\",\n  \"filters\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Save a view through other org path (API-079 cross tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"x\",\n  \"filters\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope org_not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"org_not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List my views (API-078)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"has my view\", () => pm.expect(pm.response.json().map(v => v.id)).to.include(pm.environment.get(\"viewId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Views are private: another user does not see it (API-078)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"not listed\", () => pm.expect(pm.response.json().map(v => v.id)).to.not.include(pm.environment.get(\"viewId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List views without token (API-078 unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List views of other org (API-078 cross tenant)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/saved-views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "saved-views"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope org_not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"org_not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete someone else's view (API-080 not found)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views/{{viewId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views",
+                "{{viewId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete a view through other org path (API-080 cross tenant)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/saved-views/{{viewId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "saved-views",
+                "{{viewId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete a view without token (API-080 unauthorized)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views/{{viewId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views",
+                "{{viewId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete a view with a malformed id (API-080 invalid)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views/not-a-uuid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views",
+                "not-a-uuid"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete my view (API-080)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views/{{viewId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views",
+                "{{viewId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete my view again (API-080 not found)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/saved-views/{{viewId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "saved-views",
+                "{{viewId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Sign out",
       "item": [
         {
@@ -5182,11 +9146,6 @@
           ]
         }
       ]
-    },
-    {
-      "name": "Bugs",
-      "description": "Staged folder. Requests are added with the endpoints in Stage 4 (API_INVENTORY.md).",
-      "item": []
     },
     {
       "name": "Test management",
