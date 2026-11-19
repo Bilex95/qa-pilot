@@ -10,7 +10,10 @@
 # Usage (from any folder):
 #   powershell -File scripts/with-wsl.ps1 node scripts/check-app-layout.mjs
 # The exit code is the command's exit code. Set QAP_WSL_DISTRO to use another distro than Ubuntu.
-param([Parameter(Mandatory = $true, ValueFromRemainingArguments = $true)][string[]]$Command)
+# Add -Up before the command to bring the stack up first, inside the held session (the containers need about half a
+# minute to come back after the distro was idle):
+#   powershell -File scripts/with-wsl.ps1 -Up node scripts/check-app-layout.mjs
+param([switch]$Up, [Parameter(Mandatory = $true, ValueFromRemainingArguments = $true)][string[]]$Command)
 
 $root = Split-Path -Parent $PSScriptRoot
 $distro = if ($env:QAP_WSL_DISTRO) { $env:QAP_WSL_DISTRO } else { 'Ubuntu' }
@@ -23,6 +26,12 @@ try {
     Start-Sleep -Seconds 3
     if ($holder.HasExited) { throw "The WSL hold session ended at once (exit $($holder.ExitCode)). Is the distro '$distro' installed?" }
     [Console]::Error.WriteLine("with-wsl: holding one WSL session (pid $($holder.Id)) while the command runs")
+
+    if ($Up) {
+        [Console]::Error.WriteLine('with-wsl: bringing the stack up (waits for the healthchecks)')
+        & wsl.exe -d $distro --cd ($holdScript -replace '/scripts/wsl-hold\.sh$', '') -- sh scripts/dc.sh up -d --wait 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "The stack did not come up (exit $LASTEXITCODE). Run scripts/dc.ps1 up -d --wait to see why." }
+    }
 
     $exe = $Command[0]
     $rest = @($Command | Select-Object -Skip 1)  # @() keeps a single argument an array (splatting a string passes its characters)
