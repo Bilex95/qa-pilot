@@ -92,6 +92,16 @@ async function removeLabelFixture() {
   for (const l of all.filter((x) => LABEL_NAMES.includes(x.name))) await fetch(`${base}/${l.id}`, { method: 'DELETE', headers: h });
 }
 
+// Invitation fixture for the Members screen (I-10): the layout check creates one invitation through the dialog and revokes it
+// again through the API at the end. The invite link itself is never read, printed or stored by this script.
+const INVITE_EMAIL = 'layout-i10@qapilot.test';
+async function removeInviteFixture() {
+  const { h } = await labelAdmin();
+  const base = (await labelAdmin()).base.replace(/\/labels$/, '');
+  const pending = await (await fetch(`${base}/invitations?status=pending`, { headers: h })).json();
+  for (const i of pending.filter((x) => x.email === INVITE_EMAIL)) await fetch(`${base}/invitations/${i.id}`, { method: 'DELETE', headers: h });
+}
+
 // Runs inside the page. Returns a list of problems.
 const audit = ({ checkTargets, popupSelector, margin }) => {
   const W = document.documentElement.clientWidth, H = document.documentElement.clientHeight;
@@ -289,6 +299,56 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.keyboard.press('Escape');
   await page.waitForSelector('.modal', { state: 'detached' });
 
+  // Members and roles (I-10): table, invite dialog (form, then link), remove confirmation, no results, pending invitations
+  step = 'open members';
+  await go(page, '/o/lumen/members');
+  await page.waitForSelector('table.t tbody tr');
+  await page.waitForSelector('text=Pending invitations');
+  await check('/o/lumen/members (admin)', { shot: 'members' });
+  step = 'open the Invite people dialog';
+  await page.click('button:has-text("Invite people")');
+  await page.waitForSelector('.modal');
+  await check('invite dialog', { popup: '.modal', shot: 'members-invite-form' });
+  step = 'create an invitation';
+  await page.fill('#inv-email', INVITE_EMAIL);
+  await page.click('.modal button:has-text("Create invite link")');
+  await page.waitForSelector('#inv-link');
+  // Mask the secret link in screenshots (the audit measures the same box; dots are as wide as characters in this field)
+  await page.addStyleTag({ content: '#inv-link { -webkit-text-security: disc; }' });
+  await check('invite dialog with the link', { popup: '.modal', shot: 'members-invite-link' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'open the remove confirmation';
+  await page.click('table.t tbody button:has-text("Remove")');
+  await page.waitForSelector('.modal');
+  await check('remove member confirmation', { popup: '.modal', shot: 'members-remove' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'search with no results';
+  await page.fill('#m-q', 'zzzz-no-such-person');
+  await page.waitForSelector('text=No one matches your search or role filter.');
+  await check('members: no results', { shot: 'members-no-results' });
+  await page.fill('#m-q', '');
+
+  // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
+  step = 'sign out to sign in as the QA Lead';
+  await page.click('.user-btn');
+  await page.click('.menu >> text=Sign out');
+  await page.waitForURL((u) => u.pathname === '/login');
+  await page.waitForLoadState('networkidle');
+  await fillStable(page, '#l-email', 'lukas@lumenfreight.test');
+  await fillStable(page, '#l-pass', PW);
+  await page.click('button[type=submit]');
+  await page.waitForURL('**/o/lumen/dashboard');
+  step = 'open members as the QA Lead';
+  await go(page, '/o/lumen/members');
+  await page.waitForSelector('table.t tbody tr');
+  await page.waitForSelector('text=Pending invitations');
+  if (await page.locator('table.t select, button:has-text("Invite people"), button:has-text("Remove"), button:has-text("Revoke")').count()) {
+    note(vp, 'members (QA Lead)', ['the QA Lead sees a control that only an Org Admin may use']);
+  }
+  await check('/o/lumen/members (QA Lead, read only)', { shot: 'members-lead' });
+
   // Long names and emails (rule 4)
   step = 'back to the dashboard to sign out';
   await go(page, '/o/lumen/dashboard');
@@ -316,6 +376,10 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await go(page, `/o/${LONG.slug}/settings`);
   await page.waitForSelector('.state-box');
   await check('long names: settings (labels empty state)', { shot: 'settings-labels-empty' });
+  step = 'open members in the long names workspace';
+  await go(page, `/o/${LONG.slug}/members`);
+  await page.waitForSelector('table.t tbody tr');
+  await check('long names: members', { shot: 'members-long-names' });
 
   } catch (e) {
     // A step that cannot run is itself a failure: record it and carry on with the next width
@@ -328,6 +392,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
 }
 await browser.close();
 await removeLabelFixture().catch((e) => console.log(`note: could not remove the label fixture: ${e.message}`));
+await removeInviteFixture().catch((e) => console.log(`note: could not revoke the invitation fixture: ${e.message}`));
 
 console.log(`Checked ${screens} screen and popup states at ${VIEWPORTS.filter((v) => !ONLY || v.label === ONLY).map((v) => v.label).join(', ')}`);
 if (problems.size) {
