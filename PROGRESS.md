@@ -14,8 +14,10 @@
 
 * I-24 Docker start safety and WSL idle (D-048): port preflight (`dc.ps1`, `dc.sh`, `dc-preflight.sh`), backend `db_preflight` with a 30 s retry, `with-wsl.ps1` (scoped hold, closed in `finally`), Newman inside Docker (`newman.ps1`, `newman.sh`, newman@6.2.3), `repro-i24.sh` and `repro-i24-idle.ps1`. Evidence in `docs/reviews/STAGE_4_REVIEW.md`. Verified: ruff, mypy, pytest 243 passed, Newman 103 requests and 155 assertions green through the wrapper, layout check PASS (185 states) through the wrapper, reproduction PASS, idle control (Docker stopped after 15 s) against held (stayed up). `.wslconfig` untouched; `instanceIdleTimeout=-1` documented only (BL-009). Not pushed.
 
+* I-10 Members and invitations screen (D-049): Members and roles screen (table, role select, Remove with a confirm dialog, invite dialog with the link shown once, pending invitations), QA Lead read only, own row locked, table skeleton and request id on the error state. Frontend only. Verified: ruff, mypy, pytest 243 passed, Newman 103 requests and 155 assertions green, lint, typecheck and `next build` clean, layout check PASS (255 states, 10 widths), flow script PASS (invite, accept as a new user, link works once), parity compared at 1440 and 390 with the differences listed in `docs/reviews/STAGE_4_REVIEW.md`. The invite link never reaches logs, URLs, caches or screenshots. Backlog BL-012 (pager), BL-013 (leave workspace, self demotion). Not pushed.
+
 ## Stage 4 plan (docs/issues/DAG.md)
-- [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen; I-24 Docker preflight (done, see Done)
+- [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs; I-06 suites and cases; I-11 settings; I-23 password reset
 - [ ] 4C: I-04 workflow and board; I-05 bug detail; I-07 runs
 - [ ] 4D: I-08 releases
@@ -28,7 +30,7 @@
 * Every screen and popup: add to `e2e/scripts/check-app-layout.mjs`; prototype first for any style change, then `python scripts/build_globals_css.py`.
 
 ## Next
-* I-10 members and invitations screen (rest of batch 4A). Then batch 4B: I-03, I-06, I-11, I-23.
+* Batch 4B: I-03 bugs, I-06 test suites and cases, I-11 settings, I-23 password reset (plan first, then wait for the go ahead).
 
 ## Blockers
 * None.

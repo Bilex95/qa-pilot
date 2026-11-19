@@ -34,7 +34,7 @@ AI: provider interface in `backend/app/modules/ai`; `AI_PROVIDER=mock|anthropic`
 
 ## Commands (keep this list verified and updated)
 * `docker compose up -d --wait` / `docker compose down` (build machine: `powershell -File scripts/dc.ps1 <args>`, Docker runs in WSL, D-001). `up` through `dc.ps1` or `sh scripts/dc.sh` refuses a host port owned by anything but this project (D-048)
-* WSL stops Docker a few seconds after the last `wsl` session ends (D-048): run Windows side long tasks as `powershell -File scripts/with-wsl.ps1 <command>` (one held session, closed in `finally`; no free running keepalives)
+* WSL stops Docker a few seconds after the last `wsl` session ends (D-048): run Windows side long tasks as `powershell -File scripts/with-wsl.ps1 [-Up] <command>` (`-Up` brings the stack up first; one held session, closed in `finally`; no free running keepalives)
 * Backend tests: `docker compose exec backend pytest -q`
 * Lint/types: `docker compose exec backend ruff check . && docker compose exec backend mypy app`
 * Frontend: `cd frontend && npm run lint && npm run typecheck && npm run build`

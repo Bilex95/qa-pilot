@@ -104,3 +104,50 @@ Two bugs in `with-wsl.ps1` were found and fixed while testing it: the quoted `ba
 
 * The product owner's `.wslconfig` was not changed. `instanceIdleTimeout=-1` is documented in `docs/ENVIRONMENT.md` as optional and unverified against the Microsoft documentation (BL-009 keeps this open).
 * The detached start after a Docker restart was not reproduced, so the restart policy conclusion rests on the 20 second observation and the idle measurements above.
+
+### I-10 Members and invitations screen (REQ-006, REQ-009, D-049)
+
+Frontend only: the six endpoints (API-024 to API-029) came with Stage 3 and already have happy, invalid, forbidden, `last_admin` and cross tenant tests and Postman requests. No migration, no backend change, no OpenAPI change.
+
+#### A. What a QA Lead may see (checked before the read only view was built)
+
+| Source | Lines |
+|---|---|
+| `docs/requirements/REQUIREMENTS.md` REQ-006 | "An Org Admin invites people by email and role through a copyable link." |
+| `docs/requirements/REQUIREMENTS.md` REQ-009 | "An Org Admin manages members: change role, remove member." |
+| `docs/requirements/PERSONAS_AND_ROLES.md` section 3.1 (columns: Org Admin, QA Lead, QA Engineer, Developer, Viewer) | `member.list` (members screen): Y, Y, N, N, N. `member.update_role`: Y, N, N, N, N. `member.remove`: Y, N, N, N, N. `invitation.create` / `invitation.revoke`: Y, N, N, N, N. `invitation.list`: Y, Y, N, N, N |
+| `docs/requirements/PERSONAS_AND_ROLES.md` section 4, navigation | "Members \| Y \| Y (read only) \| N \| N \| N" |
+| `docs/requirements/SCREEN_INVENTORY.md` SCR-19 | "Admin (manage), Lead (read)" |
+
+So a QA Lead sees the members list including emails (`member.list`) and the pending invitations including their email addresses (`invitation.list`), and nothing else: no role selects, no Remove, no Invite people, no Revoke. Every other role gets the no access state. The layout check fails if the QA Lead view contains one of those controls; it did not.
+
+#### B. Checks
+
+| Check | Result |
+|---|---|
+| Ruff, mypy, pytest | Clean; clean (100 files); 243 passed |
+| Newman through `scripts/newman.ps1` | 103 requests, 155 assertions, 0 failed (no new endpoints) |
+| Frontend lint, typecheck, `next build` | Clean; clean; builds, `/o/[org]/members` in the route list (dev server stopped for the build and restarted) |
+| Layout check through `with-wsl.ps1 -Up` | PASS, 255 states at 360, 390, 768, 1024, 1280, 1440, 1920, 2560, 1280 zoom 200 and 1920 zoom 200. New: members as Org Admin, invite dialog (form, then link), remove confirmation, no results, members as QA Lead (read only), members with the 80 character name and long email |
+| `e2e/scripts/check-members-flow.mjs` | PASS: Org Admin invites, the link is shown once, a new user registers with the invited email and accepts, the member is a Developer and no longer pending, the used link no longer works, the member is removed. Test users are `flow-i10-<timestamp>@qapilot.test`; the script removes the membership and any pending invitation of that pattern (also those left by earlier failed runs). The user records stay. The script never prints the link: it is held in one variable and removed from error text |
+
+The invite link is a secret and was kept out of everything that persists: not logged, not put in a URL by this screen, the mutation has `gcTime: 0` and is reset when the dialog closes, the dialog state is cleared on close, and a failed clipboard write selects the text instead. The captured screenshots mask the field. One unmasked screenshot of an earlier layout run (an invitation that the run revoked at its end) was deleted and recaptured with the mask before anything was kept.
+
+Bugs in my own scripts found and fixed on the way: the layout check ran against a stack that was still starting (the wrapper now has `-Up`), the flow clicked a banner sentence instead of the button (`text=` matches substrings), and a race that read the first row's role instead of the new member's.
+
+#### C. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side images: `e2e/parity/stage4/i10/compare/*.png` (locked on the left, app on the right); app captures in `e2e/parity/stage4/i10/app/`.
+
+| State | Result |
+|---|---|
+| Default, desktop | Same layout, columns, controls and spacing. Differences are data, not layout: join dates (the dev database has 16 Nov 2026 for everyone, the prototype has 2 Mar to 21 Aug 2026), order (the API sorts by name, the prototype by seed order) and avatar colours (derived from the user id) |
+| Default, mobile | Same stacked rows, same labels and controls; the same data differences |
+| Invite with link | Same dialog, banner and copy row. Differences: the email and role fields are read only after the link exists (the prototype leaves them looking editable), the link is masked in the capture, and the link is the real address of this app |
+| Loading | Matches after a fix: the first version used a generic line skeleton; it now uses the prototype's table skeleton (filter blocks and rows of four cells) |
+| Error | Matches after a fix: the first version had no "Request id" line; the error now carries the `X-Request-ID` header, which the API already exposes. The capture answers with a mocked 500 and the request id from the locked screenshot |
+| Only in the prototype | The "View as" role switcher in the header; the Next.js development indicator in the app screenshots (development mode only) |
+| Deliberate deviations | A confirm dialog before Remove (D-049; the prototype removes at once); your own row is locked with an explanation (D-049); the explanation is also exposed to screen readers |
+| No locked screenshot | The QA Lead read only view, the remove confirmation and the no results state: the locked set only has the Org Admin screens. They are in `e2e/parity/stage4/i10-after/` (`members-lead-*`, `members-remove-*`, `members-no-results-*`) |
+
+Backlog: BL-012 (pager), BL-013 (leave workspace and self demotion).
