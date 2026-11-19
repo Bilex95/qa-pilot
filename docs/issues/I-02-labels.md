@@ -42,9 +42,10 @@ Copied from `docs/requirements/API_INVENTORY.md` (`{O}` = `/api/v1/orgs/{org_id}
 ## Authorization, audit, data and edge cases
 
 * org.read to list; label.manage (Org Admin, QA Lead) to create and delete
-* Names unique per org, case insensitive (409)
-* Colour must be a token name from design/TOKENS.md
-* Deleting a label removes it from bugs
+* Names are trimmed, 1 to 40 characters, unique per org case insensitively (409); a race past the check is caught from the unique index and is also 409
+* Colour is optional and must be a token name (D-047); default neutral; chips stay neutral until BL-010
+* The list returns `bug_count`, 0 until I-03 registers the real count through `hooks.label_bug_counts`
+* Deleting a label removes it from bugs (I-03 adds the cascading `bug_labels` foreign key); an unknown id in the same org is 404 like another org's id
 * Every query filters by `org_id`; ids from another org return 404 (D-003)
 
 ## Tests

@@ -75,6 +75,7 @@ Copied from `docs/requirements/API_INVENTORY.md` (`{O}` = `/api/v1/orgs/{org_id}
 - [ ] QA Engineer files a bug and sees key WEB-1 in the list
 - [ ] Developer files a bug: severity Medium and P3 forced
 - [ ] Saved views are private to their owner
+- [ ] Deleting a label cascades to `bug_labels` (foreign key `ON DELETE CASCADE`, test deletes a label that is on a bug) and replaces the placeholder `bug_count` of I-02 with the real count through `hooks.label_bug_counts`
 - [ ] Implementation and tests
 - [ ] Negative and tenant permission tests
 - [ ] Docker and CI pass

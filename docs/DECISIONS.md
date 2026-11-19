@@ -237,3 +237,13 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 * **Finding:** the locked prototype caps the content area at 1280 px (`--content-max`, design/TOKENS.md) and aligns it left, so at 1920 px the empty state spans 1232 of 1688 px (73%). The built app matches the prototype exactly (comparison: `e2e/parity/stage3-fix/compare/`).
 * **Decision (product owner, Stage 3 gate):** raise the cap to **1600 px**. `--content-max` changed in the prototype, CSS regenerated, locked screenshots recaptured. At 1920 px the panel now spans 1552 of 1688 px (the 1600 px content area less 24 px padding on each side); at 1440 px and below nothing changes. Measured values per width are in the Stage 3 review and in `e2e/parity/stage3-fix/compare/`. Content stays left aligned.
 * **Options offered:** keep 1280, fill the full width, raise to 1600, center a 1280 column.
+
+
+## D-047 Label colour, label names and the settings shell (I-02)
+* **Question:** the API requires a colour token for labels, but the approved prototype draws every label chip neutral and its "New label" button has no colour picker.
+* **Decision (product owner):** the design stays locked. The colour is optional in the API, validated against a fixed set of token names (`neutral`, `primary`, `sev-critical`, `sev-high`, `sev-medium`, `sev-low`, `ok`, `warn`, `danger`, `info`) and defaults to `neutral`. Chips stay neutral in the UI; coloured chips are BL-010.
+* **Names:** trimmed before the length check and before the uniqueness check, 1 to 40 characters, unique per org case insensitively. A duplicate that slips past the service check is caught from the unique index `uq_labels_org_name_ci` and returned as 409 `name_taken`, never 500.
+* **Counts:** the list returns `bug_count`, 0 for now. Bugs (I-03) registers the real count through `hooks.label_bug_counts` and adds `bug_labels` with `ON DELETE CASCADE` to `labels`.
+* **Not found:** deleting an id that does not exist in the org is 404, the same as another org's id (D-003).
+* **Settings shell:** the Labels tab lives in `frontend/src/modules/settings` with a minimal shell (tab list, page head) that I-11 extends with the Organization, Audit log and My profile tabs. The prototype's New label button only shows a toast, so the dialog (name field only) follows the prototype's dialog styling.
+* **Reason:** keeps the approved design intact while storing what a later colour pass needs.
