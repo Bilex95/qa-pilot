@@ -66,6 +66,32 @@ async function ensureLongFixture() {
   }
 }
 
+// Label fixture for the Settings, Labels tab (I-02): created through the public API as the Lumen Org Admin and removed
+// again at the end, so the baseline seed is left as it was. 40 characters is the longest allowed name (rule 4).
+const LABEL_NAMES = ['Regression', 'Payments', 'Intermittent freight reconciliation fail'];
+async function labelAdmin() {
+  const login = await fetch(`${API}/api/v1/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'amara@lumenfreight.test', password: PW }) });
+  if (!login.ok) throw new Error(`could not sign in the Lumen admin for the label fixture: ${login.status}`);
+  const token = (await login.json()).access_token;
+  const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  const orgs = await (await fetch(`${API}/api/v1/orgs`, { headers: h })).json();
+  const orgId = orgs.find((o) => o.org.slug === 'lumen').org.id;
+  return { h, base: `${API}/api/v1/orgs/${orgId}/labels` };
+}
+async function ensureLabelFixture() {
+  const { h, base } = await labelAdmin();
+  for (const name of LABEL_NAMES) {
+    const r = await fetch(base, { method: 'POST', headers: h, body: JSON.stringify({ name }) });
+    if (!r.ok && r.status !== 409) throw new Error(`could not create the label fixture ${name}: ${r.status}`);
+  }
+}
+async function removeLabelFixture() {
+  const { h, base } = await labelAdmin();
+  const all = await (await fetch(base, { headers: h })).json();
+  for (const l of all.filter((x) => LABEL_NAMES.includes(x.name))) await fetch(`${base}/${l.id}`, { method: 'DELETE', headers: h });
+}
+
 // Runs inside the page. Returns a list of problems.
 const audit = ({ checkTargets, popupSelector, margin }) => {
   const W = document.documentElement.clientWidth, H = document.documentElement.clientHeight;
@@ -159,11 +185,12 @@ async function go(page, path) {
 }
 
 await ensureLongFixture();
+await ensureLabelFixture();
 const browser = await chromium.launch();
 { // warm up every route once so first compiles do not disturb the checks
   const warm = await browser.newPage();
   for (const path of ['/login', '/register', '/invite/not-a-real-token-000', '/onboarding/org', '/o/lumen/dashboard',
-    '/o/lumen/projects', '/o/lumen/members', '/o/lumen/bugs/new', '/o/lumen/this-page-does-not-exist']) {
+    '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs/new', '/o/lumen/this-page-does-not-exist']) {
     await go(warm, path).catch(() => {});
   }
   await warm.close();
@@ -245,6 +272,23 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     await check(path);
   }
 
+  // Settings, Labels tab (I-02): default table with a 40 character name, the New label dialog and its error state
+  step = 'open settings';
+  await go(page, '/o/lumen/settings');
+  await page.waitForSelector('table.t .label-chip');
+  await check('/o/lumen/settings (labels)', { shot: 'settings-labels' });
+  step = 'open the New label dialog';
+  await page.click('button:has-text("New label")');
+  await page.waitForSelector('.modal');
+  await check('new label dialog', { popup: '.modal', shot: 'label-dialog' });
+  step = 'submit a name that already exists';
+  await page.fill('#label-name', ' regression ');
+  await page.click('.modal button:has-text("Add label")');
+  await page.waitForSelector('.modal .err');
+  await check('new label dialog with a duplicate name error', { popup: '.modal', shot: 'label-dialog-error' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+
   // Long names and emails (rule 4)
   step = 'back to the dashboard to sign out';
   await go(page, '/o/lumen/dashboard');
@@ -267,6 +311,11 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.click('.user-btn');
   await check('long names: user menu', { popup: '.menu', shot: 'long-names-user-menu' });
   await page.keyboard.press('Escape');
+  // A workspace with no labels shows the empty state (the long names fixture org has none)
+  step = 'open settings in the long names workspace';
+  await go(page, `/o/${LONG.slug}/settings`);
+  await page.waitForSelector('.state-box');
+  await check('long names: settings (labels empty state)', { shot: 'settings-labels-empty' });
 
   } catch (e) {
     // A step that cannot run is itself a failure: record it and carry on with the next width
@@ -278,6 +327,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await ctx.close();
 }
 await browser.close();
+await removeLabelFixture().catch((e) => console.log(`note: could not remove the label fixture: ${e.message}`));
 
 console.log(`Checked ${screens} screen and popup states at ${VIEWPORTS.filter((v) => !ONLY || v.label === ONLY).map((v) => v.label).join(', ')}`);
 if (problems.size) {
