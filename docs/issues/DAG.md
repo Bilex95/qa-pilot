@@ -112,7 +112,7 @@ flowchart LR
 | I-07 | Planned |  |
 | I-08 | Planned |  |
 | I-09 | Planned |  |
-| I-10 | Planned |  |
+| I-10 | Done | 870e66a, 1e226d1, d4d776d, 111036e |
 | I-11 | Planned |  |
 | I-12 | Planned |  |
 | I-13 | Planned |  |

@@ -1,6 +1,6 @@
 # I-10 Members and invitations screen
 
-**Stage:** 4 | **Batch:** 4A (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4A (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
