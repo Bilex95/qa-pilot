@@ -407,6 +407,94 @@ export interface paths {
         patch: operations["update_environment_api_v1_orgs__org_id__environments__environment_id__patch"];
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/bugs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Bugs */
+        get: operations["list_bugs_api_v1_orgs__org_id__bugs_get"];
+        put?: never;
+        /** Create Bug */
+        post: operations["create_bug_api_v1_orgs__org_id__bugs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/bugs/{bug_ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Bug */
+        get: operations["get_bug_api_v1_orgs__org_id__bugs__bug_ref__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/bugs/{bug_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Bug */
+        delete: operations["delete_bug_api_v1_orgs__org_id__bugs__bug_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Bug */
+        patch: operations["update_bug_api_v1_orgs__org_id__bugs__bug_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/saved-views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Saved Views */
+        get: operations["list_saved_views_api_v1_orgs__org_id__saved_views_get"];
+        put?: never;
+        /** Create Saved View */
+        post: operations["create_saved_view_api_v1_orgs__org_id__saved_views_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/saved-views/{view_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Saved View */
+        delete: operations["delete_saved_view_api_v1_orgs__org_id__saved_views__view_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/audit-events": {
         parameters: {
             query?: never;
@@ -474,6 +562,236 @@ export interface components {
             /** Expires In */
             expires_in: number;
             user: components["schemas"]["UserOut"];
+        };
+        /** BugCreateIn */
+        BugCreateIn: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Steps To Reproduce */
+            steps_to_reproduce?: string[];
+            /**
+             * Expected Result
+             * @default
+             */
+            expected_result: string;
+            /**
+             * Actual Result
+             * @default
+             */
+            actual_result: string;
+            /** Severity */
+            severity?: ("critical" | "high" | "medium" | "low") | null;
+            /** Priority */
+            priority?: ("p1" | "p2" | "p3" | "p4") | null;
+            /** Component Id */
+            component_id?: string | null;
+            /** Environment Id */
+            environment_id?: string | null;
+            /** Label Ids */
+            label_ids?: string[];
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Release Id */
+            release_id?: string | null;
+            /** Source Run Result Id */
+            source_run_result_id?: string | null;
+            /**
+             * Ai Assisted
+             * @default false
+             */
+            ai_assisted: boolean;
+        };
+        /** BugOut */
+        BugOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Number */
+            number: number;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "critical" | "high" | "medium" | "low";
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "p1" | "p2" | "p3" | "p4";
+            /** Component Id */
+            component_id: string | null;
+            /** Environment Id */
+            environment_id: string | null;
+            /**
+             * Reporter Id
+             * Format: uuid
+             */
+            reporter_id: string;
+            /** Reporter Name */
+            reporter_name: string;
+            /** Assignee Id */
+            assignee_id: string | null;
+            /** Assignee Name */
+            assignee_name: string | null;
+            /** Release Id */
+            release_id: string | null;
+            /** Labels */
+            labels: components["schemas"]["LabelRef"][];
+            /** Sla Breached */
+            sla_breached: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Description */
+            description: string;
+            /** Steps To Reproduce */
+            steps_to_reproduce: string[];
+            /** Expected Result */
+            expected_result: string;
+            /** Actual Result */
+            actual_result: string;
+            /** Source Run Result Id */
+            source_run_result_id: string | null;
+            /** Ai Assisted */
+            ai_assisted: boolean;
+            /**
+             * Status Changed At
+             * Format: date-time
+             */
+            status_changed_at: string;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** Closed At */
+            closed_at: string | null;
+        };
+        /** BugSummaryOut */
+        BugSummaryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Number */
+            number: number;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "critical" | "high" | "medium" | "low";
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "p1" | "p2" | "p3" | "p4";
+            /** Component Id */
+            component_id: string | null;
+            /** Environment Id */
+            environment_id: string | null;
+            /**
+             * Reporter Id
+             * Format: uuid
+             */
+            reporter_id: string;
+            /** Reporter Name */
+            reporter_name: string;
+            /** Assignee Id */
+            assignee_id: string | null;
+            /** Assignee Name */
+            assignee_name: string | null;
+            /** Release Id */
+            release_id: string | null;
+            /** Labels */
+            labels: components["schemas"]["LabelRef"][];
+            /** Sla Breached */
+            sla_breached: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * BugUpdateIn
+         * @description Only the fields that are sent change. A field that is sent as null is cleared where that makes sense
+         *     (component, environment, release, assignee) and is a 422 otherwise.
+         */
+        BugUpdateIn: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Steps To Reproduce */
+            steps_to_reproduce?: string[] | null;
+            /** Expected Result */
+            expected_result?: string | null;
+            /** Actual Result */
+            actual_result?: string | null;
+            /** Severity */
+            severity?: ("critical" | "high" | "medium" | "low") | null;
+            /** Priority */
+            priority?: ("p1" | "p2" | "p3" | "p4") | null;
+            /** Component Id */
+            component_id?: string | null;
+            /** Environment Id */
+            environment_id?: string | null;
+            /** Label Ids */
+            label_ids?: string[] | null;
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Release Id */
+            release_id?: string | null;
         };
         /** ComponentIn */
         ComponentIn: {
@@ -667,6 +985,18 @@ export interface components {
              */
             bug_count: number;
         };
+        /** LabelRef */
+        LabelRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Color */
+            color: string;
+        };
         /** LoginIn */
         LoginIn: {
             /** Email */
@@ -839,6 +1169,17 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[BugSummaryOut] */
+        Page_BugSummaryOut_: {
+            /** Items */
+            items: components["schemas"]["BugSummaryOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** Page[MemberOut] */
         Page_MemberOut_: {
             /** Items */
@@ -978,6 +1319,67 @@ export interface components {
         /** RoleIn */
         RoleIn: {
             role: components["schemas"]["Role"];
+        };
+        /**
+         * SavedViewFilters
+         * @description The stored filter set: the same keys as the list endpoint, plus a version number. Unknown keys are a 422.
+         *     When a stored filter changes meaning, add version 2 to the Literal and a reader that upgrades version 1 rows.
+         */
+        SavedViewFilters: {
+            /**
+             * Version
+             * @default 1
+             * @constant
+             */
+            version: 1;
+            /** Project Id */
+            project_id?: string | null;
+            /** Status */
+            status?: ("new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix")[];
+            /** Severity */
+            severity?: ("critical" | "high" | "medium" | "low")[];
+            /** Priority */
+            priority?: ("p1" | "p2" | "p3" | "p4")[];
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Reporter Id */
+            reporter_id?: string | null;
+            /** Component Id */
+            component_id?: string | null;
+            /** Environment Id */
+            environment_id?: string | null;
+            /** Label Id */
+            label_id?: string | null;
+            /** Release Id */
+            release_id?: string | null;
+            /** Sla Breached */
+            sla_breached?: boolean | null;
+            /** Open */
+            open?: boolean | null;
+            /** Q */
+            q?: string | null;
+            /**
+             * Sort
+             * @default -updated_at
+             */
+            sort: string;
+        };
+        /** SavedViewIn */
+        SavedViewIn: {
+            /** Name */
+            name: string;
+            filters: components["schemas"]["SavedViewFilters"];
+        };
+        /** SavedViewOut */
+        SavedViewOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            filters: components["schemas"]["SavedViewFilters"];
         };
         /** TokensOut */
         TokensOut: {
@@ -3051,6 +3453,522 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_bugs_api_v1_orgs__org_id__bugs_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                /** @description Repeat the parameter for several values */
+                status?: ("new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix")[] | null;
+                severity?: ("critical" | "high" | "medium" | "low")[] | null;
+                priority?: ("p1" | "p2" | "p3" | "p4")[] | null;
+                assignee_id?: string | null;
+                reporter_id?: string | null;
+                component_id?: string | null;
+                environment_id?: string | null;
+                label_id?: string | null;
+                release_id?: string | null;
+                sla_breached?: boolean | null;
+                /** @description true: only open bugs; false: only Verified, Closed and Won't fix */
+                open?: boolean | null;
+                /** @description Case insensitive match on key, title and description */
+                q?: string | null;
+                /** @description updated_at, created_at, severity or priority; prefix - for descending */
+                sort?: string;
+                /** @description Page number, starting at 1 */
+                page?: number;
+                /** @description Items per page, at most 100 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_BugSummaryOut_"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_bug_api_v1_orgs__org_id__bugs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BugCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BugOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_bug_api_v1_orgs__org_id__bugs__bug_ref__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bug_ref: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BugOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_bug_api_v1_orgs__org_id__bugs__bug_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bug_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_bug_api_v1_orgs__org_id__bugs__bug_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bug_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BugUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BugOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_saved_views_api_v1_orgs__org_id__saved_views_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedViewOut"][];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_saved_view_api_v1_orgs__org_id__saved_views_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedViewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedViewOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_saved_view_api_v1_orgs__org_id__saved_views__view_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                view_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
