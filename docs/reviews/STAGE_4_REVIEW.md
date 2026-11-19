@@ -151,3 +151,52 @@ Side by side images: `e2e/parity/stage4/i10/compare/*.png` (locked on the left, 
 | No locked screenshot | The QA Lead read only view, the remove confirmation and the no results state: the locked set only has the Org Admin screens. They are in `e2e/parity/stage4/i10-after/` (`members-lead-*`, `members-remove-*`, `members-no-results-*`) |
 
 Backlog: BL-012 (pager), BL-013 (leave workspace and self demotion).
+
+### I-03 Bugs, backend part (REQ-017, REQ-018, REQ-020, REQ-021, REQ-026, REQ-027, REQ-029, REQ-041, REQ-062; D-050)
+
+The bug list screen and the New bug form are not built yet; this section covers the migration, API-060 to API-064 and API-078 to API-080, their tests and Newman. The frontend part comes after review.
+
+#### A. Checks
+
+| Check | Result |
+|---|---|
+| Ruff, mypy | Clean; clean (110 files) |
+| pytest | 392 passed (243 before; 149 new in `modules/bugs/tests/` plus 8 routes added to the contract test, which also gives every new route its 401 and cross tenant case) |
+| Migration `0004_bugs` | up, down, up, and `alembic check` reports no drift. Backend recreated afterwards (head 0004). Tables `bugs`, `bug_labels`, `saved_views`; indexes `(org_id, project_id, status)`, `(org_id, assignee_id)`, `(org_id, updated_at DESC)` (NFR-PERF-04) |
+| Newman through `scripts/newman.ps1` | 182 requests, 291 assertions, 0 failed (103 and 155 before; 79 requests and 136 assertions added: Bugs folder with happy, invalid, unauthorized, forbidden and cross tenant for each of the eight endpoints, the all or nothing edit, the label cascade and saved view privacy) |
+| OpenAPI | `frontend/openapi.json` and `schema.d.ts` regenerated with `scripts/api-types.sh` |
+
+What the new tests pin down: the numbering (`WEB-1`, per project and per org, a deleted bug's key never reused, 20 bugs created from 10 threads on separate connections get 1 to 20), the Developer rules (severity or priority sent gives 403 and nothing is created; one forbidden field in a PATCH rejects the whole request and nothing is applied; self assign only on an unassigned bug), the open definition against all nine statuses (Fixed and Ready for retest are open; Verified, Closed and Won't fix are not) for the list filter and for both counters, the SLA filter against the Python rule for every severity and status (144 bugs), soft delete (gone from list, search, filters, counts, GET by id and key; the row stays), the label cascade (`bug_labels` rows deleted, the bug stays, the label `bug_count` is the real count), component and environment deletes leaving the bug with none, saved view privacy (even an Org Admin does not see another person's view; another org's view is 404), and search treating `%` and `_` as plain characters.
+
+#### B. Performance of `GET /bugs` (NFR-PERF-01: p95 under 300 ms)
+
+Measured in a throwaway database `qapilot_perf` on the same Postgres server, with a second backend on port 8001 and 5,000 bugs (about 2 percent soft deleted), 5,802 label links, 3 projects, 12 users. The script (`.gate/perf-bugs.py`, not committed) created the database and removed it again in `finally`; it printed "throwaway database removed: yes", and the dev database was never touched. 60 runs per request after 8 warm up requests, real HTTP inside the backend container, so the numbers leave out the browser and the Windows to WSL hop.
+
+| Request | p50 ms | p95 ms | max ms | rows matched |
+|---|---|---|---|---|
+| default page (25, newest first) | 13.5 | 16.2 | 18.1 | 4887 |
+| page_size=100 | 17.1 | 20.2 | 51.8 | 4887 |
+| page 40 of size 100 | 20.5 | 24.5 | 28.4 | 4887 |
+| open bugs | 13.0 | 15.9 | 46.9 | 3885 |
+| status new, triaged and severity critical, high | 11.1 | 13.9 | 15.6 | 489 |
+| project and component filter | 10.2 | 14.2 | 15.3 | 143 |
+| label filter | 17.9 | 20.3 | 23.4 | 129 |
+| assignee filter | 10.0 | 12.6 | 13.5 | 295 |
+| sort by severity | 16.8 | 23.4 | 35.8 | 4887 |
+| sla_breached=true | 14.3 | 17.2 | 57.6 | 3811 |
+| sla_breached=true, open, sort by priority | 14.7 | 17.4 | 19.0 | 3204 |
+| search "timeout" (about 1 bug in 8) | 38.3 | 40.9 | 42.9 | 612 |
+| search "shipment 12" (title substring) | 41.3 | 43.8 | 44.4 | 60 |
+| search "stops responding" (description, every bug) | 39.1 | 44.3 | 47.6 | 4887 |
+| search by key "web-12" | 44.0 | 54.0 | 70.3 | 108 |
+| search with no match | 39.6 | 45.1 | 48.3 | 0 |
+| search with filters and sort | 33.0 | 37.0 | 66.3 | 360 |
+
+Worst p95 is 54 ms against the 300 ms limit. Search is the slowest part, about three times a filtered list, because `ILIKE '%term%'` scans the table; it is not close to the limit at this size, so no trigram index item was added to the backlog. It grows with the number of bugs in the org, so it is worth re measuring when the seed (I-12, about 60 bugs per scenario) or a real workspace gets much larger than this.
+
+#### C. Notes for review
+
+* One addition to API-060: the boolean `open` parameter (the "All open" saved view needs it). Multi value filters are repeated parameters (`status=new&status=triaged`) rather than `status[]` (D-050).
+* `release_id` and `source_run_result_id` are stored without foreign keys until I-08 and I-07; until those modules register their check (`bugs/application/hooks.py`) any such id is refused with 422.
+* Component, environment and label deletes need no hook in the bugs module: the foreign keys do the work (`SET NULL` for the first two, `CASCADE` for `bug_labels`). The I-01 `on_component_deleted` hook stays unused.
+* The BL-011 Undo on the label delete toast stays out of I-03 (product owner). The Labels tab confirm will say how many bugs lose the label, using the real count, in the frontend part.
