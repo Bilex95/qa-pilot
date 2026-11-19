@@ -103,30 +103,30 @@ flowchart LR
 
 | Issue | Status | Commit |
 |---|---|---|
-| I-01 | Planned | |
-| I-02 | Planned | |
-| I-03 | Planned | |
-| I-04 | Planned | |
-| I-05 | Planned | |
-| I-06 | Planned | |
-| I-07 | Planned | |
-| I-08 | Planned | |
-| I-09 | Planned | |
-| I-10 | Planned | |
-| I-11 | Planned | |
-| I-12 | Planned | |
-| I-13 | Planned | |
-| I-23 | Planned | |
-| I-24 | Planned | |
-| I-14 | Planned | |
-| I-15 | Planned | |
-| I-16 | Planned | |
-| I-17 | Planned | |
-| I-18 | Planned | |
-| I-19 | Planned | |
-| I-20 | Planned | |
-| I-21 | Planned | |
-| I-22 | Planned | |
+| I-01 | Done | 53bbea8, 82dd4f7 |
+| I-02 | Done | 8199178, 4ef3d92, 9749945, 30a3319, ce8a9d2 |
+| I-03 | Planned |  |
+| I-04 | Planned |  |
+| I-05 | Planned |  |
+| I-06 | Planned |  |
+| I-07 | Planned |  |
+| I-08 | Planned |  |
+| I-09 | Planned |  |
+| I-10 | Planned |  |
+| I-11 | Planned |  |
+| I-12 | Planned |  |
+| I-13 | Planned |  |
+| I-23 | Planned |  |
+| I-24 | Planned |  |
+| I-14 | Planned |  |
+| I-15 | Planned |  |
+| I-16 | Planned |  |
+| I-17 | Planned |  |
+| I-18 | Planned |  |
+| I-19 | Planned |  |
+| I-20 | Planned |  |
+| I-21 | Planned |  |
+| I-22 | Planned |  |
 
 ## Requirement coverage
 

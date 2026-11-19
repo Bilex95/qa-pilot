@@ -303,10 +303,17 @@ ISSUES = [
 ]
 
 
+# Finished issues: id -> commits on the stage branch. Add an entry when an issue is committed, then rerun this script.
+DONE = {
+    "I-01": "53bbea8, 82dd4f7",
+    "I-02": "8199178, 4ef3d92, 9749945, 30a3319, ce8a9d2",
+}
+
+
 def render(i: Issue) -> str:
     deps = ", ".join(f"[{d}]({next(x.file for x in ISSUES if x.id == d)})" for d in i.deps) or "None"
     lines = [f"# {i.id} {i.title}", "",
-             f"**Stage:** {i.stage} | **Batch:** {i.batch} (see [DAG](DAG.md)) | **Status:** Planned", "",
+             f"**Stage:** {i.stage} | **Batch:** {i.batch} (see [DAG](DAG.md)) | **Status:** {'Done' if i.id in DONE else 'Planned'}", "",
              "## Goal / requirement IDs", "", i.goal, "", "Requirements: " + ", ".join(i.reqs), "",
              "## Scope and exclusions", "", *[f"* {s}" for s in i.scope], *([""] + [f"* Not in this issue: {e}" for e in i.exclusions] if i.exclusions else []), "",
              "## Module ownership / dependencies", "", *[f"* `{m}`" for m in i.modules], f"* Depends on: {deps}",
@@ -348,7 +355,7 @@ def dag() -> str:
         deps = sorted({d for i in items for d in i.deps} - {i.id for i in items})
         lines.append(f"| {b} | {items[0].stage} | " + ", ".join(f"[{i.id}]({i.file}) {i.title}" for i in items)
                      + f" | {', '.join(deps) or 'Stage 3 foundations'} |")
-    lines += ["", "## Status", "", "| Issue | Status | Commit |", "|---|---|---|", *[f"| {i.id} | Planned | |" for i in ISSUES], "",
+    lines += ["", "## Status", "", "| Issue | Status | Commit |", "|---|---|---|", *[f"| {i.id} | {'Done' if i.id in DONE else 'Planned'} | {DONE.get(i.id, '')} |" for i in ISSUES], "",
               "## Requirement coverage", ""]
     covered = sorted({r for i in ISSUES for r in i.reqs})
     lines.append(f"{len(covered)} requirements are referenced by Stage 4 to 6 issues: " + ", ".join(covered) + ".")

@@ -1,6 +1,6 @@
 # I-01 Projects, components and environments
 
-**Stage:** 4 | **Batch:** 4A (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4A (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

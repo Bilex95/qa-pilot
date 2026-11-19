@@ -1,6 +1,6 @@
 # I-02 Labels
 
-**Stage:** 4 | **Batch:** 4A (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4A (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
