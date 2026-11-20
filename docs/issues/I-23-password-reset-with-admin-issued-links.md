@@ -1,6 +1,6 @@
 # I-23 Password reset with admin issued links
 
-**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
