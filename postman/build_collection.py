@@ -275,6 +275,13 @@ folders = [
             f"{O}/audit-events?action=auth.password_changed&page_size=100", token="adminToken",
             tests=[status(200), 'pm.test("the removed person is still named", () => { const names = pm.response.json().items.map(e => e.actor_name); pm.expect(names).to.include("Newman Reset"); });',
                    'pm.test("no password in the event", () => pm.expect(JSON.stringify(pm.response.json())).to.not.include("Newman-change-2028"));']),
+        req("Audit actors (API-154)", "GET", f"{O}/audit-events/actors", token="adminToken",
+            tests=[status(200), 'const a = pm.response.json();', 'pm.test("people by name, removed members included", () => { pm.expect(a).to.be.an("array");'
+                   ' pm.expect(a.map(x => x.full_name)).to.include("Newman Reset"); a.forEach(x => pm.expect(Object.keys(x).sort()).to.eql(["full_name", "id"])); });']),
+        req("Audit actors as QA Lead (API-154 forbidden)", "GET", f"{O}/audit-events/actors", token="leadToken", tests=[status(403), err("forbidden")]),
+        req("Audit actors as QA Engineer (API-154 forbidden)", "GET", f"{O}/audit-events/actors", token="qaToken", tests=[status(403), err("forbidden")]),
+        req("Audit actors without token (API-154 unauthorized)", "GET", f"{O}/audit-events/actors", tests=[status(401)]),
+        req("Audit actors of other org (API-154 cross tenant)", "GET", f"{F}/audit-events/actors", token="adminToken", tests=[status(404), err("org_not_found")]),
         req("Audit events as QA Lead (API-150 forbidden)", "GET", f"{O}/audit-events", token="leadToken", tests=[status(403)]),
         req("Audit events as QA Engineer (API-150 forbidden)", "GET", f"{O}/audit-events", token="qaToken", tests=[status(403)]),
         req("Audit events of other org (API-150 cross tenant)", "GET", f"{F}/audit-events", token="adminToken", tests=[status(404)]),
