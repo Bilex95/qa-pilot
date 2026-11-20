@@ -1,6 +1,6 @@
 """Projects, components and environments (I-01; REQ-013 to REQ-016).
 
-Public contract for other modules: get_project, get_component, get_environment, get_label, get_labels, take_bug_number.
+Public contract for other modules: get_project, get_component, get_components, get_environment, get_label, get_labels, take_bug_number.
 """
 
 import uuid
@@ -32,6 +32,11 @@ def get_component(db: Session, org_id: uuid.UUID, component_id: uuid.UUID) -> Co
     if component is None:
         raise NotFound("Component not found.")
     return component
+
+
+def get_components(db: Session, org_id: uuid.UUID, component_ids: list[uuid.UUID]) -> list[Component]:
+    """The components of this org among the ids; unknown or foreign ids are simply missing."""
+    return repo.components_by_ids(db, org_id, component_ids)
 
 
 def get_environment(db: Session, org_id: uuid.UUID, environment_id: uuid.UUID) -> Environment:

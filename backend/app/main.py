@@ -13,6 +13,7 @@ from app.modules.auth.api.routes import router as auth_router
 from app.modules.bugs.api.routes import router as bugs_router
 from app.modules.orgs.api.routes import router as orgs_router
 from app.modules.projects.api.routes import router as projects_router
+from app.modules.testing.api.routes import router as testing_router
 
 API_PREFIX = "/api/v1"
 
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     api.include_router(orgs_router)
     api.include_router(projects_router)
     api.include_router(bugs_router)
+    api.include_router(testing_router)
     api.include_router(audit_router)
     app.include_router(api)
     return app

@@ -5,6 +5,7 @@ from app.modules.auth.infrastructure.models import RefreshToken, User
 from app.modules.bugs.infrastructure.models import Bug, BugLabel, SavedView
 from app.modules.orgs.infrastructure.models import Invitation, Membership, Organization
 from app.modules.projects.infrastructure.models import Component, Environment, Label, Project
+from app.modules.testing.infrastructure.models import TestCase, TestCaseCounter, TestSuite
 
 __all__ = ["AuditEvent", "Bug", "BugLabel", "Component", "Environment", "Invitation", "Label", "Membership",
-           "Organization", "Project", "RefreshToken", "SavedView", "User"]
+           "Organization", "Project", "RefreshToken", "SavedView", "TestCase", "TestCaseCounter", "TestSuite", "User"]

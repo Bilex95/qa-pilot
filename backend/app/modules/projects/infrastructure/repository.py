@@ -63,6 +63,12 @@ def get_component(db: Session, org_id: uuid.UUID, component_id: uuid.UUID) -> Co
     return db.scalar(select(Component).where(Component.org_id == org_id, Component.id == component_id))
 
 
+def components_by_ids(db: Session, org_id: uuid.UUID, component_ids: list[uuid.UUID]) -> list[Component]:
+    if not component_ids:
+        return []
+    return list(db.scalars(select(Component).where(Component.org_id == org_id, Component.id.in_(component_ids))))
+
+
 def component_name_taken(db: Session, project_id: uuid.UUID, name: str, *, except_id: uuid.UUID | None = None) -> bool:
     stmt = select(func.count()).select_from(Component).where(
         Component.project_id == project_id, func.lower(Component.name) == name.lower())
