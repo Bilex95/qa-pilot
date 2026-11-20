@@ -8,6 +8,7 @@ import { Button, Spinner } from "@/components/ui/button";
 import { Banner } from "@/components/ui/feedback";
 import { Field, Input } from "@/components/ui/field";
 import { isApiError } from "@/lib/api/errors";
+import { hasPendingInvite } from "@/lib/secret-link";
 import { homeFor, useSession } from "@/lib/session/session-provider";
 import { safeNext } from "@/lib/utils";
 
@@ -32,7 +33,8 @@ export function LoginForm() {
     setPending(true);
     try {
       const me = await login(parsed.data.email, parsed.data.password);
-      router.replace(homeFor(me, next));
+      // An invitation that was waiting for sign in (D-055): back to the invite page, which finds its token in this tab
+      router.replace(hasPendingInvite() ? "/invite" : homeFor(me, next));
     } catch (err) {
       setPending(false);
       if (isApiError(err, "invalid_credentials")) setFormError("Email or password is incorrect. Check both and try again.");
@@ -51,7 +53,8 @@ export function LoginForm() {
         <Field id="l-email" label="Email" error={errors.email}>
           {(a) => <Input {...a} name="email" type="email" autoComplete="email" disabled={pending} />}
         </Field>
-        <Field id="l-pass" label="Password" error={errors.password}>
+        <Field id="l-pass" label="Password" error={errors.password}
+          labelAside={<Link className="small" href="/forgot-password">Forgot password?</Link>}>
           {(a) => <Input {...a} name="password" type="password" autoComplete="current-password" disabled={pending} />}
         </Field>
         <Button type="submit" variant="primary" aria-disabled={pending} disabled={pending}>

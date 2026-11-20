@@ -8,6 +8,7 @@ import { Button, Spinner } from "@/components/ui/button";
 import { Banner } from "@/components/ui/feedback";
 import { Field, Input } from "@/components/ui/field";
 import { isApiError } from "@/lib/api/errors";
+import { hasPendingInvite } from "@/lib/secret-link";
 import { homeFor, useSession } from "@/lib/session/session-provider";
 import { safeNext } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ export function RegisterForm() {
     setPending(true);
     try {
       const me = await register(parsed.data.full_name, parsed.data.email, parsed.data.password);
-      router.replace(homeFor(me, next));
+      router.replace(hasPendingInvite() ? "/invite" : homeFor(me, next)); // an invitation waiting for the new account (D-055)
     } catch (err) {
       setPending(false);
       if (isApiError(err, "email_taken")) setErrors({ email: "An account with this email already exists." });

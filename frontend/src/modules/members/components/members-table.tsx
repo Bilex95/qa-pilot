@@ -22,9 +22,10 @@ type Props = {
   myUserId: string | undefined;
   soleAdmin: boolean;
   onRemove: (member: Member) => void;
+  onResetPassword: (member: Member) => void;
 };
 
-export function MembersTable({ items, manage, myUserId, soleAdmin, onRemove }: Props) {
+export function MembersTable({ items, manage, myUserId, soleAdmin, onRemove, onResetPassword }: Props) {
   return (
     <div className="table-wrap">
       <table className="t stackable">
@@ -40,7 +41,7 @@ export function MembersTable({ items, manage, myUserId, soleAdmin, onRemove }: P
         <tbody>
           {items.map((m) => (
             <MemberRow key={m.membership_id} member={m} manage={manage} isMe={m.user.id === myUserId} soleAdmin={soleAdmin}
-              onRemove={onRemove} />
+              onRemove={onRemove} onResetPassword={onResetPassword} />
           ))}
         </tbody>
       </table>
@@ -48,12 +49,13 @@ export function MembersTable({ items, manage, myUserId, soleAdmin, onRemove }: P
   );
 }
 
-function MemberRow({ member, manage, isMe, soleAdmin, onRemove }: {
+function MemberRow({ member, manage, isMe, soleAdmin, onRemove, onResetPassword }: {
   member: Member;
   manage: boolean;
   isMe: boolean;
   soleAdmin: boolean;
   onRemove: (member: Member) => void;
+  onResetPassword: (member: Member) => void;
 }) {
   const org = useOrg();
   const qc = useQueryClient();
@@ -118,9 +120,14 @@ function MemberRow({ member, manage, isMe, soleAdmin, onRemove }: {
       <td data-label="Joined" className="small">{formatDate(member.joined_at)}</td>
       <td className="no-label">
         {manage && !isMe ? (
-          <Button variant="danger" size="sm" className="ghost" aria-label={`Remove ${name}`} onClick={() => onRemove(member)}>
-            Remove
-          </Button>
+          <span className="row" style={{ gap: 4, flexWrap: "wrap" }}>
+            <Button variant="ghost" size="sm" aria-label={`Reset the password of ${name}`} onClick={() => onResetPassword(member)}>
+              Reset password
+            </Button>
+            <Button variant="danger" size="sm" className="ghost" aria-label={`Remove ${name}`} onClick={() => onRemove(member)}>
+              Remove
+            </Button>
+          </span>
         ) : null}
       </td>
     </tr>

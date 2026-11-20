@@ -32,6 +32,15 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
+      // Pages that handle a secret link (D-055): never send a Referer, never cache. Listed after the general block, so for
+      // these paths the later value of the same header wins (Next.js header overriding).
+      ...["/invite", "/reset-password", "/forgot-password"].map((source) => ({
+        source,
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Cache-Control", value: "no-store" },
+        ],
+      })),
     ];
   },
 };

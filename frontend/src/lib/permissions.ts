@@ -15,6 +15,7 @@ const MATRIX = {
   "org.update_settings": ADMIN,
   "member.list": LEADS,
   "member.update_role": ADMIN,
+  "member.reset_password": ADMIN,
   "invitation.create": ADMIN,
   "audit.read": ADMIN,
   "label.manage": LEADS,

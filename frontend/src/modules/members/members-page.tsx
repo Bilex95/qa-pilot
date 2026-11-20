@@ -18,6 +18,7 @@ import { InviteDialog } from "./components/invite-dialog";
 import { MembersTable } from "./components/members-table";
 import { PendingInvitations } from "./components/pending-invitations";
 import { RemoveMemberDialog } from "./components/remove-member-dialog";
+import { ResetPasswordDialog } from "./components/reset-password-dialog";
 import { PAGE_SIZE, ROLE_ORDER } from "./schemas";
 
 type Member = Schemas["MemberOut"];
@@ -47,6 +48,7 @@ export function MembersPage() {
   const [roleFilter, setRoleFilter] = useState<"" | Role>("");
   const [inviting, setInviting] = useState(false);
   const [removing, setRemoving] = useState<Member | null>(null);
+  const [resetting, setResetting] = useState<Member | null>(null);
 
   const members = useQuery({
     queryKey: ["members", org.id, { q, role: roleFilter }],
@@ -138,7 +140,7 @@ export function MembersPage() {
               </p>
             ) : (
               <MembersTable items={data.items} manage={manage} myUserId={me?.user.id} soleAdmin={admins.data?.total === 1}
-                onRemove={setRemoving} />
+                onRemove={setRemoving} onResetPassword={setResetting} />
             )}
             {data.total > data.items.length ? (
               <p className="panel-body small muted" role="status">
@@ -151,6 +153,7 @@ export function MembersPage() {
       )}
 
       {inviting ? <InviteDialog onClose={() => setInviting(false)} /> : null}
+      {resetting ? <ResetPasswordDialog member={resetting} onClose={() => setResetting(null)} /> : null}
       {removing ? (
         <RemoveMemberDialog name={removing.user.full_name} orgName={org.name} pending={remove.isPending}
           onConfirm={() => remove.mutate(removing)} onClose={() => setRemoving(null)} />
