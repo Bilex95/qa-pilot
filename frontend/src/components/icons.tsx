@@ -40,4 +40,6 @@ export const IconLock = make(<><rect x="4" y="11" width="16" height="10" rx="2" 
 export const IconCopy = make(<><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></>, "IconCopy");
 export const IconX = make(<path d="M6 6l12 12M18 6L6 18" />, "IconX");
 export const IconTrash = make(<path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3" />, "IconTrash");
+export const IconArrowUp = make(<path d="M12 19V5M6 11l6-6 6 6" />, "IconArrowUp");
+export const IconArrowDown = make(<path d="M12 5v14M6 13l6 6 6-6" />, "IconArrowDown");
 export const IconRefresh = make(<path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4" />, "IconRefresh");

@@ -24,6 +24,7 @@ const MATRIX = {
   "bug.delete": LEADS,
   "comment.create": ALL,
   "suite.manage": QA,
+  "case.manage": QA,
   "run.create": QA,
   "release.manage": LEADS,
   "ai.bug_writer": NOT_VIEWER,
