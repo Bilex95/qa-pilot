@@ -31,7 +31,7 @@ App routes use the org slug (D-029). The prototype uses hash routes with the sam
 | SCR-16 | Releases | `/o/{org}/releases` | All (manage: Admin, Lead) | REQ-035, REQ-037 | default, empty, loading, error, mobile | `releases` |
 | SCR-17 | Release detail | `/o/{org}/releases/{id}` | All (manage and AI: Admin, Lead) | REQ-035, REQ-036, REQ-037, REQ-048, REQ-049 | default, ai (readiness summary suggestion), loading, error, mobile | `release-detail` |
 | SCR-18 | Reports | `/o/{org}/reports` | All | REQ-039, REQ-040 | default, empty (no data in range), loading, error, mobile | `reports` |
-| SCR-19 | Members and roles | `/o/{org}/members` | Admin (manage), Lead (read) | REQ-006, REQ-009 | default, invite (invite dialog with link), loading, error, mobile | `members` |
+| SCR-19 | Members and roles | `/o/{org}/members` | Admin (manage), Lead (read) | REQ-006, REQ-009, REQ-010 | default, invite (invite dialog with link), loading, error, mobile | `members` |
 | SCR-20 | Settings | `/o/{org}/settings` | All (tabs per role) | REQ-011, REQ-012, REQ-022, REQ-052, REQ-053 | default (org tab), profile, loading, error, mobile | `settings` |
 | SCR-21 | AI usage | `/o/{org}/ai-usage` | Admin, Lead | REQ-042, REQ-051, REQ-052 | default, empty, loading, error, mobile | `ai-usage` |
 | SCR-22 | Not found | any unknown route | All | REQ-058 | default, mobile | `not-found` |

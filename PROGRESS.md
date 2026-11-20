@@ -24,6 +24,8 @@
 
 * I-06 Test suites and test cases, frontend part (D-054): suites screen (SCR-12) with New suite, Edit suite, Delete suite (count in the confirm), case table with pager; case editor (SCR-13) with steps (move, add, remove, ids kept), tags, Delete case confirm, read only for Developer and Viewer. Verified: ruff, mypy, pytest 574 passed, Newman 256 requests and 420 assertions, lint, typecheck and `next build` clean in one off WSL containers, layout check PASS (645 states, 10 widths), flow script PASS (cleanup in finally proven on a deliberate failure), parity compared at 1440 and 390 with the differences in `docs/reviews/STAGE_4_REVIEW.md`. Not pushed since 3fa8fbd.
 
+* I-23 Password reset and BL-014, backend part (D-055): migration `0010_password_resets` (also `users.password_changed_at`), invitation endpoints now take the token in the body (API-030, API-031; the old token in path routes are removed), reset link (API-151), public preview and confirm (API-152, API-153), `shared_account` and `own_account` refusals, sessions end at once on a reset or a password change (microsecond order inside a shared second), access log redaction. Verified: ruff, mypy, pytest 637 passed, migration up/down/up with no drift, Newman 281 requests and 462 assertions green, OpenAPI regenerated. The frontend part (fragment links, return token store, forgot and reset pages, reset action on Members, headers) waits for the product owner's review. The frontend typecheck is red until then: it still calls the removed invitation routes. Pushed up to 9928c08.
+
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs (done, see Done); I-06 suites and cases (done, see Done); I-11 settings; I-23 password reset
@@ -38,7 +40,7 @@
 * Every screen and popup: add to `e2e/scripts/check-app-layout.mjs`; prototype first for any style change, then `python scripts/build_globals_css.py`.
 
 ## Next
-* I-11 and I-23 of batch 4B (plan first, then wait for the go ahead). BL-014 (invite token in URLs) is planned with I-23.
+* I-23 frontend (after the backend review), then I-11 of batch 4B (plan first, then wait for the go ahead). BL-014 (invite token in URLs) is planned with I-23.
 
 ## Blockers
 * None.
