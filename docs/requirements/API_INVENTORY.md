@@ -47,7 +47,7 @@
 | API-013 | POST | `/auth/logout` | Signed in | `{refresh_token}` | 204 | none |
 | API-014 | GET | `/auth/me` | Signed in | none | `{user, memberships:[{org:{id,name,slug,ai_enabled}, role}], pending_invitations:[...]}` | none |
 | API-015 | PATCH | `/auth/me` | Signed in | `{full_name}` | `user` | 422 |
-| API-016 | POST | `/auth/me/password` | Signed in | `{current_password, new_password}` | 204 (revokes every refresh token and, from I-23, every access token issued before the change: D-055) | 400 `wrong_password`, 422 |
+| API-016 | POST | `/auth/me/password` | Signed in | `{current_password, new_password}` | 200 `{access_token, refresh_token, expires_in}`: a fresh pair for this device, issued after the change. Every other session ends (every refresh token is revoked and every access token issued before the change is refused: D-055) | 400 `wrong_password`, 422 |
 | API-152 | POST | `/auth/password-reset/preview` | Public | `{token}` | `{email_masked, expires_at}` | 410 `reset_invalid` (the same answer for an unknown, used, expired or replaced link), 422, 429 |
 | API-153 | POST | `/auth/password-reset/confirm` | Public | `{token, new_password}` | 204 (the link is used up, every session of the person ends) | 410 `reset_invalid`, 422, 429 |
 

@@ -58,14 +58,15 @@ def get_users_by_ids(db: Session, ids: list[uuid.UUID]) -> dict[uuid.UUID, User]
 
 # Use cases ----------------------------------------------------------------
 
-def _issue(db: Session, user: User, user_agent: str | None) -> tuple[TokenPair, RefreshToken]:
+def _issue(db: Session, user: User, user_agent: str | None, *,
+           issued_at: datetime | None = None) -> tuple[TokenPair, RefreshToken]:
     s = get_settings()
     raw = new_opaque_token()
     rt = RefreshToken(user_id=user.id, token_hash=token_hash(raw),
                       expires_at=utcnow() + timedelta(days=s.refresh_token_days),
                       user_agent=(user_agent or "")[:255] or None)
     db.add(rt)
-    access, ttl = create_access_token(user.id)
+    access, ttl = create_access_token(user.id, now=issued_at)
     return TokenPair(access, raw, ttl), rt
 
 
@@ -165,7 +166,9 @@ def update_profile(db: Session, user: User, *, full_name: str) -> User:
     return user
 
 
-def change_password(db: Session, user: User, *, current_password: str, new_password: str) -> None:
+def change_password(db: Session, user: User, *, current_password: str, new_password: str,
+                    user_agent: str | None = None) -> TokenPair:
+    """Every other session ends; the device that made the change stays signed in with a fresh token pair (D-055)."""
     if not verify_password(user.password_hash, current_password):
         raise AppError("Current password is incorrect.", code="wrong_password", status_code=400)
     problem = password_problem(new_password)
@@ -177,8 +180,11 @@ def change_password(db: Session, user: User, *, current_password: str, new_passw
     user.password_changed_at = now  # access tokens issued before this moment stop working (D-055)
     repo.revoke_all_for_user(db, user.id, now)
     repo.revoke_pending_resets(db, user.id, now)
+    # The new pair is issued after the change, never at or before it: the access token is stamped at least one microsecond later
+    pair, _ = _issue(db, user, user_agent, issued_at=max(utcnow(), now + timedelta(microseconds=1)))
     audit.record(db, "auth.password_changed", actor_id=user.id, entity_type="user", entity_id=user.id)
     db.commit()
+    return pair
 
 
 def access_token_predates_password_change(user: User, claims: dict[str, Any]) -> bool:

@@ -73,9 +73,13 @@ def update_me(body: ProfileIn, db: DB, user: CurrentUser) -> UserOut:
     return UserOut.model_validate(service.update_profile(db, user, full_name=body.full_name))
 
 
-@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT, responses=errors(400, 401, 422))
-def change_password(body: PasswordChangeIn, db: DB, user: CurrentUser) -> None:
-    service.change_password(db, user, current_password=body.current_password, new_password=body.new_password)
+@router.post("/me/password", response_model=TokensOut, responses=errors(400, 401, 422))
+def change_password(body: PasswordChangeIn, db: DB, user: CurrentUser, user_agent: UA = None) -> TokensOut:
+    """Every other session ends (refresh tokens revoked, earlier access tokens refused). The response is a fresh token pair
+    for this device, issued after the change, so the person stays signed in here (D-055)."""
+    pair = service.change_password(db, user, current_password=body.current_password, new_password=body.new_password,
+                                   user_agent=user_agent)
+    return TokensOut(access_token=pair.access_token, refresh_token=pair.refresh_token, expires_in=pair.expires_in)
 
 
 # The token travels in the body, never in the path or the query, so it stays out of logs, history and Referer (BL-014)

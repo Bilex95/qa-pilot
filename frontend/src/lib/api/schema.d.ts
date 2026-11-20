@@ -116,7 +116,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Change Password */
+        /**
+         * Change Password
+         * @description Every other session ends (refresh tokens revoked, earlier access tokens refused). The response is a fresh token pair
+         *     for this device, issued after the change, so the person stays signed in here (D-055).
+         */
         post: operations["change_password_api_v1_auth_me_password_post"];
         delete?: never;
         options?: never;
@@ -2189,7 +2193,9 @@ export interface operations {
     change_password_api_v1_auth_me_password_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "User-Agent"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2200,11 +2206,13 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TokensOut"];
+                };
             };
             /** @description Bad request */
             400: {

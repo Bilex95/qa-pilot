@@ -390,20 +390,51 @@
           "auth"
         ],
         "summary": "Change Password",
+        "description": "Every other session ends (refresh tokens revoked, earlier access tokens refused). The response is a fresh token pair\nfor this device, issued after the change, so the person stays signed in here (D-055).",
         "operationId": "change_password_api_v1_auth_me_password_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "User-Agent",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User-Agent"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PasswordChangeIn"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
-          "204": {
-            "description": "Successful Response"
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensOut"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad request",
@@ -435,12 +466,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/password-reset/preview": {

@@ -14,7 +14,7 @@ from app.modules.audit.infrastructure.models import AuditEvent
 from app.modules.auth.application import service
 from app.modules.auth.infrastructure.models import PasswordReset
 from app.modules.orgs.infrastructure.models import Membership
-from conftest import PASSWORD, auth
+from conftest import PASSWORD
 
 O = "/api/v1/orgs"
 A = "/api/v1/auth"
@@ -311,11 +311,43 @@ def test_a_failure_is_recorded_without_the_token(db, client) -> None:
 
 # Sessions after a normal password change ---------------------------------------------------
 
-def test_a_normal_password_change_also_ends_access_tokens(client, db, world) -> None:
+def bearer(tokens: dict[str, str]) -> dict[str, str]:
+    return {"Authorization": f"Bearer {tokens['access_token']}"}
+
+
+def test_a_password_change_keeps_this_device_signed_in_and_ends_every_other_session(client, db, world) -> None:
+    from app.core.security import decode_access_token, to_microseconds
+
     person = world.a.users["developer"]
-    h = auth(person)
-    r = client.post(f"{A}/me/password", json={"current_password": PASSWORD, "new_password": NEW_PASSWORD}, headers=h)
-    assert r.status_code == 204
-    assert client.get(f"{A}/me", headers=h).status_code == 401  # the token used for the change stops working
-    new = login(client, person, NEW_PASSWORD)
-    assert client.get(f"{A}/me", headers={"Authorization": f"Bearer {new.json()['access_token']}"}).status_code == 200
+    this_device = login(client, person).json()  # the device that makes the change
+    other_device = login(client, person).json()  # another session of the same person
+    r = client.post(f"{A}/me/password", json={"current_password": PASSWORD, "new_password": NEW_PASSWORD},
+                    headers=bearer(this_device))
+    assert r.status_code == 200, r.text
+    fresh = r.json()
+    assert set(fresh) >= {"access_token", "refresh_token", "expires_in", "token_type"}
+    # the tokens in use before the change are refused, on this device and on the other one
+    assert client.get(f"{A}/me", headers=bearer(this_device)).status_code == 401
+    assert client.get(f"{A}/me", headers=bearer(other_device)).status_code == 401
+    # every earlier refresh token is revoked: the other device cannot come back, and neither can the old pair of this one
+    assert client.post(f"{A}/refresh", json={"refresh_token": other_device["refresh_token"]}).status_code == 401
+    assert client.post(f"{A}/refresh", json={"refresh_token": this_device["refresh_token"]}).status_code == 401
+    # the pair returned by the change works at once, even inside the second of the change, and its refresh token rotates
+    assert client.get(f"{A}/me", headers=bearer(fresh)).status_code == 200
+    claims = decode_access_token(fresh["access_token"])
+    assert claims is not None and person.password_changed_at is not None
+    assert claims["iat_us"] > to_microseconds(person.password_changed_at)  # issued after the change, never at or before it
+    rotated = client.post(f"{A}/refresh", json={"refresh_token": fresh["refresh_token"]})
+    assert rotated.status_code == 200 and client.get(f"{A}/me", headers=bearer(rotated.json())).status_code == 200
+    assert login(client, person, NEW_PASSWORD).status_code == 200 and login(client, person).status_code == 401
+
+
+def test_a_refused_password_change_changes_nothing(client, db, world) -> None:
+    person = world.a.users["developer"]
+    device = login(client, person).json()
+    for body, status in (({"current_password": "Wrong-pass-123", "new_password": NEW_PASSWORD}, 400),
+                         ({"current_password": PASSWORD, "new_password": "short"}, 422)):
+        assert client.post(f"{A}/me/password", json=body, headers=bearer(device)).status_code == status
+    assert client.get(f"{A}/me", headers=bearer(device)).status_code == 200  # the session and the password are untouched
+    assert client.post(f"{A}/refresh", json={"refresh_token": device["refresh_token"]}).status_code == 200
+    assert login(client, person).status_code == 200

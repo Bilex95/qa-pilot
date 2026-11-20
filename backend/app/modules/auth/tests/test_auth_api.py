@@ -201,7 +201,7 @@ def test_change_password(client, db) -> None:
     weak = client.post(f"{URL}/me/password", json={"current_password": PASSWORD, "new_password": "short"}, headers=h)
     assert weak.status_code == 422
     ok = client.post(f"{URL}/me/password", json={"current_password": PASSWORD, "new_password": "Brandnew-77"}, headers=h)
-    assert ok.status_code == 204
+    assert ok.status_code == 200 and set(ok.json()) >= {"access_token", "refresh_token", "expires_in"}
     assert client.post(f"{URL}/refresh", json={"refresh_token": tokens["refresh_token"]}).status_code == 401
     assert client.post(f"{URL}/login", json={"email": "pw@example.test", "password": "Brandnew-77"}).status_code == 200
 
