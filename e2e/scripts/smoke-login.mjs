@@ -31,7 +31,7 @@ async function login(email) {
 }
 
 // warm up: next dev compiles each route on first visit and may reload the page once; do that before checking
-for (const path of ['/login', '/register', '/onboarding/org', '/o/lumen/dashboard', '/o/lumen/projects', '/invite/warmup-token-000']) {
+for (const path of ['/login', '/register', '/onboarding/org', '/o/lumen/dashboard', '/o/lumen/projects', '/invite#warmup-token-000']) {
   await page.goto(`${base}${path}`).catch(() => {});
   await page.waitForLoadState('networkidle').catch(() => {});
 }

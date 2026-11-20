@@ -249,6 +249,12 @@ folders = [
             tests=[status(401), err("invalid_refresh_token")]),
         req("The returned refresh token works (API-016)", "POST", "/api/v1/auth/refresh", body={"refresh_token": "{{freshRefresh}}"},
             tests=[status(200)]),
+        # Cleanup: the person registered above is a real member of the seeded workspace, so remove the membership at the end of the run
+        # (the user record stays, as in any registration). Without this, every run adds a "Newman Reset" member to Members.
+        req("Remove the person created for the reset tests (cleanup)", "DELETE", f"{O}/members/{{{{resetMembershipId}}}}", token="adminToken",
+            tests=[status(204)]),
+        req("The removed person is gone from Members (cleanup check)", "GET", f"{O}/members?page_size=100", token="adminToken",
+            tests=[status(200), 'pm.test("no Newman Reset member is left", () => pm.expect(pm.response.json().items.filter(m => m.user.full_name === "Newman Reset")).to.have.length(0));']),
     ]},
     {"name": "Audit", "item": [
         req("Audit events (API-150)", "GET", f"{O}/audit-events?page_size=5", token="adminToken",

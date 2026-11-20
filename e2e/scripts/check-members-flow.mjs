@@ -26,13 +26,14 @@ let secret = ''; // the invite link
 const redact = (text) => {
   let out = String(text);
   if (secret) {
-    const token = secret.split('/').filter(Boolean).pop();
+    const token = secret.split('#').pop();
     out = out.split(secret).join('[invite link]');
     if (token) out = out.split(token).join('[token]');
   }
   return out;
 };
 const log = (message) => console.log(`flow-i10: ${message}`);
+const check = (condition, message) => { if (!condition) throw new Error(message); };
 
 async function fillStable(page, selector, value) {
   for (let i = 0; i < 4; i++) {
@@ -120,7 +121,8 @@ try {
   await admin.click('.modal button:has-text("Create invite link")');
   await admin.waitForSelector('#inv-link');
   secret = await admin.inputValue('#inv-link');
-  if (!new URL(secret).pathname.startsWith('/invite/')) throw new Error('the invite link does not look like an invite link');
+  const parsed = new URL(secret);
+  if (parsed.pathname !== '/invite' || parsed.search !== '' || parsed.hash.length < 40) throw new Error('the invite link should be /invite with the token in the fragment only');
   log('invitation created, link shown once');
   await admin.click('.modal button:has-text("Done")');
   await admin.waitForSelector('.modal', { state: 'detached' });
@@ -130,11 +132,38 @@ try {
   // 2. The new person opens the link, creates an account with the invited email and accepts
   const guest = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
   guest.setDefaultTimeout(60_000);
+  // Every request URL and Referer header and every console message of this person's browser: the token must be in none (D-055)
+  const seen = [];
+  guest.context().on('request', async (r) => { seen.push(r.url(), `referer:${(await r.allHeaders().catch(() => ({}))).referer ?? ''}`); });
+  guest.on('console', (m) => seen.push(`console:${m.text()}`));
   step = 'open the invite link as a new person'; current = guest;
-  await guest.goto(secret);
+  // A second link opened in a tab already on /invite only changes the hash (no reload): the page must use the new token each time
+  // and clear it from the address bar again. Order: a bad link first (error state), then the real one (the page must recover),
+  // then a bad one again (the page must drop the good state), then the real one again, which stays in use from here on.
+  const sameTab = async (token) => {
+    await guest.evaluate((t) => { location.hash = t; }, token); // a hash change: no reload, like pasting a link into this tab
+    await guest.waitForFunction(() => location.hash === '', null, { timeout: 15_000 });
+    check(await guest.evaluate(() => location.search === ''), 'the address bar must carry no query after a second link');
+  };
+  const realToken = secret.split('#').pop();
+  const badToken = 'z'.repeat(43); // looks like a token but is not one
+  await guest.goto(`${BASE}/invite#${badToken}`);
+  await guest.waitForSelector('text=This invite link no longer works');
+  check(new URL(guest.url()).hash === '', 'the fragment must be removed from the address bar after the page read it');
+  await sameTab(realToken);
   await guest.waitForSelector('a.btn:has-text("Create an account")');
+  check((await guest.locator('text=This invite link no longer works').count()) === 0, 'the valid second link must replace the error state');
+  log('a valid second link opened in the same tab replaced the error state, and its token was cleared from the address bar');
+  await sameTab(badToken);
+  await guest.waitForSelector('text=This invite link no longer works');
+  check((await guest.locator('a.btn:has-text("Create an account")').count()) === 0, 'a bad second link must not leave the first link\'s page on screen');
+  await sameTab(realToken);
+  await guest.waitForSelector('a.btn:has-text("Create an account")');
+  log('a bad link and then the real link in the same tab: each was used and cleared from the address bar');
+  check(new URL(guest.url()).hash === '', 'the fragment must be removed from the address bar after the page read it');
   step = 'create an account'; await guest.click('a.btn:has-text("Create an account")');
   await guest.waitForSelector('#r-name');
+  check(new URL(guest.url()).search === '' && new URL(guest.url()).hash === '', 'the register page address must carry no token and no next parameter');
   await guest.waitForLoadState('networkidle');
   await fillStable(guest, '#r-name', NAME);
   await fillStable(guest, '#r-email', EMAIL);
@@ -144,6 +173,12 @@ try {
   step = 'accept the invitation'; await guest.click('text=Accept and continue');
   await guest.waitForURL('**/o/lumen/dashboard');
   log('the new user accepted the invitation and reached the workspace');
+  const token = secret.split('#').pop();
+  check(seen.length > 5, 'the recorder should have seen the requests of this person');
+  check(seen.filter((s) => s.includes(token)).length === 0, 'the invite token must not appear in any request URL, Referer header or console message');
+  check(!(await guest.evaluate(() => JSON.stringify({ l: { ...localStorage }, s: { ...sessionStorage }, c: document.cookie }))).includes(token),
+    'the token must not stay in browser storage after the invitation is accepted');
+  log('the invite token appeared in no request URL, Referer header, console message or browser storage, and left sessionStorage on accept');
 
   // 3. The link works once
   const stranger = await (await browser.newContext()).newPage();

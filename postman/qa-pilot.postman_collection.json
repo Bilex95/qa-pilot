@@ -4056,6 +4056,98 @@
               }
             }
           ]
+        },
+        {
+          "name": "Remove the person created for the reset tests (cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/members/{{resetMembershipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "members",
+                "{{resetMembershipId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The removed person is gone from Members (cleanup check)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/members?page_size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "members"
+              ],
+              "query": [
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"no Newman Reset member is left\", () => pm.expect(pm.response.json().items.filter(m => m.user.full_name === \"Newman Reset\")).to.have.length(0));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

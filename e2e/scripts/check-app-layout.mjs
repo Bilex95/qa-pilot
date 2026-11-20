@@ -9,6 +9,7 @@ import { chromium } from 'playwright';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { revokeResetLinks } from './revoke-reset-links.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i > -1 ? process.argv[i + 1] : fallback; };
@@ -199,6 +200,42 @@ async function removeBugFixture() {
   if (project) await fetch(`${org}/projects/${project.id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ archived: true }) });
 }
 
+// Reset password fixture (I-23): a person who belongs to the Lumen workspace only, registered and invited through the API, so the
+// Members row can offer Reset password and the reset page has a real link (the token lives in memory only, never printed). The
+// membership is removed again at the end; the user record stays, as in any registration.
+const RESET_EMAIL = 'layout-i23@qapilot.test';
+const RESET_FIX = { token: '', membershipId: '' };
+async function ensureResetFixture() {
+  const { h, org } = await bugApi();
+  const asJson = (headers, body) => ({ method: 'POST', headers, body: JSON.stringify(body) });
+  const plain = { 'Content-Type': 'application/json' };
+  let reg = await fetch(`${API}/api/v1/auth/register`, asJson(plain, { full_name: 'Layout I23 Person', email: RESET_EMAIL, password: PW }));
+  if (reg.status === 409) reg = await fetch(`${API}/api/v1/auth/login`, asJson(plain, { email: RESET_EMAIL, password: PW }));
+  const user = await must(reg, 'register or sign in the reset fixture person');
+  const members = await must(await fetch(`${org}/members?q=layout-i23&page_size=100`, { headers: h }), 'list members');
+  if (!members.items.some((m) => m.user.email === RESET_EMAIL)) {
+    const inv = await must(await fetch(`${org}/invitations`, asJson(h, { email: RESET_EMAIL, role: 'viewer' })), 'invite the reset fixture person');
+    await must(await fetch(`${API}/api/v1/invitations/accept`, asJson({ ...plain, Authorization: `Bearer ${user.access_token}` }, { token: inv.invite_url.split('#').pop() })), 'accept the invitation');
+  }
+  const found = (await must(await fetch(`${org}/members?q=layout-i23&page_size=100`, { headers: h }), 'list members')).items.find((m) => m.user.email === RESET_EMAIL);
+  RESET_FIX.membershipId = found.membership_id;
+  await freshResetToken();
+}
+// A newer link replaces the older one, and the Members dialog below creates one at every width, so each width starts with a new link
+async function freshResetToken() {
+  const { h, org } = await bugApi();
+  const link = await must(await fetch(`${org}/members/${RESET_FIX.membershipId}/password-reset`, { method: 'POST', headers: h }), 'create the reset link');
+  RESET_FIX.token = link.reset_url.split('#').pop();
+}
+async function removeResetFixture() {
+  const { h, org } = await bugApi();
+  const members = await must(await fetch(`${org}/members?q=layout-i23&page_size=100`, { headers: h }), 'list members');
+  for (const m of members.items.filter((x) => x.user.email === RESET_EMAIL)) await fetch(`${org}/members/${m.membership_id}`, { method: 'DELETE', headers: h });
+  // Removing the membership does not end the person's reset links: revoke them so none stays live after the run
+  const { revoked } = revokeResetLinks([RESET_EMAIL]);
+  console.log(`reset fixture: revoked ${revoked} live reset link(s); none is left`);
+}
+
 // Sign out through the user menu and sign in again as another Lumen person
 async function signInAs(page, email) {
   step = `sign out to sign in as ${email}`;
@@ -308,10 +345,11 @@ await ensureLongFixture();
 await ensureLabelFixture();
 await ensureBugFixture();
 await ensureTestFixture();
+await ensureResetFixture();
 const browser = await chromium.launch();
 { // warm up every route once so first compiles do not disturb the checks
   const warm = await browser.newPage();
-  for (const path of ['/login', '/register', '/invite/not-a-real-token-000', '/onboarding/org', '/o/lumen/dashboard',
+  for (const path of ['/login', '/register', '/invite#not-a-real-token-000', '/forgot-password', '/reset-password', '/onboarding/org', '/o/lumen/dashboard',
     '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs', '/o/lumen/bugs/new', '/o/lumen/bugs/WEB-1',
     '/o/lumen/tests', '/o/lumen/tests/cases/new', `/o/lumen/tests/cases/${TEST_FIX.caseKey}`,
     '/o/lumen/this-page-does-not-exist']) {
@@ -353,11 +391,23 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
 
   try {
   // Signed out screens
-  for (const [path, shot] of [['/login', 'login'], ['/register', null], ['/invite/not-a-real-token-000', null]]) {
+  await freshResetToken();
+  for (const [path, shot] of [['/login', 'login'], ['/register', null], ['/invite#not-a-real-token-000', null],
+    ['/forgot-password', 'forgot-password'], ['/reset-password', 'reset-password-invalid'],
+    [`/reset-password#${RESET_FIX.token}`, 'reset-password']]) {
     await go(page, path);
     await page.waitForSelector('.auth-card h2');
-    await check(path, { shot });
+    if (path.startsWith('/reset-password#')) await page.waitForSelector('#rp-new'); // the preview answered: the form is showing
+    await check(path.replace(RESET_FIX.token, '[token]'), { shot }); // the token is never printed
   }
+  // The reset form with an error on every field (a weak password and two that differ)
+  await go(page, `/reset-password#${RESET_FIX.token}`);
+  await page.waitForSelector('#rp-new');
+  await fillStable(page, '#rp-new', 'short1');
+  await fillStable(page, '#rp-confirm', 'other1');
+  await page.click('button:has-text("Set password")');
+  await page.waitForSelector('.auth-card .err');
+  await check('/reset-password (errors)', { shot: 'reset-password-error' });
 
   // Sign in as the Org Admin (most navigation and controls)
   await go(page, '/login');
@@ -450,6 +500,35 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.fill('#m-q', 'zzzz-no-such-person');
   await page.waitForSelector('text=No one matches your search or role filter.');
   await check('members: no results', { shot: 'members-no-results' });
+  await page.fill('#m-q', '');
+
+  // Reset password (I-23): the confirmation, the link dialog (the link is masked in the screenshot), and the refusal for a person in two workspaces
+  step = 'open the Reset password confirmation';
+  await fillStable(page, '#m-q', RESET_EMAIL);
+  const resetRow = page.locator('table.t tbody tr', { hasText: RESET_EMAIL });
+  await resetRow.waitFor();
+  await check('members: the row with Reset password and Remove', { shot: 'members-reset-row' });
+  await resetRow.locator('button[aria-label^="Reset the password of"]').click();
+  await page.waitForSelector('.modal');
+  await check('reset password confirmation', { popup: '.modal', shot: 'members-reset-confirm' });
+  step = 'create the reset link';
+  await page.click('.modal button:has-text("Create reset link")');
+  await page.waitForSelector('#reset-link');
+  await page.addStyleTag({ content: '#reset-link { -webkit-text-security: disc; }' }); // the link is a secret: never in a screenshot
+  await check('reset password link dialog', { popup: '.modal', shot: 'members-reset-link' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'open the refusal for a person in two workspaces';
+  await fillStable(page, '#m-q', 'priya@lumenfreight.test');
+  const sharedRow = page.locator('table.t tbody tr', { hasText: 'priya@lumenfreight.test' });
+  await sharedRow.waitFor();
+  await sharedRow.locator('button[aria-label^="Reset the password of"]').click();
+  await page.waitForSelector('.modal');
+  await page.click('.modal button:has-text("Create reset link")');
+  await page.waitForSelector('.modal .banner.error');
+  await check('reset password refused for a person in two workspaces', { popup: '.modal', shot: 'members-reset-refused' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
   await page.fill('#m-q', '');
 
   // Bug list (I-03): the default list with the long text fixtures, More filters, saved views, and every state
@@ -775,6 +854,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await ctx.close();
 }
 await browser.close();
+await removeResetFixture().catch((e) => console.log(`note: could not remove the reset fixture member: ${e.message}`));
 await removeBugFixture().catch((e) => console.log(`note: could not remove the bug fixture: ${e.message}`));
 await removeLabelFixture().catch((e) => console.log(`note: could not remove the label fixture: ${e.message}`));
 await removeInviteFixture().catch((e) => console.log(`note: could not revoke the invitation fixture: ${e.message}`));
