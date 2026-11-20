@@ -165,7 +165,7 @@ Rule: every screen maps to at least one REQ; every Must REQ maps to a screen, an
 | REQ-009 | Must | SCR-19 | API-024, API-025, API-026 | |
 | REQ-010 | Must | SCR-01, SCR-02, SCR-19 | API-010, API-011, API-151, API-152, API-153 | |
 | REQ-011 | Should | SCR-20 | API-015, API-016 | |
-| REQ-012 | Should | SCR-20 | API-150 | |
+| REQ-012 | Should | SCR-20 | API-150, API-154 | |
 | REQ-013 | Must | SCR-06, SCR-07 | API-040, API-041, API-042, API-043 | |
 | REQ-014 | Must | SCR-07 | API-044, API-045, API-046, API-047 | |
 | REQ-015 | Must | SCR-07 | API-048, API-049, API-050, API-051 | |

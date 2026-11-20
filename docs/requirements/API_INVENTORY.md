@@ -181,8 +181,9 @@ All AI endpoints: check `ai_enabled` (403 `ai_disabled`), rate limits (429), wri
 
 | ID | Method | Path | Role | Request | Response | Errors |
 |---|---|---|---|---|---|---|
-| API-150 | GET | `{O}/audit-events` | `audit.read` | `?action&actor_id&entity_type&from&to&page` | page of audit events | none |
+| API-150 | GET | `{O}/audit-events` | `audit.read` | `?action&actor_id&entity_type&from&to&page` | page of audit events; each event carries `actor_name` (also for a person removed since) | none |
+| API-154 | GET | `{O}/audit-events/actors` | `audit.read` | none | `[{id, full_name}]`: only people with at least one event in this workspace, removed members included, by name (for the actor filter) | none |
 
 ## 3. Counts
 
-97 endpoints across 10 groups (counted by `scripts/check_traceability.py`). Every endpoint gets: Pydantic request and response schemas, pytest cases for happy, invalid, unauthorized, forbidden and cross tenant paths, and a Postman request (CLAUDE.md rules).
+101 endpoints across 10 groups (counted by `scripts/check_traceability.py`). Every endpoint gets: Pydantic request and response schemas, pytest cases for happy, invalid, unauthorized, forbidden and cross tenant paths, and a Postman request (CLAUDE.md rules).

@@ -34,7 +34,8 @@ Copied from `docs/requirements/API_INVENTORY.md` (`{O}` = `/api/v1/orgs/{org_id}
 | API-015 | PATCH | `/auth/me` | Signed in | `{full_name}` | `user` | 422 |
 | API-016 | POST | `/auth/me/password` | Signed in | `{current_password, new_password}` | 200 `{access_token, refresh_token, expires_in}`: a fresh pair for this device, issued after the change. Every other session ends (every refresh token is revoked and every access token issued before the change is refused: D-055) | 400 `wrong_password`, 422 |
 | API-023 | PATCH | `{O}` | `org.update_settings` | `{name?, ai_enabled?, ai_daily_limit?}` | org | 403, 422 |
-| API-150 | GET | `{O}/audit-events` | `audit.read` | `?action&actor_id&entity_type&from&to&page` | page of audit events | none |
+| API-150 | GET | `{O}/audit-events` | `audit.read` | `?action&actor_id&entity_type&from&to&page` | page of audit events; each event carries `actor_name` (also for a person removed since) | none |
+| API-154 | GET | `{O}/audit-events/actors` | `audit.read` | none | `[{id, full_name}]`: only people with at least one event in this workspace, removed members included, by name (for the actor filter) | none |
 
 ## Authorization, audit, data and edge cases
 

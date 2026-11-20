@@ -195,7 +195,7 @@ ISSUES = [
           "One settings screen with tabs per role.",
           ["Organization tab (name, AI on or off, daily limit), Labels tab (from I-02), Audit log tab, My profile tab with password change"],
           ["AI usage numbers (I-19)"], ["frontend/src/modules/settings"], ["I-02", "I-10"],
-          ["API-015", "API-016", "API-023", "API-150"], ["SCR-20"],
+          ["API-015", "API-016", "API-023", "API-150", "API-154"], ["SCR-20"],
           ["Org Admin: all tabs; QA Lead: Labels and My profile; others: My profile"],
           ["Password change signs out other sessions (backend revokes refresh tokens)", "Turning AI off hides AI controls everywhere (D-027)"],
           STD_UI_TESTS, ["Viewer only sees My profile"]),
@@ -385,6 +385,6 @@ if __name__ == "__main__":
     for i in ISSUES:
         missing = [a for a in i.apis if a not in API_ROWS]
         assert not missing, (i.id, missing)
-        (OUT / i.file).write_text(render(i), encoding="utf-8")
-    (OUT / "DAG.md").write_text(dag(), encoding="utf-8")
+        (OUT / i.file).write_text(render(i), encoding="utf-8", newline="\n")  # LF on Windows too: no line ending noise in git
+    (OUT / "DAG.md").write_text(dag(), encoding="utf-8", newline="\n")
     print(f"Wrote {len(ISSUES)} issues and DAG.md")
