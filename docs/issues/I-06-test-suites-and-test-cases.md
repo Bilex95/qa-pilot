@@ -1,6 +1,6 @@
 # I-06 Test suites and test cases
 
-**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

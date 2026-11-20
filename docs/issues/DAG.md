@@ -108,7 +108,7 @@ flowchart LR
 | I-03 | Done | 6b29711, 9668292, 1a9d8c2, d2fee0b |
 | I-04 | Planned |  |
 | I-05 | Planned |  |
-| I-06 | Planned |  |
+| I-06 | Done | 20bfae6, c23000f, 0c960f3, c19719f |
 | I-07 | Planned |  |
 | I-08 | Planned |  |
 | I-09 | Planned |  |
