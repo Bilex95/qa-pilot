@@ -312,6 +312,18 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 * **Reason:** stable human ids without a schema change later, no half created bulk batches, and the same soft delete and counter patterns as bugs.
 
 
+## D-054 Test suites screen and case editor in the app (I-06 frontend)
+* **Suites screen (SCR-12):** the suite list on the left is grouped by project (suites of an archived project share an "Archived projects" group) with each suite's case count; the selected suite and the page of its cases live in the URL (`?suite=<id>&page=<n>`) and default to the first suite. The panel shows the suite's description, component and, once runs exist (I-07), the last run pass rate. The case table shows ID (`TC-n`), Title (a link to the editor), Type, Priority, Steps and Tags. Everyone reads; Org Admin, QA Lead and QA Engineer see New suite, New test case, Edit suite and Delete suite.
+* **Pager (product owner):** 25 cases per page with Previous and Next, as on the bug list. The prototype shows all cases of a suite without a pager.
+* **Dialogs:** New suite and Edit suite share one dialog (name, project on create only, component, description); a name that is taken in the project is shown on the name field (409 `name_taken`). The project of a suite cannot change. Delete suite asks first and names how many cases go with it ("Its 3 cases are deleted with it.", product owner).
+* **Case editor (SCR-13):** title, suite, type, priority, preconditions, steps (action and expected result side by side, move up, move down, remove, add, 1 to 50 rows) and tags (comma separated, 20 at most, 30 characters each). A saved case can move only to a suite of its own project (D-052); a new case can go into any suite, chosen from the `?suite=` link or the first suite. Rows left completely empty are ignored; a row with only one of the two texts is an error. Saved steps are sent back with their `id`, so moving a step keeps its id. Title 5 to 200 characters, checked on the screen and by the API. Three case types (D-052).
+* **Delete case (product owner):** a confirm dialog names the case; the prototype has no delete. Past test runs keep their own copy of a case (REQ-032), which the dialog says.
+* **Read only:** Developer and Viewer see the same screen with every field disabled, no Save, Add step, move or Delete, and the prototype's note "Only QA roles can edit test cases." in the side column.
+* **Left out until their issues:** the AI Test Case Generator panel and the "Generate cases" button (I-17); the case editor is a single column of 980 px for editors. The prototype's "View as" switcher is not part of the app.
+* **Test data:** the flow script names its suites `flow-i06-<timestamp>` and deletes every suite with that prefix in `finally` (their cases go with them), also after a failed step; a negative hook (`QA_FLOW_INJECT_FAILURE=1`) fails on purpose to prove it. Case numbers used by test data stay used.
+* **Reason:** the locked layout with the same states, no control the API refuses, and a link for every selected suite or case.
+
+
 ## D-053 Approved edit to the locked prototype: no native clear button in the filter search box
 * **What changed:** one CSS rule was added to `design/reference/approved.html`, directly after `.filters .search-f` (commit `b632541`):
   ```

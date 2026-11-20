@@ -259,3 +259,40 @@ The suites screen and the case editor are not built yet; this section covers the
 What the new tests pin down: a QA role writes a case with four steps and a Developer or Viewer reads it but gets 403 on every write; the title and step limits (0 and 51 steps, 1000 character steps, 20 tags, 201 character titles); `TC-n` numbering per org across suites and projects, never reused after a delete, and 20 cases created from 10 threads on separate connections get 1 to 20; reordering steps keeps their ids and a new step gets one; moving a case works inside a project and is a 422 across projects, orgs and for unknown suites; bulk of 50 is accepted and 51 creates nothing, one bad case in the batch creates nothing and uses no number, and `ai_usage_id` is refused until a check is registered; suite names are unique per project ignoring case and spaces, a deleted suite frees its name, a suite delete takes its cases with it and records how many; component and project must belong to the right place; filters by tag (case insensitive) and type; cross tenant 404 by UUID, by `TC-n` and by suite.
 
 Notes for review: `GET /test-cases/{case_ref}` accepts a key like `TC-103` (an addition to API-097, as for bugs); `case_type` has four values in the API and the UI will offer three (D-052); `last_run_pass_rate` is `null` until I-07.
+
+After the first review (commit `c23000f`): the API, the check constraint, DOMAIN_MODEL and API_INVENTORY now agree on three case types (`other` removed); case titles are 5 to 200 characters with tests at 4, 5, 200 and 201 on create, edit and bulk; D-053 records the one CSS rule added to the locked prototype (the exact diff is in the decision), and `scripts/validate-design.ps1` passes. Retest after the change: ruff and mypy clean, pytest 574 passed, Newman 256 requests and 420 assertions, 0 failed. One finding: the first Newman run after the change failed 6 assertions in the cross tenant requests, because a body that is invalid by itself (a 4 character title) now returns 422 before the org check returns 404; those requests now carry valid bodies.
+
+### I-06 Test suites and test cases, frontend part (SCR-12, SCR-13; D-054)
+
+The suites screen with its dialogs, the case editor, and the delete confirmations for a suite and a case.
+
+#### H. Checks
+
+| Check | Result |
+|---|---|
+| Lint, typecheck, `next build` | Run in one off containers in WSL with the dev server stopped: clean; clean; builds, and the route list has `/o/[org]/tests`, `/o/[org]/tests/cases/[id]` and `/o/[org]/tests/cases/new`. The `.next` volume was emptied afterwards, the dev server restarted, `/login` answers 200 |
+| Layout check through `with-wsl.ps1 -Up` | PASS, 645 states (was 445) at 360, 390, 768, 1024, 1280, 1440, 1920, 2560, 1280 zoom 200 and 1920 zoom 200. Screenshots in `e2e/parity/stage4/i06-after/` |
+| `e2e/scripts/check-tests-flow.mjs` | PASS: a QA Engineer creates a suite through its dialog, a 4 character title is refused on the screen, a case with 4 steps (type Edge, priority P1, tags "Discounts, address, discounts" stored as discounts and address) is saved as `TC-n`, two steps are moved and saved, the new order survives a reload and each step keeps its id (checked against the API before and after); a Developer opens the case: every field is disabled, no Save, Add step, Move or Delete, the read only note is shown, and the suites screen has no New suite or New test case; the QA Engineer renames the suite through its dialog, deletes the case through its confirmation, and deletes the suite through its confirmation, which says "Its 1 case is deleted with it."; the case of the deleted suite is gone |
+| Cleanup of test data | Suites are named `flow-i06-<timestamp>`; the script deletes every suite with that prefix in `finally` (their cases go with them) and nothing else. Proven on the failure path: with `QA_FLOW_INJECT_FAILURE=1` the script fails on purpose right after creating its suite, exits 1, and reports "cleanup: deleted 1 test suite(s) still there"; the normal run deletes 0 left over |
+| Backend suites | ruff and mypy clean, pytest 574 passed, Newman 256 requests and 420 assertions, 0 failed |
+
+States added to the layout check: suites screen (admin) with a suite of 30 cases (the pager), a case with a 200 character title, 50 steps of long unbroken text and 20 tags (one of 30 characters), and a suite with a 59 character component; New suite dialog and its "name already taken" error; Edit suite dialog; delete suite confirmation; a suite with an 80 character name and a 1000 character description with no cases; an empty suite; no suites at all; loading (response held back); error (a mocked 500 with a request id); the case editor with the long case, its delete confirmation, loading, error and not found; New test case and its error banner; the suites screen and the case editor as Developer (read only, no controls: the check fails if one is present); the empty workspace in the long names fixture. The fixtures are created and removed through the API: suites in the fixture project are deleted with their cases (soft delete, the numbers stay used).
+
+What the checks found on the way: the step editor lacked the prototype's "Action" and "Expected result" captions and its up and down arrows (a chevron turned over was not the same icon); both were added. The flow script cannot read the app's own request bodies, so what it asserts is read from the API before and after, not from the request.
+
+#### I. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side images: `e2e/parity/stage4/i06/compare/*.png` (locked on the left, app on the right); app captures in `e2e/parity/stage4/i06/app/`.
+
+| State | Result |
+|---|---|
+| Suites, default, desktop and mobile | Same page head, suite list with project headings and case counts, panel head, table columns, type tags, priority tags and tag chips. Data differs (names carry the `parity-i06` prefix, ids are `TC-15` to `TC-19`, and the last run line is absent until runs exist) |
+| Suites, empty | Same state box and icon; the app's "New suite" is primary as in the prototype. The prototype's header also shows "New test case" and the text "or generate them from a user story" |
+| Suites, loading and error | Same table skeleton; same error box with the request id |
+| Case editor, default, desktop and mobile | Same fields, order, step captions, arrows and trash icons, tags and preconditions; on mobile the same stacked layout |
+| Case editor, loading and error | Same states. In the error state the header says "Test case" because the case did not load; the prototype keeps the case title and a Save case button |
+| Differences by decision | A pager under the cases (25 per page; the prototype lists them all); Edit suite and Delete suite in the panel head, Delete case beside Save case, and the confirm dialogs for both (the prototype has none); the Priority options read "P1 urgent" and so on (the prototype shows "P1"); only three case types (REQ-047, D-052); one sentence shorter page subtitle |
+| Differences until their issues | No "Generate cases" button and no Test Case Generator panel (I-17); the form is one column of 980 px; no "Last run n% pass" until I-07 |
+| No locked screenshot | New suite, Edit suite and both delete confirmations; the long fixtures; a suite with no cases; the Developer read only editor and suites screen; the New case error banner; the not found state: in `i06-after/` (`tests-*`, `case-*`) |
+
+Backlog: none added in this part.
