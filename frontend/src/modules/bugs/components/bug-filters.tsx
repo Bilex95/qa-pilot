@@ -45,7 +45,7 @@ export function BugFilters({ filters, search, onSearch, onChange, onClear }: Pro
         </Select>
         <label className="sr-only" htmlFor="f-s">Status</label>
         <Select id="f-s" value={filters.status} onChange={(e) => onChange({ status: e.target.value })}>
-          <option value="open">Open (not finished)</option>
+          <option value="open">All open</option>
           <option value="any">Any status</option>
           {STATUS_OPTIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </Select>
