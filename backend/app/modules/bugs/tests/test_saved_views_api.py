@@ -41,6 +41,11 @@ def test_filters_are_stored_and_returned_with_a_version_number(client, db, world
     assert make_view(client, world.a, name="Explicit", filters={"version": 1})["filters"]["version"] == 1
 
 
+def test_a_view_can_store_the_unassigned_filter(client, world) -> None:
+    view = make_view(client, world.a, name="Needs an owner", filters={"unassigned": True, "open": True})
+    assert view["filters"]["unassigned"] is True and view["filters"]["assignee_id"] is None
+
+
 def test_views_are_private_to_their_owner(client, world) -> None:
     mine = make_view(client, world.a, "qa_engineer", name="Mine")
     theirs = make_view(client, world.a, "qa_lead", name="Theirs")
@@ -85,7 +90,9 @@ def test_view_names_are_unique_per_person_ignoring_case(client, world) -> None:
     {"name": "Bad", "filters": {"unknown_key": 1}}, {"name": "Bad", "filters": {"version": 2}},
     {"name": "Bad", "filters": {"sort": "title"}}, {"name": "Bad", "filters": {"severity": ["urgent"]}},
     {"name": "Bad", "filters": {"project_id": "nope"}}, {"name": "Bad", "filters": {"q": "x" * 201}},
-    {"name": "Bad", "filters": []}, {"name": 5, "filters": {}}, {"name": "Bad", "filters": {}, "extra": 1},
+    {"name": "Bad", "filters": {"assignee_id": "6f1a3c1e-0b57-4c52-9d3e-1f2a3b4c5d6e", "unassigned": True}},
+    {"name": "Bad", "filters": {"unassigned": "maybe"}}, {"name": "Bad", "filters": []},
+    {"name": 5, "filters": {}}, {"name": "Bad", "filters": {}, "extra": 1},
 ])
 def test_create_view_invalid_input(client, world, body) -> None:
     r = client.post(f"{O}/{world.a.org.id}/saved-views", json=body, headers=world.a.h("qa_engineer"))

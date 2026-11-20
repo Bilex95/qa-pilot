@@ -53,6 +53,7 @@ def _filters(
     severity: Annotated[list[Severity] | None, Query()] = None,
     priority: Annotated[list[Priority] | None, Query()] = None,
     assignee_id: uuid.UUID | None = None,
+    unassigned: Annotated[bool | None, Query(description="true: only bugs nobody is assigned to. Not with assignee_id")] = None,
     reporter_id: uuid.UUID | None = None,
     component_id: uuid.UUID | None = None,
     environment_id: uuid.UUID | None = None,
@@ -64,8 +65,11 @@ def _filters(
     sort: Annotated[str, Query(pattern=rf"^-?({'|'.join(SORT_FIELDS)})$",
                                description="updated_at, created_at, severity or priority; prefix - for descending")] = "-updated_at",
 ) -> BugFilters:
+    if assignee_id is not None and unassigned is True:
+        raise Unprocessable("Some fields are not valid.", details=[{
+            "loc": ["query", "unassigned"], "msg": "Send either assignee_id or unassigned=true, not both."}])
     return BugFilters(project_id=project_id, status=list(status or []), severity=list(severity or []),
-                      priority=list(priority or []), assignee_id=assignee_id, reporter_id=reporter_id,
+                      priority=list(priority or []), assignee_id=assignee_id, unassigned=unassigned, reporter_id=reporter_id,
                       component_id=component_id, environment_id=environment_id, label_id=label_id,
                       release_id=release_id, sla_breached=sla_breached, open=open, q=q, sort=sort)
 

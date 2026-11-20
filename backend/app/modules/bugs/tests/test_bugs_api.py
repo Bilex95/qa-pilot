@@ -345,6 +345,34 @@ def test_filters(client, db, world) -> None:
     assert set(keys(listing(client, a, status=["new", "triaged"], project_id=web["id"], severity="low"))) == {"WEB-2"}
 
 
+def test_unassigned_filter(client, db, world) -> None:
+    a = world.a
+    project = make_project(client, a)
+    dev = str(a.users["developer"].id)
+    make_bug(client, a, project, title="Nobody has this one")
+    make_bug(client, a, project, title="Diego has this one", assignee_id=dev)
+    make_bug(client, a, project, title="Nobody has this either", severity="critical")
+    gone = make_bug(client, a, project, title="Deleted unassigned bug")
+    client.delete(f"{O}/{a.org.id}/bugs/{gone['id']}", headers=a.h("qa_lead"))
+    assert set(keys(listing(client, a, unassigned="true"))) == {"WEB-1", "WEB-3"}  # the deleted one is not there
+    assert keys(listing(client, a, unassigned="false")) == ["WEB-2"]
+    assert keys(listing(client, a, unassigned="true", severity="critical")) == ["WEB-3"]
+    assert keys(listing(client, a, unassigned="true", open="true", q="either")) == ["WEB-3"]
+    assert listing(client, a, assignee_id=dev, unassigned="false")["total"] == 1
+    assert listing(client, a, assignee_id=dev)["total"] == 1  # unchanged behaviour without the new parameter
+    assert listing(client, a)["total"] == 3
+
+
+def test_assignee_id_together_with_unassigned_true_is_422(client, world) -> None:
+    make_bug(client, world.a, make_project(client, world.a))
+    r = client.get(f"{O}/{world.a.org.id}/bugs", params={"assignee_id": str(world.a.users["developer"].id),
+                                                         "unassigned": "true"}, headers=world.a.h("qa_lead"))
+    assert r.status_code == 422 and code(r) == "validation_error"
+    assert r.json()["error"]["details"][0]["loc"] == ["query", "unassigned"]
+    r = client.get(f"{O}/{world.a.org.id}/bugs", params={"unassigned": "maybe"}, headers=world.a.h("qa_lead"))
+    assert r.status_code == 422
+
+
 def test_search_matches_key_title_and_description_case_insensitively(client, world) -> None:
     project = make_project(client, world.a)
     make_bug(client, world.a, project, title="Login page crashes")

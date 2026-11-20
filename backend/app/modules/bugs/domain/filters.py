@@ -11,6 +11,7 @@ class BugFilters:
     severity: list[str] = field(default_factory=list)
     priority: list[str] = field(default_factory=list)
     assignee_id: uuid.UUID | None = None
+    unassigned: bool | None = None  # True: only bugs nobody is assigned to; False: only assigned bugs
     reporter_id: uuid.UUID | None = None
     component_id: uuid.UUID | None = None
     environment_id: uuid.UUID | None = None

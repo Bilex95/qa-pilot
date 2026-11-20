@@ -48,6 +48,10 @@ def bugs_query(org_id: uuid.UUID, f: BugFilters, now: datetime) -> Select[Bug]:
         stmt = stmt.where(Bug.priority.in_(f.priority))
     if f.assignee_id:
         stmt = stmt.where(Bug.assignee_id == f.assignee_id)
+    if f.unassigned is True:
+        stmt = stmt.where(Bug.assignee_id.is_(None))
+    elif f.unassigned is False:
+        stmt = stmt.where(Bug.assignee_id.is_not(None))
     if f.reporter_id:
         stmt = stmt.where(Bug.reporter_id == f.reporter_id)
     if f.component_id:

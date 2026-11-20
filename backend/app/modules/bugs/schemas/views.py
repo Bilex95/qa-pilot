@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated, Literal
 
-from pydantic import Field, StringConstraints
+from pydantic import Field, StringConstraints, model_validator
 
 from app.core.schemas import ApiModel
 from app.modules.bugs.domain.rules import SORT_FIELDS, Priority, Severity, Status
@@ -19,6 +19,7 @@ class SavedViewFilters(ApiModel):
     severity: list[Severity] = Field(default_factory=list, max_length=4)
     priority: list[Priority] = Field(default_factory=list, max_length=4)
     assignee_id: uuid.UUID | None = None
+    unassigned: bool | None = None
     reporter_id: uuid.UUID | None = None
     component_id: uuid.UUID | None = None
     environment_id: uuid.UUID | None = None
@@ -28,6 +29,12 @@ class SavedViewFilters(ApiModel):
     open: bool | None = None
     q: Annotated[str, StringConstraints(max_length=200)] | None = None
     sort: SortValue = "-updated_at"
+
+    @model_validator(mode="after")
+    def _not_both_assignee_filters(self) -> "SavedViewFilters":
+        if self.assignee_id is not None and self.unassigned is True:
+            raise ValueError("Use either assignee_id or unassigned, not both.")
+        return self
 
 
 class SavedViewIn(ApiModel):
