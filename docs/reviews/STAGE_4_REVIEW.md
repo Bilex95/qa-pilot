@@ -239,3 +239,23 @@ Side by side images: `e2e/parity/stage4/i03/compare/*.png` (locked on the left, 
 | No locked screenshot | Save view and delete view dialogs, More filters row, empty workspace, Developer and Viewer forms: in `i03-after/` (`bugs-save-view-*`, `bugs-delete-view-*`, `bugs-more-filters-*`, `bugs-empty-*`, `bug-new-developer-*`, `bug-new-viewer-*`) |
 
 Backlog: BL-015 (create a label on the spot), BL-016 (`is_production` flag), BL-017 (rename a saved view).
+
+After the first review of the I-03 frontend (commit `b632541`): the Status filter says "All open" (approved), the Environment starts at None (approved), "Clear filters" now stays in the filter row at 1440 px and the browser's own clear button in the search box is hidden (prototype CSS first, `globals.css` regenerated; `type="search"` kept). The wrap was fixed by the shorter label alone: the widest option in the Status select is now "Ready for retest" instead of "Open (not finished)". Before and after: `e2e/parity/stage4/i03/compare/bug-list-empty-desktop-BEFORE-wrap-fix.png` and `bug-list-empty-desktop.png`. The layout check passed again (445 states) and the parity pair was recaptured.
+
+### I-06 Test suites and test cases, backend part (REQ-030, REQ-031; D-052)
+
+The suites screen and the case editor are not built yet; this section covers the migration, API-090 to API-100, their tests and Newman. The frontend part comes after review.
+
+#### G. Checks
+
+| Check | Result |
+|---|---|
+| Ruff, mypy | Clean; clean (117 files) |
+| pytest | 567 passed (399 before; 168 new in `modules/testing/tests/` plus 11 routes added to the contract test, which gives every new route its 401 and cross tenant case) |
+| Migration `0005_testing` | up, down, up, and `alembic check` reports no drift. Backend recreated afterwards (head 0005). Tables `test_suites`, `test_cases`, `test_case_counters`; partial unique index on `(project_id, lower(name))` for suites that are not deleted |
+| Newman through `scripts/newman.ps1` | 254 requests, 416 assertions, 0 failed (184 and 295 before; 70 requests and 121 assertions added: the Test management folder with happy, invalid, unauthorized, forbidden and cross tenant for each of the eleven endpoints, the step reorder that keeps ids, bulk all or nothing, and the suite delete that takes its cases with it) |
+| OpenAPI | `frontend/openapi.json` and `schema.d.ts` regenerated with `scripts/api-types.sh` |
+
+What the new tests pin down: a QA role writes a case with four steps and a Developer or Viewer reads it but gets 403 on every write; the title and step limits (0 and 51 steps, 1000 character steps, 20 tags, 201 character titles); `TC-n` numbering per org across suites and projects, never reused after a delete, and 20 cases created from 10 threads on separate connections get 1 to 20; reordering steps keeps their ids and a new step gets one; moving a case works inside a project and is a 422 across projects, orgs and for unknown suites; bulk of 50 is accepted and 51 creates nothing, one bad case in the batch creates nothing and uses no number, and `ai_usage_id` is refused until a check is registered; suite names are unique per project ignoring case and spaces, a deleted suite frees its name, a suite delete takes its cases with it and records how many; component and project must belong to the right place; filters by tag (case insensitive) and type; cross tenant 404 by UUID, by `TC-n` and by suite.
+
+Notes for review: `GET /test-cases/{case_ref}` accepts a key like `TC-103` (an addition to API-097, as for bugs); `case_type` has four values in the API and the UI will offer three (D-052); `last_run_pass_rate` is `null` until I-07.

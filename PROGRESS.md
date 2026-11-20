@@ -20,6 +20,8 @@
 
 * I-03 Bugs, frontend part (D-051): bug list (SCR-08) with filters, More filters, sorting, pager and saved views (create, apply, delete), New bug form (SCR-11, Developer sends no severity or priority), label delete confirm with the real count, plus the backend `unassigned` filter. Verified: ruff, mypy, pytest 399 passed, Newman 184 requests and 295 assertions, lint, typecheck and `next build` clean in one off WSL containers, layout check PASS (445 states, 10 widths), flow script PASS, parity compared at 1440 and 390 with the differences in `docs/reviews/STAGE_4_REVIEW.md`. Backlog BL-015, BL-016, BL-017. Not pushed since BL-014.
 
+* I-06 Test suites and test cases, backend part (D-052): migration 0005, API-090 to API-100, `TC-n` ids from a per org counter, bulk create (all or nothing), `ai_usage_id` refused until I-14. Verified: ruff, mypy, pytest 567 passed, migration up/down/up with no drift, Newman 254 requests and 416 assertions green, OpenAPI regenerated. The suites screen and case editor (frontend part) wait for the product owner's review of the backend. Also done: I-03 filter fixes (b632541). Pushed up to 3fa8fbd.
+
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs (done, see Done); I-06 suites and cases; I-11 settings; I-23 password reset
@@ -34,7 +36,7 @@
 * Every screen and popup: add to `e2e/scripts/check-app-layout.mjs`; prototype first for any style change, then `python scripts/build_globals_css.py`.
 
 ## Next
-* I-06, I-11, I-23 of batch 4B (plan first, then wait for the go ahead). BL-014 (invite token in URLs) is planned with I-23.
+* I-06 frontend (suites screen SCR-12, case editor SCR-13) after the product owner reviews the backend; then I-11 and I-23 of batch 4B (plan first, then wait for the go ahead). BL-014 (invite token in URLs) is planned with I-23.
 
 ## Blockers
 * None.
