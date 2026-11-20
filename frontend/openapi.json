@@ -3096,6 +3096,24 @@
             }
           },
           {
+            "name": "unassigned",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "true: only bugs nobody is assigned to. Not with assignee_id",
+              "title": "Unassigned"
+            },
+            "description": "true: only bugs nobody is assigned to. Not with assignee_id"
+          },
+          {
             "name": "reporter_id",
             "in": "query",
             "required": false,
@@ -6400,6 +6418,17 @@
               }
             ],
             "title": "Assignee Id"
+          },
+          "unassigned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unassigned"
           },
           "reporter_id": {
             "anyOf": [

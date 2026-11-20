@@ -1342,6 +1342,8 @@ export interface components {
             priority?: ("p1" | "p2" | "p3" | "p4")[];
             /** Assignee Id */
             assignee_id?: string | null;
+            /** Unassigned */
+            unassigned?: boolean | null;
             /** Reporter Id */
             reporter_id?: string | null;
             /** Component Id */
@@ -3466,6 +3468,8 @@ export interface operations {
                 severity?: ("critical" | "high" | "medium" | "low")[] | null;
                 priority?: ("p1" | "p2" | "p3" | "p4")[] | null;
                 assignee_id?: string | null;
+                /** @description true: only bugs nobody is assigned to. Not with assignee_id */
+                unassigned?: boolean | null;
                 reporter_id?: string | null;
                 component_id?: string | null;
                 environment_id?: string | null;
