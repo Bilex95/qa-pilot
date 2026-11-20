@@ -10,7 +10,8 @@ from app.core.permissions import PERMISSIONS, Role, can
 from app.main import app
 
 PUBLIC = {("GET", "/api/v1/health"), ("POST", "/api/v1/auth/register"), ("POST", "/api/v1/auth/login"),
-          ("POST", "/api/v1/auth/refresh"), ("GET", "/api/v1/invitations/{token}")}
+          ("POST", "/api/v1/auth/refresh"), ("POST", "/api/v1/invitations/preview"),
+          ("POST", "/api/v1/auth/password-reset/preview"), ("POST", "/api/v1/auth/password-reset/confirm")}
 
 
 def _routes() -> list[tuple[str, str]]:
@@ -44,7 +45,9 @@ def test_openapi_lists_every_inventory_endpoint_built_so_far() -> None:
         ("DELETE", "/api/v1/orgs/{org_id}/members/{membership_id}"),
         ("POST", "/api/v1/orgs/{org_id}/invitations"), ("GET", "/api/v1/orgs/{org_id}/invitations"),
         ("DELETE", "/api/v1/orgs/{org_id}/invitations/{invitation_id}"),
-        ("GET", "/api/v1/invitations/{token}"), ("POST", "/api/v1/invitations/{token}/accept"),
+        ("POST", "/api/v1/invitations/preview"), ("POST", "/api/v1/invitations/accept"),
+        ("POST", "/api/v1/orgs/{org_id}/members/{membership_id}/password-reset"),
+        ("POST", "/api/v1/auth/password-reset/preview"), ("POST", "/api/v1/auth/password-reset/confirm"),
         ("GET", "/api/v1/orgs/{org_id}/audit-events"),
         ("GET", "/api/v1/orgs/{org_id}/bugs"), ("POST", "/api/v1/orgs/{org_id}/bugs"),
         ("GET", "/api/v1/orgs/{org_id}/bugs/{bug_ref}"), ("PATCH", "/api/v1/orgs/{org_id}/bugs/{bug_id}"),
@@ -121,7 +124,7 @@ A, L, Q, D, V = "org_admin", "qa_lead", "qa_engineer", "developer", "viewer"
 MATRIX = {
     "org.update_settings": {A}, "member.list": {A, L}, "member.list_basic": {A, L, Q, D, V},
     "member.update_role": {A}, "member.remove": {A}, "invitation.create": {A}, "invitation.list": {A, L},
-    "audit.read": {A}, "label.manage": {A, L}, "project.create": {A, L}, "bug.create": {A, L, Q, D},
+    "audit.read": {A}, "member.reset_password": {A}, "label.manage": {A, L}, "project.create": {A, L}, "bug.create": {A, L, Q, D},
     "bug.set_severity_priority": {A, L, Q}, "bug.delete": {A, L}, "comment.create": {A, L, Q, D, V},
     "attachment.upload": {A, L, Q, D}, "suite.manage": {A, L, Q}, "run.execute": {A, L, Q},
     "release.manage": {A, L}, "report.export": {A, L, Q, D, V}, "ai.bug_writer": {A, L, Q, D},

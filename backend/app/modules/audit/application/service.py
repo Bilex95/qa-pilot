@@ -43,6 +43,14 @@ def count_recent(db: Session, action: str, *, email: str, minutes: int) -> int:
     return int(db.scalar(stmt) or 0)
 
 
+def count_recent_by_ip(db: Session, action: str, *, ip: str, minutes: int) -> int:
+    """Events of one kind from one client address, for throttling endpoints that have no account to count against."""
+    since = utcnow() - timedelta(minutes=minutes)
+    stmt = select(func.count()).select_from(AuditEvent).where(
+        and_(AuditEvent.action == action, AuditEvent.created_at >= since, AuditEvent.ip == ip))
+    return int(db.scalar(stmt) or 0)
+
+
 def list_events(
     db: Session,
     org_id: uuid.UUID,

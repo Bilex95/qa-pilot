@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     login_max_failures: int = 10
     login_window_minutes: int = 15
 
+    # Password reset links issued by an Org Admin (D-045, D-055)
+    password_reset_minutes: int = 60
+    reset_max_failures: int = 10  # failed preview or confirm attempts per client address ...
+    reset_window_minutes: int = 15  # ... in this window
+
     @field_validator("jwt_secret")
     @classmethod
     def _secret_long_enough(cls, v: str) -> str:

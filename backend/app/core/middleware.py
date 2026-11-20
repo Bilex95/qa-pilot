@@ -15,6 +15,17 @@ log = logging.getLogger("app.access")
 _SAFE_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 
+_TOKEN_PATH = re.compile(r"^(/api/v1/invitations/)(?!preview$|accept$)[^/]+(/.*)?$")
+
+
+def redact_path(path: str) -> str:
+    """The path as it is written to the access log. Tokens now travel in request bodies, so no current route has one in its
+    path; a request to the old token in path form (`/api/v1/invitations/<token>`, removed in I-23) is still logged without
+    the token if anything sends one (BL-014, D-055)."""
+    match = _TOKEN_PATH.match(path)
+    return f"{match.group(1)}{{token}}{match.group(2) or ''}" if match else path
+
+
 class RequestContextMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, *, production: bool) -> None:  # type: ignore[no-untyped-def]
         super().__init__(app)
@@ -35,6 +46,6 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         if self.production:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         if request.url.path != "/api/v1/health":
-            log.info("request", extra={"method": request.method, "path": request.url.path,
+            log.info("request", extra={"method": request.method, "path": redact_path(request.url.path),
                                        "status": response.status_code, "latency_ms": latency})
         return response

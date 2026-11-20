@@ -3,7 +3,8 @@
 import re
 
 SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$")
-RESERVED_SLUGS = frozenset({"api", "admin", "login", "register", "invite", "onboarding", "o", "new", "settings"})
+RESERVED_SLUGS = frozenset({"api", "admin", "login", "register", "invite", "forgot-password", "reset-password", "onboarding",
+                            "o", "new", "settings"})
 
 
 def slug_problem(slug: str) -> str | None:

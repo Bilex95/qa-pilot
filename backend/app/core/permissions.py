@@ -31,6 +31,7 @@ PERMISSIONS: dict[str, frozenset[Role]] = {
     "member.list_basic": ALL,
     "member.update_role": ADMIN_ONLY,
     "member.remove": ADMIN_ONLY,
+    "member.reset_password": ADMIN_ONLY,  # issue a password reset link for a member (D-045, D-055)
     "invitation.create": ADMIN_ONLY,
     "invitation.revoke": ADMIN_ONLY,
     "invitation.list": LEADS,

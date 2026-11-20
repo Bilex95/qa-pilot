@@ -1,4 +1,4 @@
-"""Org, member and invitation endpoints API-020 to API-031."""
+"""Org, member and invitation endpoints API-020 to API-031 and the reset link endpoint API-151."""
 
 import uuid
 from typing import Annotated, Any, Literal
@@ -18,6 +18,7 @@ from app.modules.orgs.schemas.orgs import (
     InvitationIn,
     InvitationOut,
     InvitationPreviewOut,
+    InvitationTokenIn,
     MemberOut,
     MembershipOut,
     MemberUser,
@@ -27,6 +28,7 @@ from app.modules.orgs.schemas.orgs import (
     OrgOut,
     OrgUpdateIn,
     OrgWithRoleOut,
+    PasswordResetLinkOut,
     RoleIn,
 )
 
@@ -118,16 +120,22 @@ def revoke_invitation(invitation_id: uuid.UUID, db: DB,
     service.revoke_invitation(db, ctx.org_id, invitation_id, actor_id=ctx.user.id)
 
 
-Token = Annotated[str, Path(min_length=10, max_length=200)]
-
-
-@router.get("/invitations/{token}", response_model=InvitationPreviewOut, responses=errors(410, 422))
-def preview_invitation(token: Token, db: DB) -> InvitationPreviewOut:
-    inv, org, masked = service.preview_invitation(db, token)
+# The token travels in the body, never in the path or the query, so it stays out of logs, history and Referer (BL-014, D-055)
+@router.post("/invitations/preview", response_model=InvitationPreviewOut, responses=errors(410, 422))
+def preview_invitation(body: InvitationTokenIn, db: DB) -> InvitationPreviewOut:
+    inv, org, masked = service.preview_invitation(db, body.token)
     return InvitationPreviewOut(org_name=org.name, role=inv.role, email_masked=masked, expires_at=inv.expires_at)
 
 
-@router.post("/invitations/{token}/accept", response_model=AcceptOut, responses=errors(401, 403, 409, 410, 422))
-def accept_invitation(token: Token, db: DB, user: CurrentUser) -> AcceptOut:
-    org, m = service.accept_invitation(db, token, user_id=user.id, user_email=user.email)
+@router.post("/invitations/accept", response_model=AcceptOut, responses=errors(401, 403, 409, 410, 422))
+def accept_invitation(body: InvitationTokenIn, db: DB, user: CurrentUser) -> AcceptOut:
+    org, m = service.accept_invitation(db, body.token, user_id=user.id, user_email=user.email)
     return AcceptOut(org=OrgOut.model_validate(org), membership=MembershipOut.model_validate(m))
+
+
+@router.post("/orgs/{org_id}/members/{membership_id}/password-reset", status_code=status.HTTP_201_CREATED,
+             response_model=PasswordResetLinkOut, responses=errors(401, 403, 404, 409))
+def create_password_reset_link(membership_id: uuid.UUID, db: DB,
+                               ctx: Annotated[OrgContext, Depends(require("member.reset_password"))]) -> PasswordResetLinkOut:
+    url, expires = service.create_password_reset_link(db, ctx.org, membership_id, actor_id=ctx.user.id)
+    return PasswordResetLinkOut(reset_url=url, expires_at=expires)

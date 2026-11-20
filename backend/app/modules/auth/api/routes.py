@@ -1,4 +1,4 @@
-"""Auth endpoints API-010 to API-016. Thin: parse, call service, shape response."""
+"""Auth endpoints API-010 to API-016 and the password reset endpoints API-152, API-153. Thin: parse, call service, shape response."""
 
 from typing import Annotated
 
@@ -18,6 +18,9 @@ from app.modules.auth.schemas.auth import (
     ProfileIn,
     RefreshIn,
     RegisterIn,
+    ResetConfirmIn,
+    ResetPreviewIn,
+    ResetPreviewOut,
     TokensOut,
     UserOut,
 )
@@ -73,3 +76,15 @@ def update_me(body: ProfileIn, db: DB, user: CurrentUser) -> UserOut:
 @router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT, responses=errors(400, 401, 422))
 def change_password(body: PasswordChangeIn, db: DB, user: CurrentUser) -> None:
     service.change_password(db, user, current_password=body.current_password, new_password=body.new_password)
+
+
+# The token travels in the body, never in the path or the query, so it stays out of logs, history and Referer (BL-014)
+@router.post("/password-reset/preview", response_model=ResetPreviewOut, responses=errors(410, 422, 429))
+def preview_password_reset(body: ResetPreviewIn, db: DB) -> ResetPreviewOut:
+    masked, expires = service.preview_password_reset(db, token=body.token)
+    return ResetPreviewOut(email_masked=masked, expires_at=expires)
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT, responses=errors(410, 422, 429))
+def confirm_password_reset(body: ResetConfirmIn, db: DB) -> None:
+    service.confirm_password_reset(db, token=body.token, new_password=body.new_password)
