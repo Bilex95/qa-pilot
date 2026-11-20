@@ -200,3 +200,42 @@ Worst p95 is 54 ms against the 300 ms limit. Search is the slowest part, about t
 * `release_id` and `source_run_result_id` are stored without foreign keys until I-08 and I-07; until those modules register their check (`bugs/application/hooks.py`) any such id is refused with 422.
 * Component, environment and label deletes need no hook in the bugs module: the foreign keys do the work (`SET NULL` for the first two, `CASCADE` for `bug_labels`). The I-01 `on_component_deleted` hook stays unused.
 * The BL-011 Undo on the label delete toast stays out of I-03 (product owner). The Labels tab confirm will say how many bugs lose the label, using the real count, in the frontend part.
+
+#### D. Backend addition after review: the unassigned filter (D-051)
+
+`unassigned=true` on `GET /bugs` returns bugs nobody is assigned to (`false` the assigned ones); `assignee_id` together with `unassigned=true` is a 422, and saved view filters accept the key with the same rule. Evidence: pytest 399 passed (ruff and mypy clean), Newman 184 requests and 295 assertions, 0 failed, OpenAPI types regenerated. Commits `9668292`, `3db68b2`, `ccf7f02`.
+
+### I-03 Bugs, frontend part (SCR-08, SCR-11; D-051)
+
+The bug list with saved views, the New bug form and the label delete confirmation with the real count.
+
+#### E. Checks
+
+| Check | Result |
+|---|---|
+| Lint, typecheck, `next build` | Run in one off containers in WSL with the dev server stopped (not on Windows): clean; clean; builds, and the route list has `/o/[org]/bugs` and `/o/[org]/bugs/new`. The `.next` cache volume was emptied afterwards, the dev server restarted and `/login` answers 200 |
+| Layout check through `with-wsl.ps1 -Up` | PASS, 445 states (was 255) at 360, 390, 768, 1024, 1280, 1440, 1920, 2560, 1280 zoom 200 and 1920 zoom 200. Screenshots in `e2e/parity/stage4/i03-after/` |
+| `e2e/scripts/check-bugs-flow.mjs` | PASS: a QA Engineer reports a bug (High, P2, a label) and finds it as `LAYT-n`; a Developer reports one and the real request has no `severity`, `priority`, `release_id` or `source_run_result_id` (the bug comes back Medium and P3); the Unassigned filter lists only unassigned bugs; Status, search and More filters (priority) narrow the list; a saved view is created, applied, still applied after a reload, invisible to another person, and deleted through its confirmation; a bug key link opens the placeholder; the label delete confirmation says "It will be removed from 1 bug. The bug itself stays." and the bug keeps existing without the label |
+| Backend suites | ruff and mypy clean, pytest 399 passed, Newman 184 requests and 295 assertions, 0 failed |
+
+States added to the layout check: bug list (admin) with a 200 character title, a 158 character unbroken word, a bug with 8 labels and a 59 character component; More filters open with a project and the long component; Save view dialog and its name taken error; the long named saved view applied; delete view confirmation; no results; Past SLA badge (the API cannot backdate a bug, so the check edits the list response to show the badge); loading (response held back); error (a mocked 500 with a request id); empty workspace ("No bugs yet", in the long names workspace); the list as Developer and as Viewer (no Report bug button); New bug as Org Admin, with the error banner, with long text in every field and every label picked, as Developer (severity and priority disabled with the hint, checked) and as Viewer (no access); the delete label confirmation in Settings. The fixtures are created and removed through the API: bugs are soft deleted (the keys stay used) and the fixture project is archived again.
+
+What the checks found and fixed on the way: the sort chevron I had rotated pointed sideways (the icon already points down); the Save view tab put its plus icon above the text; two filter changes made faster than one render could overwrite each other in the first version of the flow script (the script now waits for the URL like a person), and a search that settled late could undo a view applied after it (typing is now only written to the URL while it is still unsent). One real limit remains: two filter changes made within a single render (milliseconds apart, not possible by hand) can lose the first one.
+
+Flow script notes: the Playwright request body of the app's `fetch(Request)` calls cannot be read, so the first version of the Developer check passed on an empty body. It now records the real body inside the page and fails if no body was read. Test views are private to each person, so a failed run left three views behind; the script now removes `flow-i03-` views of every user it signs in as through the API in `finally`, and only those (a listing script with a dry run, `.gate/views-left.mjs`, showed exactly those three before they were deleted). The failure path of that cleanup was not exercised after the change; the normal path was (0 views left).
+
+#### F. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side images: `e2e/parity/stage4/i03/compare/*.png` (locked on the left, app on the right); app captures in `e2e/parity/stage4/i03/app/`.
+
+| State | Result |
+|---|---|
+| Bug list, default, desktop and mobile | Same page head, view tabs, filter row, table columns, badges, key, pager. Data differs (the dev database has the Layout fixture project and the parity bugs, all New, none past SLA). Row assignee names wrap in the app when the title column is wide because of the fixture titles |
+| Bug list, no results ("refund") | Same state box, title and text |
+| Bug list, loading and error | Same table skeleton; same error box with the request id |
+| New bug, default and error, desktop and mobile | Same fields, order and styling. The error banner lists the fields that failed (the prototype's example says project and title; the app preselects a project, so it names the title only) |
+| Differences by decision | No "Critical in prod" tab (BL-016); no Export CSV button (API-133, I-09); the Status select shows "Open (not finished)" instead of "Any status" because that is what the list really filters (D-051); a "More filters" button after the five controls; the search placeholder says "Search key, title or description"; the pager buttons are real; no "View as" switcher (as on Members) |
+| Differences until their issues | No AI Bug Writer panel (the form is one column, 860 px wide), no duplicate warning, no file drop zone (I-15, I-05); the New bug AI and AI loading screenshots are not captured; Labels are a pick list of existing labels instead of a free text box (BL-015); Environment starts at None (the prototype starts at prod); bug key links open the "on its way" placeholder until I-05 |
+| No locked screenshot | Save view and delete view dialogs, More filters row, empty workspace, Developer and Viewer forms: in `i03-after/` (`bugs-save-view-*`, `bugs-delete-view-*`, `bugs-more-filters-*`, `bugs-empty-*`, `bug-new-developer-*`, `bug-new-viewer-*`) |
+
+Backlog: BL-015 (create a label on the spot), BL-016 (`is_production` flag), BL-017 (rename a saved view).
