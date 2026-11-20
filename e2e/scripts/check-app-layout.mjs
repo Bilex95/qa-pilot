@@ -102,8 +102,84 @@ async function removeInviteFixture() {
   for (const i of pending.filter((x) => x.email === INVITE_EMAIL)) await fetch(`${base}/invitations/${i.id}`, { method: 'DELETE', headers: h });
 }
 
+// Bug fixtures for the bug list and the New bug form (I-03), created through the public API as the Lumen Org Admin and removed at
+// the end: a project with a 59 character component, five bugs (one with a 200 character title, one with a 158 character unbroken
+// word, one carrying 8 labels), and a saved view with a 59 character name. Bugs are soft deleted, so the rows stay and the keys are
+// used up; the project is archived again so it does not show up in the project pickers afterwards.
+const BUG_PROJECT = { key: 'LAYT', name: 'Layout fixture project' };
+const FIXTURE_LABELS = ['Layout label one', 'Layout label two', 'Layout label three', 'Layout label four', 'Layout label five'];
+const LONG_COMPONENT = 'Reconciliation '.repeat(4).trim();
+const LONG_TITLE = 'Shipment manifest export fails for carrier references with non Latin characters on routes with many stops. '.repeat(3).slice(0, 200).trim();
+const UNBROKEN_TITLE = `Unbroken${'x'.repeat(150)}`;
+const LONG_VIEW = 'Critical checkout regressions across all supported releases';
+const VIEW_NAME = 'Layout view check';
+async function bugApi() {
+  const { h, base } = await labelAdmin();
+  return { h, org: base.replace(/\/labels$/, '') };
+}
+async function must(res, what) {
+  if (!res.ok) throw new Error(`${what}: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return res.status === 204 ? null : res.json();
+}
+async function clearBugFixture() {
+  const { h, org } = await bugApi();
+  const projects = await must(await fetch(`${org}/projects?include_archived=true&page_size=100`, { headers: h }), 'list projects');
+  const project = projects.items.find((p) => p.key === BUG_PROJECT.key);
+  if (project) {
+    const bugs = await must(await fetch(`${org}/bugs?project_id=${project.id}&page_size=100`, { headers: h }), 'list fixture bugs');
+    for (const b of bugs.items) await fetch(`${org}/bugs/${b.id}`, { method: 'DELETE', headers: h });
+  }
+  const views = await must(await fetch(`${org}/saved-views`, { headers: h }), 'list saved views');
+  for (const v of views.filter((x) => [LONG_VIEW, VIEW_NAME].includes(x.name))) await fetch(`${org}/saved-views/${v.id}`, { method: 'DELETE', headers: h });
+  const labels = await must(await fetch(`${org}/labels`, { headers: h }), 'list labels');
+  for (const l of labels.filter((x) => FIXTURE_LABELS.includes(x.name))) await fetch(`${org}/labels/${l.id}`, { method: 'DELETE', headers: h });
+  return { h, org, project };
+}
+async function ensureBugFixture() {
+  let { h, org, project } = await clearBugFixture();
+  const json = (body) => ({ method: 'POST', headers: h, body: JSON.stringify(body) });
+  if (!project) project = await must(await fetch(`${org}/projects`, json({ name: BUG_PROJECT.name, key: BUG_PROJECT.key })), 'create the fixture project');
+  else if (project.archived_at) await must(await fetch(`${org}/projects/${project.id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ archived: false }) }), 'unarchive the fixture project');
+  const comps = await must(await fetch(`${org}/projects/${project.id}/components`, { headers: h }), 'list components');
+  const component = comps.find((c) => c.name === LONG_COMPONENT) ?? await must(await fetch(`${org}/projects/${project.id}/components`, json({ name: LONG_COMPONENT })), 'create the long component');
+  const envs = await must(await fetch(`${org}/projects/${project.id}/environments`, { headers: h }), 'list environments');
+  const prod = envs.find((e) => e.name === 'prod') ?? envs[0];
+  for (const name of FIXTURE_LABELS) await must(await fetch(`${org}/labels`, json({ name })), `create label ${name}`);
+  const labels = await must(await fetch(`${org}/labels`, { headers: h }), 'list labels');
+  const idOf = (n) => labels.find((l) => l.name === n).id;
+  const eight = [...LABEL_NAMES, ...FIXTURE_LABELS].map(idOf);
+  const members = await must(await fetch(`${org}/members?page_size=100`, { headers: h }), 'list members');
+  const diego = members.items.find((m) => m.user.email === 'diego@lumenfreight.test').user.id;
+  const bug = async (b) => must(await fetch(`${org}/bugs`, json({ project_id: project.id, ...b })), `create bug ${b.title.slice(0, 20)}`);
+  await bug({ title: 'Checkout total ignores the discount code', severity: 'high', priority: 'p2', component_id: component.id,
+    environment_id: prod.id, assignee_id: diego, label_ids: [idOf('Regression'), idOf('Payments')] });
+  await bug({ title: LONG_TITLE, severity: 'critical', priority: 'p1', component_id: component.id, environment_id: prod.id,
+    assignee_id: diego, label_ids: eight });
+  await bug({ title: UNBROKEN_TITLE, severity: 'medium', priority: 'p3', environment_id: prod.id });
+  await bug({ title: 'Tooltip is cut off on the shipment map', severity: 'low', priority: 'p4' });
+  await bug({ title: 'Driver app crashes when the network drops during upload', severity: 'high', priority: 'p2', assignee_id: diego });
+  await must(await fetch(`${org}/saved-views`, json({ name: LONG_VIEW, filters: { version: 1, severity: ['critical'], open: true } })), 'create the long view');
+}
+async function removeBugFixture() {
+  const { h, org, project } = await clearBugFixture();
+  if (project) await fetch(`${org}/projects/${project.id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ archived: true }) });
+}
+
+// Sign out through the user menu and sign in again as another Lumen person
+async function signInAs(page, email) {
+  step = `sign out to sign in as ${email}`;
+  await page.click('.user-btn');
+  await page.click('.menu >> text=Sign out');
+  await page.waitForURL((u) => u.pathname === '/login');
+  await page.waitForLoadState('networkidle');
+  await fillStable(page, '#l-email', email);
+  await fillStable(page, '#l-pass', PW);
+  await page.click('button[type=submit]');
+  await page.waitForURL('**/o/lumen/dashboard');
+}
+
 // Runs inside the page. Returns a list of problems.
-const audit = ({ checkTargets, popupSelector, margin }) => {
+const audit =({ checkTargets, popupSelector, margin }) => {
   const W = document.documentElement.clientWidth, H = document.documentElement.clientHeight;
   const out = [];
   const visible = (e) => {
@@ -196,11 +272,13 @@ async function go(page, path) {
 
 await ensureLongFixture();
 await ensureLabelFixture();
+await ensureBugFixture();
 const browser = await chromium.launch();
 { // warm up every route once so first compiles do not disturb the checks
   const warm = await browser.newPage();
   for (const path of ['/login', '/register', '/invite/not-a-real-token-000', '/onboarding/org', '/o/lumen/dashboard',
-    '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs/new', '/o/lumen/this-page-does-not-exist']) {
+    '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs', '/o/lumen/bugs/new', '/o/lumen/bugs/WEB-1',
+    '/o/lumen/this-page-does-not-exist']) {
     await go(warm, path).catch(() => {});
   }
   await warm.close();
@@ -275,7 +353,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     await page.waitForTimeout(300);
   }
 
-  for (const path of ['/o/lumen/projects', '/o/lumen/members', '/o/lumen/bugs/new', '/o/lumen/this-page-does-not-exist', '/onboarding/org']) {
+  for (const path of ['/o/lumen/projects', '/o/lumen/members', '/o/lumen/bugs/WEB-1', '/o/lumen/this-page-does-not-exist', '/onboarding/org']) {
     step = `open ${path}`;
     await go(page, path);
     await page.waitForSelector('h1, h2');
@@ -296,6 +374,14 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.click('.modal button:has-text("Add label")');
   await page.waitForSelector('.modal .err');
   await check('new label dialog with a duplicate name error', { popup: '.modal', shot: 'label-dialog-error' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  // The delete confirmation names how many bugs lose the label (the count is real since I-03): Regression is on one fixture bug
+  step = 'open the delete label confirmation';
+  await page.click('button[aria-label="Delete label Regression"]');
+  await page.waitForSelector('.modal');
+  await page.waitForSelector('#delete-label-count');
+  await check('delete label confirmation', { popup: '.modal', shot: 'label-delete-confirm' });
   await page.keyboard.press('Escape');
   await page.waitForSelector('.modal', { state: 'detached' });
 
@@ -330,6 +416,114 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await check('members: no results', { shot: 'members-no-results' });
   await page.fill('#m-q', '');
 
+  // Bug list (I-03): the default list with the long text fixtures, More filters, saved views, and every state
+  const bugsUrl = /\/api\/v1\/orgs\/[^/]+\/bugs\?/;
+  const cors = { 'access-control-allow-origin': BASE, 'access-control-allow-credentials': 'true', 'access-control-expose-headers': 'X-Request-ID' };
+  step = 'open the bug list';
+  await go(page, '/o/lumen/bugs');
+  await page.waitForSelector('table.t tbody tr');
+  await check('/o/lumen/bugs (admin, long title, 8 labels, long component)', { shot: 'bugs' });
+  step = 'open More filters and pick the fixture project and its long component';
+  await page.click('button:has-text("More filters")');
+  await page.selectOption('#f-p', { label: BUG_PROJECT.name });
+  await page.waitForFunction((n) => [...document.querySelectorAll('#f-c option')].some((o) => o.textContent === n), LONG_COMPONENT);
+  await page.selectOption('#f-c', { label: LONG_COMPONENT });
+  await page.waitForSelector('table.t tbody tr');
+  await check('bug list: More filters open, project and a long component chosen', { shot: 'bugs-more-filters' });
+  step = 'clear the filters';
+  await page.click('button:has-text("Clear filters")');
+  await page.waitForSelector('table.t tbody tr');
+
+  // Saved views: the long named view tab, the Save view dialog (form, then the name already taken), and the delete confirmation
+  step = 'open the Save view dialog';
+  await page.click('.views button:has-text("Save view")');
+  await page.waitForSelector('.modal');
+  await check('save view dialog', { popup: '.modal', shot: 'bugs-save-view' });
+  await fillStable(page, '#view-name', VIEW_NAME);
+  await page.click('.modal button:has-text("Save view")');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  await page.waitForSelector(`.views button[aria-label="Delete view ${VIEW_NAME}"]`);
+  step = 'save a view with a name that is taken';
+  await page.click('.views button:has-text("Save view")');
+  await page.waitForSelector('.modal');
+  await fillStable(page, '#view-name', VIEW_NAME.toUpperCase());
+  await page.click('.modal button:has-text("Save view")');
+  await page.waitForSelector('.modal .err');
+  await check('save view dialog with a name already taken', { popup: '.modal', shot: 'bugs-save-view-error' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'apply the long named view';
+  await page.click(`.views button[title="${LONG_VIEW}"]`);
+  await page.waitForSelector('table.t tbody tr');
+  await check('bug list: the long named saved view applied', { shot: 'bugs-view-applied' });
+  step = 'open the delete view confirmation';
+  await page.click(`.views button[aria-label="Delete view ${VIEW_NAME}"]`);
+  await page.waitForSelector('.modal');
+  await check('delete view confirmation', { popup: '.modal', shot: 'bugs-delete-view' });
+  await page.click('.modal button:has-text("Delete view")');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  await page.waitForSelector(`.views button[aria-label="Delete view ${VIEW_NAME}"]`, { state: 'detached' });
+
+  step = 'search with no results';
+  await go(page, '/o/lumen/bugs');
+  await page.waitForSelector('table.t tbody tr');
+  await fillStable(page, '#f-q', 'zzzz-no-such-bug');
+  await page.waitForSelector('text=No bugs match these filters');
+  await check('bug list: no results', { shot: 'bugs-no-results' });
+
+  step = 'show the Past SLA badge';
+  await page.route(bugsUrl, async (route) => {
+    const res = await route.fetch();
+    const body = await res.json();
+    body.items.slice(0, 2).forEach((b) => { b.sla_breached = true; }); // the API cannot backdate a bug, so the badge is shown by editing the response
+    await route.fulfill({ response: res, json: body });
+  });
+  await go(page, '/o/lumen/bugs');
+  await page.waitForSelector('.badge.sla');
+  await check('bug list: Past SLA badge', { shot: 'bugs-sla' });
+  await page.unroute(bugsUrl);
+
+  step = 'show the loading state';
+  await page.route(bugsUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/bugs`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Bugs")');
+  await page.waitForSelector('.sk');
+  await check('bug list: loading', { shot: 'bugs-loading' });
+  await page.waitForSelector('table.t tbody tr');
+  await page.unroute(bugsUrl);
+
+  step = 'show the error state';
+  await page.route(bugsUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i03' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/bugs');
+  await page.waitForSelector('.state-box.error');
+  await check('bug list: error', { shot: 'bugs-error' });
+  await page.unroute(bugsUrl);
+
+  // New bug (SCR-11): default, the error banner, and long text in every field
+  step = 'open the New bug form';
+  await go(page, '/o/lumen/bugs/new');
+  await page.waitForSelector('#n-title');
+  await check('/o/lumen/bugs/new (admin)', { shot: 'bug-new' });
+  step = 'save an empty bug form';
+  await page.click('button:has-text("Save bug")');
+  await page.waitForSelector('.banner.error');
+  await check('new bug: error banner', { shot: 'bug-new-error' });
+  step = 'fill the New bug form with long text';
+  await page.selectOption('#n-proj', { label: BUG_PROJECT.name });
+  await page.waitForFunction((n) => [...document.querySelectorAll('#n-comp option')].some((o) => o.textContent === n), LONG_COMPONENT);
+  await page.selectOption('#n-comp', { label: LONG_COMPONENT });
+  await fillStable(page, '#n-title', LONG_TITLE);
+  await page.fill('#n-step-1', UNBROKEN_TITLE);
+  await page.click('button:has-text("Add step")');
+  await page.fill('#n-step-2', LONG_TITLE);
+  await page.fill('#n-exp', UNBROKEN_TITLE);
+  await page.fill('#n-act', LONG_TITLE.repeat(4));
+  for (const b of await page.locator('#n-lab button').all()) await b.click();
+  await check('new bug: long text, every label chosen', { shot: 'bug-new-long' });
+
   // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
   step = 'sign out to sign in as the QA Lead';
   await page.click('.user-btn');
@@ -348,6 +542,30 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     note(vp, 'members (QA Lead)', ['the QA Lead sees a control that only an Org Admin may use']);
   }
   await check('/o/lumen/members (QA Lead, read only)', { shot: 'members-lead' });
+
+  // The Developer: severity and priority are disabled on the New bug form (D-032); the Viewer cannot report bugs
+  await signInAs(page, 'diego@lumenfreight.test');
+  step = 'open the bug list as the Developer';
+  await go(page, '/o/lumen/bugs');
+  await page.waitForSelector('table.t tbody tr');
+  await check('/o/lumen/bugs (Developer)', { shot: 'bugs-developer' });
+  step = 'open the New bug form as the Developer';
+  await go(page, '/o/lumen/bugs/new');
+  await page.waitForSelector('#n-title');
+  if (!(await page.isDisabled('#n-sev')) || !(await page.isDisabled('#n-pri')) || !(await page.isVisible('#dev-note'))) {
+    note(vp, 'new bug (Developer)', ['severity and priority must be disabled with the hint for a Developer']);
+  }
+  await check('/o/lumen/bugs/new (Developer)', { shot: 'bug-new-developer' });
+  await signInAs(page, 'hana@lumenfreight.test');
+  step = 'open the bug list as the Viewer';
+  await go(page, '/o/lumen/bugs');
+  await page.waitForSelector('table.t tbody tr');
+  if (await page.locator('a:has-text("Report bug")').count()) note(vp, 'bug list (Viewer)', ['the Viewer sees the Report bug button']);
+  await check('/o/lumen/bugs (Viewer)', { shot: 'bugs-viewer' });
+  step = 'open the New bug form as the Viewer';
+  await go(page, '/o/lumen/bugs/new');
+  await page.waitForSelector('text=Viewers cannot report bugs');
+  await check('/o/lumen/bugs/new (Viewer, no access)', { shot: 'bug-new-viewer' });
 
   // Long names and emails (rule 4)
   step = 'back to the dashboard to sign out';
@@ -380,6 +598,11 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await go(page, `/o/${LONG.slug}/members`);
   await page.waitForSelector('table.t tbody tr');
   await check('long names: members', { shot: 'members-long-names' });
+  // A workspace with no bugs at all shows the empty state with the Report bug action
+  step = 'open the bug list in the long names workspace';
+  await go(page, `/o/${LONG.slug}/bugs`);
+  await page.waitForSelector('text=No bugs yet');
+  await check('long names: bug list (empty state)', { shot: 'bugs-empty' });
 
   } catch (e) {
     // A step that cannot run is itself a failure: record it and carry on with the next width
@@ -391,6 +614,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await ctx.close();
 }
 await browser.close();
+await removeBugFixture().catch((e) => console.log(`note: could not remove the bug fixture: ${e.message}`));
 await removeLabelFixture().catch((e) => console.log(`note: could not remove the label fixture: ${e.message}`));
 await removeInviteFixture().catch((e) => console.log(`note: could not revoke the invitation fixture: ${e.message}`));
 
