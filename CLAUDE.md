@@ -37,6 +37,7 @@ AI: provider interface in `backend/app/modules/ai`; `AI_PROVIDER=mock|anthropic`
 * WSL stops Docker a few seconds after the last `wsl` session ends (D-048): run Windows side long tasks as `powershell -File scripts/with-wsl.ps1 [-Up] <command>` (`-Up` brings the stack up first; one held session, closed in `finally`; no free running keepalives)
 * Backend tests: `docker compose exec backend pytest -q`
 * Lint/types: `docker compose exec backend ruff check . && docker compose exec backend mypy app`
+* Backend ruff, mypy and pytest in one go from Windows: `powershell -File scripts/with-wsl.ps1 -Up powershell -File scripts/py-checks.ps1`; contract regeneration the same way with `scripts/api-types.ps1`
 * Frontend: `cd frontend && npm run lint && npm run typecheck && npm run build`
 * Seed: `docker compose exec backend python -m app.seed --scenario baseline`
 * Newman (needs the baseline seed; runs inside Docker as one WSL session): `powershell -File scripts/newman.ps1` (or `sh scripts/newman.sh` in WSL). Plain equivalent where Node is on the PATH: `npx newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --env-var password=<SEED_USER_PASSWORD>`
