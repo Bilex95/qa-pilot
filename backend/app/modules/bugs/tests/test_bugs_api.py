@@ -567,7 +567,7 @@ def test_labels_component_and_environment_can_be_replaced_and_cleared(client, wo
     assert cleared.json()["component_id"] is None and cleared.json()["labels"] == []
 
 
-@pytest.mark.parametrize("body", [{}, {"title": None}, {"title": "abc"}, {"severity": None}, {"severity": "urgent"}, {"label_ids": None},
+@pytest.mark.parametrize("body", [{}, {"title": None}, {"title": "abc"}, {"title": "x" * 201}, {"title": "abcd"}, {"severity": None}, {"severity": "urgent"}, {"label_ids": None},
                                   {"steps_to_reproduce": None}, {"status": "closed"}, {"project_id": str(uuid.uuid4())}, {"title": 5}])
 def test_update_invalid_input(client, world, body) -> None:
     bug = make_bug(client, world.a, make_project(client, world.a))
