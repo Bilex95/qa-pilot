@@ -39,7 +39,7 @@ All ids are UUIDs. All timestamps are UTC (D-024). Every tenant owned table has 
 | Entity | Fields | Notes |
 |---|---|---|
 | **TestSuite** | id, org_id, project_id, name, description, component_id, deleted_at | |
-| **TestCase** | id, org_id, suite_id, title, preconditions, steps (list of {action, expected}), tags (list), priority, case_type (`positive`, `negative`, `edge`, `other`), ai_generated (bool), deleted_at | |
+| **TestCase** | id, org_id, suite_id, title, preconditions, steps (list of {action, expected}), tags (list), priority, case_type (`positive`, `negative`, `edge`), ai_generated (bool), deleted_at | |
 | **TestRun** | id, org_id, project_id, name, environment_id, release_id, status (`in_progress`, `completed`), created_by_id, started_at, completed_at | |
 | **TestRunResult** | id, org_id, run_id, case_id, case_title (snapshot), steps (snapshot), result (`untested`, `pass`, `fail`, `blocked`, `skipped`), failed_step_index, actual_result, note, executed_by_id, executed_at | Snapshot keeps history stable (REQ-032) |
 

@@ -4532,8 +4532,7 @@
                   "enum": [
                     "positive",
                     "negative",
-                    "edge",
-                    "other"
+                    "edge"
                   ],
                   "type": "string"
                 },
@@ -6226,7 +6225,7 @@
           "title": {
             "type": "string",
             "maxLength": 200,
-            "minLength": 1,
+            "minLength": 5,
             "title": "Title"
           },
           "preconditions": {
@@ -6270,8 +6269,7 @@
             "enum": [
               "positive",
               "negative",
-              "edge",
-              "other"
+              "edge"
             ],
             "title": "Case Type",
             "default": "positive"
@@ -6329,8 +6327,7 @@
             "enum": [
               "positive",
               "negative",
-              "edge",
-              "other"
+              "edge"
             ],
             "title": "Case Type"
           },
@@ -6436,8 +6433,7 @@
             "enum": [
               "positive",
               "negative",
-              "edge",
-              "other"
+              "edge"
             ],
             "title": "Case Type"
           },
@@ -6486,7 +6482,7 @@
               {
                 "type": "string",
                 "maxLength": 200,
-                "minLength": 1
+                "minLength": 5
               },
               {
                 "type": "null"
@@ -6563,8 +6559,7 @@
                 "enum": [
                   "positive",
                   "negative",
-                  "edge",
-                  "other"
+                  "edge"
                 ]
               },
               {

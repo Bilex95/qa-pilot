@@ -936,7 +936,7 @@ export interface components {
              * @default positive
              * @enum {string}
              */
-            case_type: "positive" | "negative" | "edge" | "other";
+            case_type: "positive" | "negative" | "edge";
             /**
              * Ai Generated
              * @default false
@@ -970,7 +970,7 @@ export interface components {
              * Case Type
              * @enum {string}
              */
-            case_type: "positive" | "negative" | "edge" | "other";
+            case_type: "positive" | "negative" | "edge";
             /** Tags */
             tags: string[];
             /** Step Count */
@@ -1024,7 +1024,7 @@ export interface components {
              * Case Type
              * @enum {string}
              */
-            case_type: "positive" | "negative" | "edge" | "other";
+            case_type: "positive" | "negative" | "edge";
             /** Tags */
             tags: string[];
             /** Step Count */
@@ -1053,7 +1053,7 @@ export interface components {
             /** Priority */
             priority?: ("p1" | "p2" | "p3" | "p4") | null;
             /** Case Type */
-            case_type?: ("positive" | "negative" | "edge" | "other") | null;
+            case_type?: ("positive" | "negative" | "edge") | null;
             /** Suite Id */
             suite_id?: string | null;
         };
@@ -4683,7 +4683,7 @@ export interface operations {
         parameters: {
             query?: {
                 tag?: string | null;
-                case_type?: ("positive" | "negative" | "edge" | "other") | null;
+                case_type?: ("positive" | "negative" | "edge") | null;
                 /** @description Page number, starting at 1 */
                 page?: number;
                 /** @description Items per page, at most 100 */

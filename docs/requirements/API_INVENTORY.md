@@ -121,8 +121,8 @@
 | API-092 | GET | `{O}/test-suites/{suite_id}` | `test.read` | none | suite | 404 |
 | API-093 | PATCH | `{O}/test-suites/{suite_id}` | `suite.manage` | `{name?, description?, component_id?}` | suite | 422 |
 | API-094 | DELETE | `{O}/test-suites/{suite_id}` | `suite.manage` | none | 204 (soft) | none |
-| API-095 | GET | `{O}/test-suites/{suite_id}/cases` | `test.read` | `?tag&case_type&page` | page of `{id, title, priority, case_type, tags, step_count, ai_generated}` | none |
-| API-096 | POST | `{O}/test-suites/{suite_id}/cases` | `case.manage` | `{title, preconditions?, steps:[{action, expected}], tags?, priority?, case_type?}` | 201 case | 422 |
+| API-095 | GET | `{O}/test-suites/{suite_id}/cases` | `test.read` | `?tag&case_type (positive, negative, edge)&page` | page of `{id, title, priority, case_type, tags, step_count, ai_generated}` | none |
+| API-096 | POST | `{O}/test-suites/{suite_id}/cases` | `case.manage` | `{title (5 to 200 chars), preconditions?, steps:[{action, expected}], tags?, priority?, case_type? (positive, negative, edge)}` | 201 case | 422 |
 | API-097 | GET | `{O}/test-cases/{case_id}` | `test.read` | none | full case | 404 |
 | API-098 | PATCH | `{O}/test-cases/{case_id}` | `case.manage` | any case field | case | 422 |
 | API-099 | DELETE | `{O}/test-cases/{case_id}` | `case.manage` | none | 204 (soft) | none |

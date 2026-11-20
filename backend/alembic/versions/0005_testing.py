@@ -55,7 +55,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.CheckConstraint("case_type IN ('positive', 'negative', 'edge', 'other')", name=op.f('ck_test_cases_case_type')),
+    sa.CheckConstraint("case_type IN ('positive', 'negative', 'edge')", name=op.f('ck_test_cases_case_type')),
     sa.CheckConstraint("priority IN ('p1', 'p2', 'p3', 'p4')", name=op.f('ck_test_cases_priority')),
     sa.ForeignKeyConstraint(['org_id'], ['organizations.id'], name=op.f('fk_test_cases_org_id_organizations'), ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['suite_id'], ['test_suites.id'], name=op.f('fk_test_cases_suite_id_test_suites'), ondelete='CASCADE'),

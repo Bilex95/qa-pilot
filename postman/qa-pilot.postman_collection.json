@@ -10774,7 +10774,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Nope\",\n  \"steps\": [\n    {\n      \"action\": \"a\",\n      \"expected\": \"b\"\n    }\n  ]\n}",
+              "raw": "{\n  \"title\": \"No such suite\",\n  \"steps\": [\n    {\n      \"action\": \"a\",\n      \"expected\": \"b\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10790,6 +10790,124 @@
                 "exec": [
                   "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
                   "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create case with a 4 character title (API-096 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/test-suites/{{suiteId}}/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "test-suites",
+                "{{suiteId}}",
+                "cases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"abcd\",\n  \"steps\": [\n    {\n      \"action\": \"a\",\n      \"expected\": \"b\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create case with a type outside the three (API-096 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/test-suites/{{suiteId}}/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "test-suites",
+                "{{suiteId}}",
+                "cases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Other type\",\n  \"steps\": [\n    {\n      \"action\": \"a\",\n      \"expected\": \"b\"\n    }\n  ],\n  \"case_type\": \"other\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
                 ]
               }
             }
@@ -10833,7 +10951,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Nope\",\n  \"steps\": [\n    {\n      \"action\": \"a\",\n      \"expected\": \"b\"\n    }\n  ]\n}",
+              "raw": "{\n  \"title\": \"Cross tenant\",\n  \"steps\": [\n    {\n      \"action\": \"a\",\n      \"expected\": \"b\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11645,7 +11763,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"x\"\n}",
+              "raw": "{\n  \"title\": \"No such case\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11703,7 +11821,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"x\"\n}",
+              "raw": "{\n  \"title\": \"Cross tenant\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12057,7 +12175,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cases\": [\n    {\n      \"title\": \"Nope\",\n      \"steps\": [\n        {\n          \"action\": \"a\",\n          \"expected\": \"b\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"cases\": [\n    {\n      \"title\": \"Cross tenant\",\n      \"steps\": [\n        {\n          \"action\": \"a\",\n          \"expected\": \"b\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"

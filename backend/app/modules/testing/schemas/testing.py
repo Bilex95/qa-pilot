@@ -18,7 +18,7 @@ from app.modules.testing.domain.rules import (
 
 SuiteName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
 SuiteDescription = Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)]
-CaseTitle = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+CaseTitle = Annotated[str, StringConstraints(strip_whitespace=True, min_length=5, max_length=200)]  # as for bugs (D-052)
 Preconditions = Annotated[str, StringConstraints(max_length=2000)]
 StepText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
 Tag = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_TAG_LENGTH)]

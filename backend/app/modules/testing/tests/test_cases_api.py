@@ -77,19 +77,21 @@ def test_developer_and_viewer_see_cases_read_only(client, world, role) -> None:
 
 
 @pytest.mark.parametrize("body", [
-    {}, {"title": "Case"}, {"steps": [STEP]}, {"title": "", "steps": [STEP]}, {"title": "   ", "steps": [STEP]},
-    {"title": "x" * 201, "steps": [STEP]}, {"title": 5, "steps": [STEP]}, {"title": "Case", "steps": []},
-    {"title": "Case", "steps": [STEP] * 51}, {"title": "Case", "steps": [{"action": "Only action"}]},
-    {"title": "Case", "steps": [{"expected": "Only expected"}]}, {"title": "Case", "steps": [{"action": "", "expected": "x"}]},
-    {"title": "Case", "steps": [{"action": "x", "expected": "   "}]},
-    {"title": "Case", "steps": [{"action": "x" * 1001, "expected": "x"}]},
-    {"title": "Case", "steps": [{"action": "x", "expected": "x", "extra": 1}]},
-    {"title": "Case", "steps": [{"id": "nope", "action": "x", "expected": "x"}]},
-    {"title": "Case", "steps": [{"id": SAME_ID, **STEP}, {"id": SAME_ID, **STEP}]},
-    {"title": "Case", "steps": [STEP], "preconditions": "p" * 2001}, {"title": "Case", "steps": [STEP], "tags": ["t"] * 21},
-    {"title": "Case", "steps": [STEP], "tags": ["x" * 31]}, {"title": "Case", "steps": [STEP], "tags": [""]},
-    {"title": "Case", "steps": [STEP], "priority": "p5"}, {"title": "Case", "steps": [STEP], "case_type": "weird"},
-    {"title": "Case", "steps": [STEP], "extra": 1}, {"title": "Case", "steps": [STEP], "ai_usage_id": str(uuid.uuid4())},
+    {}, {"title": "Valid case"}, {"steps": [STEP]}, {"title": "", "steps": [STEP]}, {"title": "   ", "steps": [STEP]},
+    {"title": "x" * 201, "steps": [STEP]}, {"title": 5, "steps": [STEP]}, {"title": "Valid case", "steps": []},
+    {"title": "Valid case", "steps": [STEP] * 51}, {"title": "Valid case", "steps": [{"action": "Only action"}]},
+    {"title": "Valid case", "steps": [{"expected": "Only expected"}]}, {"title": "Valid case", "steps": [{"action": "", "expected": "x"}]},
+    {"title": "Valid case", "steps": [{"action": "x", "expected": "   "}]},
+    {"title": "Valid case", "steps": [{"action": "x" * 1001, "expected": "x"}]},
+    {"title": "Valid case", "steps": [{"action": "x", "expected": "x", "extra": 1}]},
+    {"title": "Valid case", "steps": [{"id": "nope", "action": "x", "expected": "x"}]},
+    {"title": "Valid case", "steps": [{"id": SAME_ID, **STEP}, {"id": SAME_ID, **STEP}]},
+    {"title": "Valid case", "steps": [STEP], "preconditions": "p" * 2001}, {"title": "Valid case", "steps": [STEP], "tags": ["t"] * 21},
+    {"title": "Valid case", "steps": [STEP], "tags": ["x" * 31]}, {"title": "Valid case", "steps": [STEP], "tags": [""]},
+    {"title": "Valid case", "steps": [STEP], "priority": "p5"}, {"title": "Valid case", "steps": [STEP], "case_type": "weird"},
+    {"title": "Valid case", "steps": [STEP], "case_type": "other"},  # REQ-047: positive, negative and edge only
+    {"title": "abcd", "steps": [STEP]},  # 4 characters: one short of the minimum
+    {"title": "Valid case", "steps": [STEP], "extra": 1}, {"title": "Valid case", "steps": [STEP], "ai_usage_id": str(uuid.uuid4())},
 ])
 def test_create_case_invalid_input(client, world, body) -> None:
     _, suite = setup(client, world.a)
@@ -103,6 +105,38 @@ def test_steps_and_title_at_the_limits_are_accepted(client, world) -> None:
     assert case["step_count"] == 50 and len(case["title"]) == 200 and len(case["tags"]) == 20
 
 
+def test_title_length_is_5_to_200_like_bugs(client, world) -> None:
+    """4 and 201 characters are refused, 5 and 200 are accepted: on create, on edit and in bulk."""
+    _, suite = setup(client, world.a)
+    h = world.a.h("qa_engineer")
+    for length, ok in ((4, False), (5, True), (200, True), (201, False)):
+        title = "t" * length
+        created = client.post(cases_url(world.a, suite), json={"title": title, "steps": [STEP]}, headers=h)
+        assert created.status_code == (201 if ok else 422), (length, created.text)
+        in_bulk = bulk(client, world.a, suite, [{"title": title, "steps": [STEP]}])
+        assert in_bulk.status_code == (201 if ok else 422), (length, in_bulk.text)
+    case = make_case(client, world.a, suite, title="A title to edit")
+    for length, ok in ((4, False), (5, True), (200, True), (201, False)):
+        r = patch(client, world.a, case, title="e" * length)
+        assert r.status_code == (200 if ok else 422), (length, r.text)
+        if not ok:
+            assert r.json()["error"]["details"][0]["loc"] == ["body", "title"]
+    assert make_case(client, world.a, suite, title="  abcde  ")["title"] == "abcde"  # trimmed before the length check
+    r = client.post(cases_url(world.a, suite), json={"title": "  abc  ", "steps": [STEP]}, headers=h)
+    assert r.status_code == 422  # 3 characters once trimmed
+
+
+def test_only_three_case_types_exist(client, world) -> None:
+    _, suite = setup(client, world.a)
+    for case_type in ("positive", "negative", "edge"):
+        assert make_case(client, world.a, suite, title=f"A {case_type} case", case_type=case_type)["case_type"] == case_type
+    r = client.post(cases_url(world.a, suite), json={"title": "Other type", "steps": [STEP], "case_type": "other"},
+                    headers=world.a.h("qa_lead"))
+    assert r.status_code == 422 and r.json()["error"]["details"][0]["loc"] == ["body", "case_type"]
+    r = bulk(client, world.a, suite, [{"title": "Other type", "steps": [STEP], "case_type": "other"}])
+    assert r.status_code == 422
+
+
 def test_one_step_is_enough(client, world) -> None:
     _, suite = setup(client, world.a)
     assert make_case(client, world.a, suite, steps=[STEP])["step_count"] == 1
@@ -113,7 +147,7 @@ def test_create_in_a_missing_deleted_or_foreign_suite_is_404(client, world) -> N
     _, suite = setup(client, world.a)
     client.delete(f"{O}/{world.a.org.id}/test-suites/{suite['id']}", headers=world.a.h("qa_lead"))
     for sid in (str(uuid.uuid4()), theirs["id"], suite["id"]):
-        r = client.post(f"{O}/{world.a.org.id}/test-suites/{sid}/cases", json={"title": "Case", "steps": [STEP]},
+        r = client.post(f"{O}/{world.a.org.id}/test-suites/{sid}/cases", json={"title": "Valid case", "steps": [STEP]},
                         headers=world.a.h("qa_lead"))
         assert r.status_code == 404 and code(r) == "not_found"
 
@@ -202,7 +236,7 @@ def test_list_filters_by_tag_and_type(client, world) -> None:
     assert keys(tag="nothing") == []
 
 
-@pytest.mark.parametrize("params", [{"page_size": 101}, {"page": 0}, {"case_type": "weird"}, {"tag": "x" * 31}])
+@pytest.mark.parametrize("params", [{"page_size": 101}, {"page": 0}, {"case_type": "weird"}, {"case_type": "other"}, {"tag": "x" * 31}])
 def test_list_cases_invalid_params_are_422(client, world, params) -> None:
     _, suite = setup(client, world.a)
     r = client.get(cases_url(world.a, suite), params=params, headers=world.a.h("qa_lead"))
@@ -211,7 +245,7 @@ def test_list_cases_invalid_params_are_422(client, world, params) -> None:
 
 def test_list_hides_deleted_cases_and_other_orgs(client, world) -> None:
     _, suite = setup(client, world.a)
-    keep, gone = make_case(client, world.a, suite), make_case(client, world.a, suite, title="Gone")
+    keep, gone = make_case(client, world.a, suite), make_case(client, world.a, suite, title="Gone case")
     client.delete(f"{O}/{world.a.org.id}/test-cases/{gone['id']}", headers=world.a.h("qa_lead"))
     assert [c["id"] for c in client.get(cases_url(world.a, suite), headers=world.a.h("qa_lead")).json()["items"]] == [keep["id"]]
     theirs = make_suite(client, world.b, make_project(client, world.b))
@@ -305,7 +339,8 @@ def test_editing_a_step_keeps_its_id_and_a_new_step_gets_one(client, world) -> N
 @pytest.mark.parametrize("body", [
     {}, {"title": None}, {"title": ""}, {"title": "x" * 201}, {"steps": None}, {"steps": []}, {"steps": [STEP] * 51},
     {"steps": [{"action": "x"}]}, {"tags": None}, {"tags": ["t"] * 21}, {"priority": None}, {"priority": "p5"},
-    {"case_type": "weird"}, {"preconditions": None}, {"suite_id": None}, {"suite_id": "nope"}, {"number": 9}, {"ai_generated": True},
+    {"case_type": "weird"}, {"case_type": "other"}, {"title": "abcd"}, {"preconditions": None}, {"suite_id": None},
+    {"suite_id": "nope"}, {"number": 9}, {"ai_generated": True},
 ])
 def test_update_case_invalid_input(client, world, body) -> None:
     _, suite = setup(client, world.a)
@@ -331,7 +366,7 @@ def test_a_case_moves_only_to_a_suite_of_the_same_project(client, world) -> None
 
 
 def test_updating_a_missing_case_is_404(client, world) -> None:
-    r = client.patch(f"{O}/{world.a.org.id}/test-cases/{uuid.uuid4()}", json={"title": "Nope"}, headers=world.a.h("qa_lead"))
+    r = client.patch(f"{O}/{world.a.org.id}/test-cases/{uuid.uuid4()}", json={"title": "Missing case"}, headers=world.a.h("qa_lead"))
     assert r.status_code == 404
 
 

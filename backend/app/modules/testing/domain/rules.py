@@ -4,10 +4,10 @@ import re
 import uuid
 from typing import Literal
 
-CaseType = Literal["positive", "negative", "edge", "other"]
+CaseType = Literal["positive", "negative", "edge"]  # REQ-047, DOMAIN_MODEL 1.4
 Priority = Literal["p1", "p2", "p3", "p4"]
 
-CASE_TYPES: tuple[str, ...] = ("positive", "negative", "edge", "other")
+CASE_TYPES: tuple[str, ...] = ("positive", "negative", "edge")
 PRIORITIES: tuple[str, ...] = ("p1", "p2", "p3", "p4")
 DEFAULT_PRIORITY = "p3"
 DEFAULT_CASE_TYPE = "positive"
