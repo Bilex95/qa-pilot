@@ -44,3 +44,7 @@ export function Input({ className, ...props }: ComponentProps<"input">) {
 export function Select({ className, ...props }: ComponentProps<"select">) {
   return <select className={cn("select", className)} {...props} />;
 }
+
+export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
+  return <textarea className={cn("textarea", className)} {...props} />;
+}

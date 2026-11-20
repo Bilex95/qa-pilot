@@ -18,8 +18,9 @@ export default function SectionPage() {
   const org = useOrg();
   const key = section[0] ?? "";
   const item = NAV.flatMap((g) => g.items).find((i) => i.path === key);
-  const isNewBug = key === "bugs" && section[1] === "new";
-  if (!item || (section.length > 1 && !isNewBug)) return <NotFoundScreen home={`/o/${org.slug}/dashboard`} />;
+  // /bugs/WEB-12 is the bug detail screen (I-05); until then a bug key shows the placeholder instead of a 404
+  const bugKey = key === "bugs" && section.length === 2 && /^[A-Za-z]{2,6}-\d{1,9}$/.test(section[1] ?? "") ? section[1] : undefined;
+  if (!item || (section.length > 1 && !bugKey)) return <NotFoundScreen home={`/o/${org.slug}/dashboard`} />;
   if (item.requires && !can(org.role, item.requires)) {
     return (
       <EmptyState icon={IconLock} title={`You do not have access to ${item.label}`}>
@@ -27,7 +28,7 @@ export default function SectionPage() {
       </EmptyState>
     );
   }
-  const title = isNewBug ? "Report a bug" : (SECTION_TITLES[key] ?? item.label);
+  const title = bugKey ? `Bug ${bugKey.toUpperCase()}` : (SECTION_TITLES[key] ?? item.label);
   return (
     <>
       <div className="page-head">

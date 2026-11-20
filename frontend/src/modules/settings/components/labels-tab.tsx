@@ -11,6 +11,7 @@ import { api, unwrap } from "@/lib/api/client";
 import { isApiError } from "@/lib/api/errors";
 import { useOrg } from "@/modules/shell/org-context";
 
+import { DeleteLabelDialog } from "./delete-label-dialog";
 import { LabelChip } from "./label-chip";
 import { NewLabelDialog } from "./new-label-dialog";
 
@@ -20,6 +21,7 @@ export function LabelsTab() {
   const qc = useQueryClient();
   const toast = useToast();
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<{ id: string; name: string; bug_count: number } | null>(null);
   const key = ["labels", org.id];
 
   const labels = useQuery({
@@ -35,7 +37,12 @@ export function LabelsTab() {
       if (isApiError(err, "not_found")) toast("That label was already deleted.");
       else toast("Could not delete the label. Try again.", "error");
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: () => {
+      setDeleting(null);
+      // the bugs that had the label lose it, so cached bug lists are stale too
+      void qc.invalidateQueries({ queryKey: ["bugs", org.id] });
+      return qc.invalidateQueries({ queryKey: key });
+    },
   });
 
   if (labels.isLoading) return <LoadingPanel rows={5} />;
@@ -78,8 +85,7 @@ export function LabelsTab() {
                         size="sm"
                         className="icon-btn"
                         aria-label={`Delete label ${label.name}`}
-                        disabled={remove.isPending && remove.variables === label.id}
-                        onClick={() => remove.mutate(label.id)}
+                        onClick={() => setDeleting(label)}
                       >
                         <IconTrash />
                       </Button>
@@ -92,6 +98,10 @@ export function LabelsTab() {
         </section>
       )}
       {creating ? <NewLabelDialog onClose={() => setCreating(false)} /> : null}
+      {deleting ? (
+        <DeleteLabelDialog name={deleting.name} bugCount={deleting.bug_count} pending={remove.isPending}
+          onConfirm={() => remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
+      ) : null}
     </>
   );
 }
