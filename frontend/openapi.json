@@ -5566,6 +5566,17 @@
             ],
             "title": "Actor Id"
           },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
           "action": {
             "type": "string",
             "title": "Action"

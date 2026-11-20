@@ -269,6 +269,13 @@ folders = [
     {"name": "Audit", "item": [
         req("Audit events (API-150)", "GET", f"{O}/audit-events?page_size=5", token="adminToken",
             tests=[status(200), 'pm.test("has events", () => pm.expect(pm.response.json().total).to.be.above(0));']),
+        req("Audit events carry the actor name (API-150)", "GET", f"{O}/audit-events?page_size=5", token="adminToken",
+            tests=[status(200), 'pm.test("actor_name is a string", () => pm.response.json().items.filter(e => e.actor_id).forEach(e => pm.expect(e.actor_name).to.be.a("string")));']),
+        req("A password change is in the audit log, with the name of the person removed since (API-150, D-056)", "GET",
+            f"{O}/audit-events?action=auth.password_changed&page_size=100", token="adminToken",
+            tests=[status(200), 'pm.test("the removed person is still named", () => { const names = pm.response.json().items.map(e => e.actor_name); pm.expect(names).to.include("Newman Reset"); });',
+                   'pm.test("no password in the event", () => pm.expect(JSON.stringify(pm.response.json())).to.not.include("Newman-change-2028"));']),
+        req("Audit events as QA Lead (API-150 forbidden)", "GET", f"{O}/audit-events", token="leadToken", tests=[status(403)]),
         req("Audit events as QA Engineer (API-150 forbidden)", "GET", f"{O}/audit-events", token="qaToken", tests=[status(403)]),
         req("Audit events of other org (API-150 cross tenant)", "GET", f"{F}/audit-events", token="adminToken", tests=[status(404)]),
         req("Audit events bad date (API-150 invalid)", "GET", f"{O}/audit-events?from=yesterday", token="adminToken", tests=[status(422)]),

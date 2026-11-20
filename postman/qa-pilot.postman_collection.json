@@ -4440,6 +4440,151 @@
           ]
         },
         {
+          "name": "Audit events carry the actor name (API-150)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/audit-events?page_size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "audit-events"
+              ],
+              "query": [
+                {
+                  "key": "page_size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"actor_name is a string\", () => pm.response.json().items.filter(e => e.actor_id).forEach(e => pm.expect(e.actor_name).to.be.a(\"string\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A password change is in the audit log, with the name of the person removed since (API-150, D-056)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/audit-events?action=auth.password_changed&page_size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "audit-events"
+              ],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "auth.password_changed"
+                },
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"the removed person is still named\", () => { const names = pm.response.json().items.map(e => e.actor_name); pm.expect(names).to.include(\"Newman Reset\"); });",
+                  "pm.test(\"no password in the event\", () => pm.expect(JSON.stringify(pm.response.json())).to.not.include(\"Newman-change-2028\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Audit events as QA Lead (API-150 forbidden)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/audit-events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "audit-events"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Audit events as QA Engineer (API-150 forbidden)",
           "request": {
             "method": "GET",
