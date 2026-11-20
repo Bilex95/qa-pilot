@@ -343,6 +343,11 @@ folders = [
             tests=[status(200), 'pm.test("only the critical one", () => pm.expect(pm.response.json().items.map(b => b.id)).to.eql([pm.environment.get("bugTwoId")]));']),
         req("List bugs filtered by label (API-060)", "GET", f"{O}/bugs?label_id={{{{bugLabelId}}}}", token="qaToken",
             tests=[status(200), 'pm.test("one tagged bug", () => pm.expect(pm.response.json().items.map(b => b.id)).to.eql([pm.environment.get("bugId")]));']),
+        req("List unassigned bugs (API-060)", "GET", f"{O}/bugs?unassigned=true&project_id={{{{projectId}}}}", token="qaToken",
+            tests=[status(200), 'pm.test("the two unassigned bugs", () => pm.expect(pm.response.json().items.map(b => b.id).sort()).to.eql('
+                   '[pm.environment.get("bugId"), pm.environment.get("bugThreeId")].sort()));']),
+        req("List bugs with assignee and unassigned together (API-060 invalid)", "GET",
+            f"{O}/bugs?unassigned=true&assignee_id={{{{devUserId}}}}", token="qaToken", tests=[status(422), err("validation_error")]),
         req("Search bugs by key in lower case (API-060)", "GET", f"{O}/bugs?q={{{{bugKey}}}}", token="qaToken",
             pre=['pm.environment.set("bugKeyLower", pm.environment.get("bugKey").toLowerCase());'],
             tests=[status(200), 'pm.test("found by key", () => pm.expect(pm.response.json().items.map(b => b.key)).to.include(pm.environment.get("bugKey")));']),

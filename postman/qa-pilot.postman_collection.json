@@ -6119,6 +6119,112 @@
           ]
         },
         {
+          "name": "List unassigned bugs (API-060)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?unassigned=true&project_id={{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "unassigned",
+                  "value": "true"
+                },
+                {
+                  "key": "project_id",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"the two unassigned bugs\", () => pm.expect(pm.response.json().items.map(b => b.id).sort()).to.eql([pm.environment.get(\"bugId\"), pm.environment.get(\"bugThreeId\")].sort()));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List bugs with assignee and unassigned together (API-060 invalid)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs?unassigned=true&assignee_id={{devUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ],
+              "query": [
+                {
+                  "key": "unassigned",
+                  "value": "true"
+                },
+                {
+                  "key": "assignee_id",
+                  "value": "{{devUserId}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Search bugs by key in lower case (API-060)",
           "request": {
             "method": "GET",
