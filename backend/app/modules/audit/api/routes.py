@@ -11,6 +11,7 @@ from app.core.pagination import Page, PageParams, page_params
 from app.core.schemas import errors
 from app.modules.audit.application import service
 from app.modules.audit.schemas.audit import AuditEventOut
+from app.modules.auth.application import service as auth
 
 router = APIRouter(tags=["audit"])
 
@@ -28,5 +29,8 @@ def list_audit_events(
 ) -> Page[AuditEventOut]:
     rows, total = service.list_events(db, ctx.org_id, params, action=action, actor_id=actor_id,
                                       entity_type=entity_type, date_from=date_from, date_to=date_to)
-    return Page(items=[AuditEventOut.model_validate(r) for r in rows], page=params.page,
+    names = {uid: u.full_name for uid, u in auth.get_users_by_ids(db, [r.actor_id for r in rows if r.actor_id]).items()}
+    items = [AuditEventOut.model_validate(r).model_copy(update={"actor_name": names.get(r.actor_id) if r.actor_id else None})
+             for r in rows]
+    return Page(items=items, page=params.page,
                 page_size=params.page_size, total=total)

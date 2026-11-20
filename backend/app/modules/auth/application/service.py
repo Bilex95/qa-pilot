@@ -160,14 +160,26 @@ def logout(db: Session, *, refresh_token: str, user: User) -> None:
     db.commit()
 
 
-def update_profile(db: Session, user: User, *, full_name: str) -> User:
-    user.full_name = full_name.strip()
+def _record_for_workspaces(db: Session, action: str, user: User, org_ids: list[uuid.UUID],
+                           data: dict[str, Any] | None = None) -> None:
+    """An identity event is shown in the audit log of every workspace the person belongs to (their admins see it); a person
+    without a workspace still gets one event with no workspace. Never carries a password or token."""
+    for org_id in org_ids or [None]:  # type: ignore[list-item]
+        audit.record(db, action, actor_id=user.id, org_id=org_id, entity_type="user", entity_id=user.id, data=data)
+
+
+def update_profile(db: Session, user: User, *, full_name: str, org_ids: list[uuid.UUID] | None = None) -> User:
+    new_name = full_name.strip()
+    if new_name != user.full_name:
+        _record_for_workspaces(db, "auth.profile_updated", user, org_ids or [],
+                               {"full_name": {"from": user.full_name, "to": new_name}})
+    user.full_name = new_name
     db.commit()
     return user
 
 
 def change_password(db: Session, user: User, *, current_password: str, new_password: str,
-                    user_agent: str | None = None) -> TokenPair:
+                    user_agent: str | None = None, org_ids: list[uuid.UUID] | None = None) -> TokenPair:
     """Every other session ends; the device that made the change stays signed in with a fresh token pair (D-055)."""
     if not verify_password(user.password_hash, current_password):
         raise AppError("Current password is incorrect.", code="wrong_password", status_code=400)
@@ -182,7 +194,7 @@ def change_password(db: Session, user: User, *, current_password: str, new_passw
     repo.revoke_pending_resets(db, user.id, now)
     # The new pair is issued after the change, never at or before it: the access token is stamped at least one microsecond later
     pair, _ = _issue(db, user, user_agent, issued_at=max(utcnow(), now + timedelta(microseconds=1)))
-    audit.record(db, "auth.password_changed", actor_id=user.id, entity_type="user", entity_id=user.id)
+    _record_for_workspaces(db, "auth.password_changed", user, org_ids or [])
     db.commit()
     return pair
 

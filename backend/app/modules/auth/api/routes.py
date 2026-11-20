@@ -70,15 +70,17 @@ def me(db: DB, user: CurrentUser) -> MeOut:
 
 @router.patch("/me", response_model=UserOut, responses=errors(401, 422))
 def update_me(body: ProfileIn, db: DB, user: CurrentUser) -> UserOut:
-    return UserOut.model_validate(service.update_profile(db, user, full_name=body.full_name))
+    org_ids = [o.id for o, _ in orgs.memberships_for_user(db, user.id)]
+    return UserOut.model_validate(service.update_profile(db, user, full_name=body.full_name, org_ids=org_ids))
 
 
 @router.post("/me/password", response_model=TokensOut, responses=errors(400, 401, 422))
 def change_password(body: PasswordChangeIn, db: DB, user: CurrentUser, user_agent: UA = None) -> TokensOut:
     """Every other session ends (refresh tokens revoked, earlier access tokens refused). The response is a fresh token pair
     for this device, issued after the change, so the person stays signed in here (D-055)."""
+    org_ids = [o.id for o, _ in orgs.memberships_for_user(db, user.id)]
     pair = service.change_password(db, user, current_password=body.current_password, new_password=body.new_password,
-                                   user_agent=user_agent)
+                                   user_agent=user_agent, org_ids=org_ids)
     return TokensOut(access_token=pair.access_token, refresh_token=pair.refresh_token, expires_in=pair.expires_in)
 
 
