@@ -129,6 +129,10 @@ async function clearBugFixture() {
     const bugs = await must(await fetch(`${org}/bugs?project_id=${project.id}&page_size=100`, { headers: h }), 'list fixture bugs');
     for (const b of bugs.items) await fetch(`${org}/bugs/${b.id}`, { method: 'DELETE', headers: h });
   }
+  if (project) { // test suites of the fixture project (their cases are soft deleted with them)
+    const found = await must(await fetch(`${org}/test-suites?project_id=${project.id}&page_size=100`, { headers: h }), 'list fixture suites');
+    for (const s of found.items) await fetch(`${org}/test-suites/${s.id}`, { method: 'DELETE', headers: h });
+  }
   const views = await must(await fetch(`${org}/saved-views`, { headers: h }), 'list saved views');
   for (const v of views.filter((x) => [LONG_VIEW, VIEW_NAME].includes(x.name))) await fetch(`${org}/saved-views/${v.id}`, { method: 'DELETE', headers: h });
   const labels = await must(await fetch(`${org}/labels`, { headers: h }), 'list labels');
@@ -159,6 +163,36 @@ async function ensureBugFixture() {
   await bug({ title: 'Tooltip is cut off on the shipment map', severity: 'low', priority: 'p4' });
   await bug({ title: 'Driver app crashes when the network drops during upload', severity: 'high', priority: 'p2', assignee_id: diego });
   await must(await fetch(`${org}/saved-views`, json({ name: LONG_VIEW, filters: { version: 1, severity: ['critical'], open: true } })), 'create the long view');
+}
+// Test suite fixtures for the suites screen and the case editor (I-06): a suite with 30 cases (so the pager shows), one case with
+// a 200 character title, 50 steps of long text and 20 tags, a suite with an 80 character name and a 1000 character description,
+// and an empty suite. Created in the fixture project and removed with it (clearBugFixture).
+const SUITE_A = 'Layout fixture suite';
+const SUITE_B = 'Intermittent carrier reconciliation and settlement ledger export checks for long running batches';
+const SUITE_B_NAME = SUITE_B.slice(0, 80).trim();
+const SUITE_C = 'Layout empty suite';
+const TEST_FIX = { caseKey: '' };
+async function ensureTestFixture() {
+  const { h, org } = await bugApi();
+  const projects = await must(await fetch(`${org}/projects?include_archived=true&page_size=100`, { headers: h }), 'list projects');
+  const project = projects.items.find((p) => p.key === BUG_PROJECT.key); // ensureBugFixture has created it
+  const json = (body) => ({ method: 'POST', headers: h, body: JSON.stringify(body) });
+  const comps = await must(await fetch(`${org}/projects/${project.id}/components`, { headers: h }), 'list components');
+  const component = comps.find((c) => c.name === LONG_COMPONENT);
+  const suite = async (body) => must(await fetch(`${org}/test-suites`, json({ project_id: project.id, ...body })), 'create suite');
+  const a = await suite({ name: SUITE_A, description: 'Cart, discounts and payment. '.repeat(10).trim(), component_id: component?.id });
+  await suite({ name: SUITE_B_NAME, description: 'Long description of what this suite covers. '.repeat(22).slice(0, 1000).trim() });
+  await suite({ name: SUITE_C });
+  const step = (i, long) => ({ action: long ? `Step ${i} ${'unbrokenaction'.repeat(8)} with text that goes on and on to fill the box` : `Action ${i}`,
+    expected: long ? `Expected ${i} ${'unbrokenexpectation'.repeat(6)} and a longer sentence of text` : `Expected ${i}` });
+  const long = await must(await fetch(`${org}/test-suites/${a.id}/cases`, json({
+    title: LONG_TITLE, preconditions: 'A shipper with parcels in the cart. '.repeat(10).trim(), case_type: 'edge', priority: 'p1',
+    steps: Array.from({ length: 50 }, (_, i) => step(i + 1, i % 5 === 0)),
+    tags: ['t'.repeat(30), ...Array.from({ length: 19 }, (_, i) => `tag-${i + 1}`)] })), 'create the long case');
+  TEST_FIX.caseKey = long.key;
+  await must(await fetch(`${org}/test-suites/${a.id}/cases/bulk`, json({ cases: Array.from({ length: 29 }, (_, i) => ({
+    title: `Layout fixture case number ${i + 1}`, steps: [step(1, false), step(2, false)], tags: ['discounts', 'layout'], case_type: ['positive', 'negative', 'edge'][i % 3],
+    priority: ['p1', 'p2', 'p3', 'p4'][i % 4] })) })), 'create the bulk cases');
 }
 async function removeBugFixture() {
   const { h, org, project } = await clearBugFixture();
@@ -273,11 +307,13 @@ async function go(page, path) {
 await ensureLongFixture();
 await ensureLabelFixture();
 await ensureBugFixture();
+await ensureTestFixture();
 const browser = await chromium.launch();
 { // warm up every route once so first compiles do not disturb the checks
   const warm = await browser.newPage();
   for (const path of ['/login', '/register', '/invite/not-a-real-token-000', '/onboarding/org', '/o/lumen/dashboard',
     '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs', '/o/lumen/bugs/new', '/o/lumen/bugs/WEB-1',
+    '/o/lumen/tests', '/o/lumen/tests/cases/new', `/o/lumen/tests/cases/${TEST_FIX.caseKey}`,
     '/o/lumen/this-page-does-not-exist']) {
     await go(warm, path).catch(() => {});
   }
@@ -524,6 +560,110 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   for (const b of await page.locator('#n-lab button').all()) await b.click();
   await check('new bug: long text, every label chosen', { shot: 'bug-new-long' });
 
+  // Test suites (SCR-12) and the case editor (SCR-13), I-06: default with the long fixtures, the pager, dialogs, every state
+  const suitesUrl = /\/api\/v1\/orgs\/[^/]+\/test-suites\?/;
+  const caseUrl = /\/api\/v1\/orgs\/[^/]+\/test-cases\//;
+  step = 'open the test suites';
+  await go(page, '/o/lumen/tests');
+  await page.waitForSelector('.suite-list a');
+  await page.click(`.suite-list a:has-text("${SUITE_A}")`);
+  await page.waitForSelector('table.t tbody tr');
+  await page.waitForSelector('.pager');
+  await check('/o/lumen/tests (admin, 30 cases, a long case)', { shot: 'tests' });
+  step = 'open the New suite dialog and a name that is taken';
+  await page.click('button:has-text("New suite")');
+  await page.waitForSelector('.modal');
+  await check('new suite dialog', { popup: '.modal', shot: 'tests-new-suite' });
+  await fillStable(page, '#suite-name', SUITE_A.toUpperCase());
+  await page.selectOption('#suite-project', { label: BUG_PROJECT.name });
+  await page.click('.modal button:has-text("Create suite")');
+  await page.waitForSelector('.modal .err');
+  await check('new suite dialog with a name already taken', { popup: '.modal', shot: 'tests-new-suite-error' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'open the Edit suite dialog';
+  await page.click('button:has-text("Edit suite")');
+  await page.waitForSelector('.modal');
+  await check('edit suite dialog', { popup: '.modal', shot: 'tests-edit-suite' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'open the delete suite confirmation';
+  await page.click('button[aria-label^="Delete suite"]');
+  await page.waitForSelector('#delete-suite-count');
+  await check('delete suite confirmation', { popup: '.modal', shot: 'tests-delete-suite' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'open the suite with the long name and the empty suite';
+  await page.click(`.suite-list a:has-text("${SUITE_B_NAME.slice(0, 30)}")`);
+  await page.waitForSelector('text=No cases in this suite yet');
+  await check('tests: suite with an 80 character name and a long description, no cases', { shot: 'tests-long-suite' });
+  await page.click(`.suite-list a:has-text("${SUITE_C}")`);
+  await page.waitForSelector('text=No cases in this suite yet');
+  await check('tests: empty suite', { shot: 'tests-empty-suite' });
+
+  step = 'show the suites no results, loading and error states';
+  await page.route(suitesUrl, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { items: [], page: 1, page_size: 100, total: 0 } });
+  });
+  await go(page, '/o/lumen/tests');
+  await page.waitForSelector('text=No test suites yet');
+  await check('tests: no suites at all', { shot: 'tests-empty' });
+  await page.unroute(suitesUrl);
+  await page.route(suitesUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/tests`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Test suites")');
+  await page.waitForSelector('.sk');
+  await check('tests: loading', { shot: 'tests-loading' });
+  await page.waitForSelector('.suite-list a');
+  await page.unroute(suitesUrl);
+  await page.route(suitesUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i06' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/tests');
+  await page.waitForSelector('.state-box.error');
+  await check('tests: error', { shot: 'tests-error' });
+  await page.unroute(suitesUrl);
+
+  step = 'open the case editor with the long case';
+  await go(page, `/o/lumen/tests/cases/${TEST_FIX.caseKey}`);
+  await page.waitForSelector('#c-title');
+  await page.waitForSelector('textarea[aria-label="Step 50 action"]');
+  await check('case editor (admin, 200 character title, 50 steps, 20 tags)', { shot: 'case-editor' });
+  step = 'open the delete case confirmation';
+  await page.click('button[aria-label^="Delete case"]');
+  await page.waitForSelector('.modal');
+  await check('delete case confirmation', { popup: '.modal', shot: 'case-delete' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'show the case editor loading, error and not found states';
+  await page.route(caseUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/tests/cases/${TEST_FIX.caseKey}`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Test case")');
+  await page.waitForSelector('[role=status] .sk');
+  await check('case editor: loading', { shot: 'case-loading' });
+  await page.waitForSelector('#c-title');
+  await page.unroute(caseUrl);
+  await page.route(caseUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i06' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, `/o/lumen/tests/cases/${TEST_FIX.caseKey}`);
+  await page.waitForSelector('.state-box.error');
+  await check('case editor: error', { shot: 'case-error' });
+  await page.unroute(caseUrl);
+  await go(page, '/o/lumen/tests/cases/TC-999999');
+  await page.waitForSelector('text=This test case does not exist');
+  await check('case editor: not found', { shot: 'case-not-found' });
+  step = 'open the New test case form and save it empty';
+  await go(page, '/o/lumen/tests/cases/new');
+  await page.waitForSelector('#c-title');
+  await check('/o/lumen/tests/cases/new (admin)', { shot: 'case-new' });
+  await page.click('button:has-text("Save case")');
+  await page.waitForSelector('.banner.error');
+  await check('new case: error banner', { shot: 'case-new-error' });
+
   // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
   step = 'sign out to sign in as the QA Lead';
   await page.click('.user-btn');
@@ -556,6 +696,23 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     note(vp, 'new bug (Developer)', ['severity and priority must be disabled with the hint for a Developer']);
   }
   await check('/o/lumen/bugs/new (Developer)', { shot: 'bug-new-developer' });
+  step = 'open the test suites and a case as the Developer';
+  await go(page, '/o/lumen/tests');
+  await page.waitForSelector('.suite-list a');
+  await page.click(`.suite-list a:has-text("${SUITE_A}")`);
+  await page.waitForSelector('table.t tbody tr');
+  if (await page.locator('button:has-text("New suite"), button:has-text("Edit suite"), button[aria-label^="Delete suite"], a:has-text("New test case")').count()) {
+    note(vp, 'tests (Developer)', ['the Developer sees a control that only QA roles may use']);
+  }
+  await check('/o/lumen/tests (Developer, read only)', { shot: 'tests-developer' });
+  await go(page, `/o/lumen/tests/cases/${TEST_FIX.caseKey}`);
+  await page.waitForSelector('textarea[aria-label="Step 1 action"]');
+  if (!(await page.isDisabled('#c-title')) || !(await page.isDisabled('textarea[aria-label="Step 1 action"]')) ||
+      await page.locator('button:has-text("Save case"), button:has-text("Add step"), button[aria-label^="Delete case"]').count()) {
+    note(vp, 'case editor (Developer)', ['the fields must be disabled and there must be no Save, Add step or Delete']);
+  }
+  await page.waitForSelector('text=Only QA roles can edit test cases.');
+  await check('case editor (Developer, read only)', { shot: 'case-editor-developer' });
   await signInAs(page, 'hana@lumenfreight.test');
   step = 'open the bug list as the Viewer';
   await go(page, '/o/lumen/bugs');
@@ -603,6 +760,10 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await go(page, `/o/${LONG.slug}/bugs`);
   await page.waitForSelector('text=No bugs yet');
   await check('long names: bug list (empty state)', { shot: 'bugs-empty' });
+  step = 'open the test suites in the long names workspace';
+  await go(page, `/o/${LONG.slug}/tests`);
+  await page.waitForSelector('text=No test suites yet');
+  await check('long names: test suites (empty state)', { shot: 'tests-empty-workspace' });
 
   } catch (e) {
     // A step that cannot run is itself a failure: record it and carry on with the next width
