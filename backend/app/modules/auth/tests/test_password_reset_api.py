@@ -351,3 +351,47 @@ def test_a_refused_password_change_changes_nothing(client, db, world) -> None:
     assert client.get(f"{A}/me", headers=bearer(device)).status_code == 200  # the session and the password are untouched
     assert client.post(f"{A}/refresh", json={"refresh_token": device["refresh_token"]}).status_code == 200
     assert login(client, person).status_code == 200
+
+
+# Removing a person ends their reset links (D-056, BL-020) ------------------------------------------
+
+def remove(client, world, role="developer"):  # type: ignore[no-untyped-def]
+    m = world.a.memberships[role]
+    return client.delete(f"{O}/{world.a.org.id}/members/{m.id}", headers=world.a.h("org_admin"))
+
+
+def test_removing_a_person_revokes_their_live_reset_link_and_ends_their_sessions(client, db, world) -> None:
+    person = world.a.users["developer"]
+    device = login(client, person).json()
+    _, token = link(client, world)
+    assert preview(client, token).status_code == 200
+    assert remove(client, world).status_code == 204
+    assert preview(client, token).status_code == 410 and confirm(client, token).status_code == 410
+    reset = db.scalar(select(PasswordReset).where(PasswordReset.token_hash == token_hash(token)))
+    assert reset is not None and reset.revoked_at is not None and reset.used_at is None
+    # no workspace is left, so the sessions end as well
+    assert client.get(f"{A}/me", headers=bearer(device)).status_code == 401
+    assert client.post(f"{A}/refresh", json={"refresh_token": device["refresh_token"]}).status_code == 401
+
+
+def test_a_person_still_in_another_workspace_keeps_their_sessions(client, db, world) -> None:
+    person = world.a.users["developer"]
+    db.add(Membership(org_id=world.b.org.id, user_id=person.id, role="viewer", status="active"))
+    db.flush()
+    device = login(client, person).json()
+    # a link cannot be issued for a shared account, so one that predates the second membership is simulated
+    reset = PasswordReset(user_id=person.id, org_id=world.a.org.id, created_by_id=world.a.users["org_admin"].id,
+                          token_hash=token_hash("old-link-token-1"), expires_at=utcnow() + timedelta(minutes=30))
+    db.add(reset)
+    db.flush()
+    assert remove(client, world).status_code == 204
+    assert preview(client, "old-link-token-1").status_code == 410  # the link still ends
+    assert client.get(f"{A}/me", headers=bearer(device)).status_code == 200  # the account is shared: sessions stay
+    assert client.post(f"{A}/refresh", json={"refresh_token": device["refresh_token"]}).status_code == 200
+    assert client.get(f"{O}/{world.b.org.id}", headers=bearer(device)).status_code == 200  # the other workspace is untouched
+
+
+def test_removing_a_person_leaves_other_people_links_alone(client, world) -> None:
+    _, other = link(client, world, role="viewer")
+    assert remove(client, world, role="developer").status_code == 204
+    assert preview(client, other).status_code == 200

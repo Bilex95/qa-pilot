@@ -225,6 +225,20 @@ def issue_password_reset(db: Session, *, user_id: uuid.UUID, org_id: uuid.UUID, 
     return raw, expires
 
 
+def end_access_after_removal(db: Session, *, user_id: uuid.UUID, in_other_workspace: bool) -> None:
+    """Public contract for the orgs module, called when a person is removed from a workspace (D-056). Every live reset link
+    of that person ends. When no workspace is left for them, their sessions end too (refresh tokens revoked, access tokens
+    issued before now refused); a person who still belongs to another workspace keeps their sessions. The caller commits."""
+    now = utcnow()
+    repo.revoke_pending_resets(db, user_id, now)
+    if in_other_workspace:
+        return
+    user = get_active_user(db, user_id)
+    if user is not None:
+        user.password_changed_at = now
+    repo.revoke_all_for_user(db, user_id, now)
+
+
 def _reset_throttle(db: Session) -> None:
     s = get_settings()
     ip = request_info().client_ip

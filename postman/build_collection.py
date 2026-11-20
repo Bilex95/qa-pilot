@@ -249,10 +249,20 @@ folders = [
             tests=[status(401), err("invalid_refresh_token")]),
         req("The returned refresh token works (API-016)", "POST", "/api/v1/auth/refresh", body={"refresh_token": "{{freshRefresh}}"},
             tests=[status(200)]),
-        # Cleanup: the person registered above is a real member of the seeded workspace, so remove the membership at the end of the run
-        # (the user record stays, as in any registration). Without this, every run adds a "Newman Reset" member to Members.
-        req("Remove the person created for the reset tests (cleanup)", "DELETE", f"{O}/members/{{{{resetMembershipId}}}}", token="adminToken",
+        # Removal ends the person's links and, with no workspace left, their sessions (D-056, BL-020). This is also the cleanup.
+        req("Create another reset link for the same person (API-151)", "POST", f"{O}/members/{{{{resetMembershipId}}}}/password-reset",
+            token="adminToken", tests=[status(201), 'pm.environment.set("removalToken", pm.response.json().reset_url.split("#").pop());']),
+        req("Remove the person created for the reset tests (API-026, cleanup)", "DELETE", f"{O}/members/{{{{resetMembershipId}}}}", token="adminToken",
             tests=[status(204)]),
+        req("The live link ended with the removal: preview (D-056)", "POST", "/api/v1/auth/password-reset/preview", body={"token": "{{removalToken}}"},
+            tests=[status(410), err("reset_invalid")]),
+        req("The live link ended with the removal: confirm (D-056)", "POST", "/api/v1/auth/password-reset/confirm",
+            body={"token": "{{removalToken}}", "new_password": "Newman-other-2029"}, tests=[status(410), err("reset_invalid")]),
+        req("No workspace left, so the session ends (D-056)", "GET", "/api/v1/auth/me", token="freshToken", tests=[status(401), err("unauthorized")]),
+        req("No workspace left, so the refresh token is revoked (D-056)", "POST", "/api/v1/auth/refresh", body={"refresh_token": "{{freshRefresh}}"},
+            tests=[status(401), err("invalid_refresh_token")]),
+        # Cleanup check: the person registered above is a real member of the seeded workspace, so remove the membership at the end of the run
+        # (the user record stays, as in any registration). Without this, every run adds a "Newman Reset" member to Members.
         req("The removed person is gone from Members (cleanup check)", "GET", f"{O}/members?page_size=100", token="adminToken",
             tests=[status(200), 'pm.test("no Newman Reset member is left", () => pm.expect(pm.response.json().items.filter(m => m.user.full_name === "Newman Reset")).to.have.length(0));']),
     ]},

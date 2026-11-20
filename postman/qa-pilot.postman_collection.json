@@ -4058,7 +4058,52 @@
           ]
         },
         {
-          "name": "Remove the person created for the reset tests (cleanup)",
+          "name": "Create another reset link for the same person (API-151)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/members/{{resetMembershipId}}/password-reset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "members",
+                "{{resetMembershipId}}",
+                "password-reset"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"removalToken\", pm.response.json().reset_url.split(\"#\").pop());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove the person created for the reset tests (API-026, cleanup)",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -4095,6 +4140,197 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The live link ended with the removal: preview (D-056)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password-reset/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password-reset",
+                "preview"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{removalToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 410\", () => pm.response.to.have.status(410));",
+                  "pm.test(\"error envelope reset_invalid\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"reset_invalid\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The live link ended with the removal: confirm (D-056)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password-reset/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password-reset",
+                "confirm"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{removalToken}}\",\n  \"new_password\": \"Newman-other-2029\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 410\", () => pm.response.to.have.status(410));",
+                  "pm.test(\"error envelope reset_invalid\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"reset_invalid\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "No workspace left, so the session ends (D-056)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{freshToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"error envelope unauthorized\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"unauthorized\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "No workspace left, so the refresh token is revoked (D-056)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{freshRefresh}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"error envelope invalid_refresh_token\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"invalid_refresh_token\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
                 ]
               }
             }

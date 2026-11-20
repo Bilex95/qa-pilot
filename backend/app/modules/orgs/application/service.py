@@ -145,6 +145,8 @@ def remove_member(db: Session, org_id: uuid.UUID, membership_id: uuid.UUID, *, a
     if m.role == Role.ORG_ADMIN and repo.count_active_admins(db, org_id) <= 1:
         raise Conflict("The last Org Admin cannot be removed.", code="last_admin")
     m.status = "removed"
+    db.flush()
+    auth.end_access_after_removal(db, user_id=m.user_id, in_other_workspace=bool(repo.memberships_for_user(db, m.user_id)))
     audit.record(db, "member.removed", actor_id=actor_id, org_id=org_id, entity_type="membership",
                  entity_id=m.id, data={"user_id": str(m.user_id)})
     db.commit()
