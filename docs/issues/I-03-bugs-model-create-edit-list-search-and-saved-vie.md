@@ -1,6 +1,6 @@
 # I-03 Bugs: model, create, edit, list, search and saved views
 
-**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
