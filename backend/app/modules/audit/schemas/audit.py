@@ -5,6 +5,11 @@ from typing import Any
 from app.core.schemas import ApiModel
 
 
+class AuditActorOut(ApiModel):
+    id: uuid.UUID
+    full_name: str
+
+
 class AuditEventOut(ApiModel):
     id: uuid.UUID
     created_at: datetime

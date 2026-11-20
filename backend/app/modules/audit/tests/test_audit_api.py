@@ -104,3 +104,40 @@ def test_the_log_keeps_the_name_of_a_person_who_was_removed(client, world) -> No
 def test_events_of_another_workspace_never_carry_over(client, world) -> None:
     client.patch(f"{A}/me", json={"full_name": "Only In B"}, headers=world.b.h("developer"))
     assert events(client, world.a.org.id, world.a.h("org_admin"), "?action=auth.profile_updated") == []
+
+
+# API-154 people with events, for the actor filter ------------------------------------------------------
+
+def actors(client, org_id, headers):  # type: ignore[no-untyped-def]
+    return client.get(f"{O}/{org_id}/audit-events/actors", headers=headers)
+
+
+def test_actors_lists_only_people_with_events_in_this_workspace_by_name(client, world) -> None:
+    admin = world.a.h("org_admin")
+    assert actors(client, world.a.org.id, admin).json() == []  # nobody has an event yet
+    client.patch(f"{A}/me", json={"full_name": "Zed Zero"}, headers=world.a.h("developer"))
+    client.patch(f"{O}/{world.a.org.id}", json={"name": "Renamed"}, headers=admin)
+    client.patch(f"{A}/me", json={"full_name": "Zed Zero"}, headers=world.b.h("developer"))  # an event in org B only
+    body = actors(client, world.a.org.id, admin).json()
+    ids = {a["id"] for a in body}
+    assert ids == {str(world.a.users["developer"].id), str(world.a.users["org_admin"].id)}
+    assert str(world.b.users["developer"].id) not in ids and all(set(a) == {"id", "full_name"} for a in body)
+    assert [a["full_name"].lower() for a in body] == sorted(a["full_name"].lower() for a in body)  # by name
+
+
+def test_actors_still_lists_a_person_removed_from_the_workspace(client, world) -> None:
+    admin = world.a.h("org_admin")
+    client.patch(f"{A}/me", json={"full_name": "Dana Developer"}, headers=world.a.h("developer"))
+    m = world.a.memberships["developer"]
+    client.delete(f"{O}/{world.a.org.id}/members/{m.id}", headers=admin)
+    assert "Dana Developer" in [a["full_name"] for a in actors(client, world.a.org.id, admin).json()]
+
+
+@pytest.mark.parametrize("role", ["qa_lead", "qa_engineer", "developer", "viewer"])
+def test_only_admin_reads_the_actors(client, world, role) -> None:
+    assert actors(client, world.a.org.id, world.a.h(role)).status_code == 403
+
+
+def test_actors_of_another_workspace_are_not_readable(client, world) -> None:
+    r = actors(client, world.b.org.id, world.a.h("org_admin"))  # an admin of A asks for B
+    assert r.status_code == 404 and r.json()["error"]["code"] == "org_not_found"

@@ -10,10 +10,18 @@ from app.core.deps import DB, OrgContext, require
 from app.core.pagination import Page, PageParams, page_params
 from app.core.schemas import errors
 from app.modules.audit.application import service
-from app.modules.audit.schemas.audit import AuditEventOut
+from app.modules.audit.schemas.audit import AuditActorOut, AuditEventOut
 from app.modules.auth.application import service as auth
 
 router = APIRouter(tags=["audit"])
+
+
+@router.get("/orgs/{org_id}/audit-events/actors", response_model=list[AuditActorOut], responses=errors(401, 403, 404))
+def list_audit_actors(db: DB, ctx: Annotated[OrgContext, Depends(require("audit.read"))]) -> list[AuditActorOut]:
+    """People with at least one event in this workspace, by name, for the actor filter. Removed members stay listed."""
+    users = auth.get_users_by_ids(db, service.actor_ids(db, ctx.org_id))
+    return sorted((AuditActorOut(id=uid, full_name=u.full_name) for uid, u in users.items()),
+                  key=lambda a: (a.full_name.lower(), str(a.id)))
 
 
 @router.get("/orgs/{org_id}/audit-events", response_model=Page[AuditEventOut], responses=errors(401, 403, 404, 422))

@@ -51,6 +51,12 @@ def count_recent_by_ip(db: Session, action: str, *, ip: str, minutes: int) -> in
     return int(db.scalar(stmt) or 0)
 
 
+def actor_ids(db: Session, org_id: uuid.UUID) -> list[uuid.UUID]:
+    """Everyone who has at least one event in this workspace, including people removed since (for the Audit log filter)."""
+    stmt = select(AuditEvent.actor_id).where(AuditEvent.org_id == org_id, AuditEvent.actor_id.is_not(None)).distinct()
+    return list(db.scalars(stmt))
+
+
 def list_events(
     db: Session,
     org_id: uuid.UUID,
