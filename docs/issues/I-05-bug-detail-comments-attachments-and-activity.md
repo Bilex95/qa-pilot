@@ -22,7 +22,7 @@ Requirements: REQ-018, REQ-023, REQ-024, REQ-025
 * `backend/app/modules/bugs`
 * `frontend/src/modules/bugs`
 * Depends on: [I-03](I-03-bugs-model-create-edit-list-search-and-saved-vie.md)
-* Migration: `0005_bug_detail`
+* Migration: `0006_bug_detail`
 
 ## UI states and committed screenshots
 

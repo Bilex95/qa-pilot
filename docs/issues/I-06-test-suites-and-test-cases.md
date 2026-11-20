@@ -21,7 +21,7 @@ Requirements: REQ-030, REQ-031
 * `backend/app/modules/testing`
 * `frontend/src/modules/testing`
 * Depends on: [I-01](I-01-projects-components-and-environments.md)
-* Migration: `0006_testing`
+* Migration: `0005_testing`
 
 ## UI states and committed screenshots
 
