@@ -495,6 +495,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/test-suites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Suites */
+        get: operations["list_suites_api_v1_orgs__org_id__test_suites_get"];
+        put?: never;
+        /** Create Suite */
+        post: operations["create_suite_api_v1_orgs__org_id__test_suites_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-suites/{suite_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Suite */
+        get: operations["get_suite_api_v1_orgs__org_id__test_suites__suite_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Suite */
+        delete: operations["delete_suite_api_v1_orgs__org_id__test_suites__suite_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Suite */
+        patch: operations["update_suite_api_v1_orgs__org_id__test_suites__suite_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-suites/{suite_id}/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Cases */
+        get: operations["list_cases_api_v1_orgs__org_id__test_suites__suite_id__cases_get"];
+        put?: never;
+        /** Create Case */
+        post: operations["create_case_api_v1_orgs__org_id__test_suites__suite_id__cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-suites/{suite_id}/cases/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Cases Bulk */
+        post: operations["create_cases_bulk_api_v1_orgs__org_id__test_suites__suite_id__cases_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-cases/{case_ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Case */
+        get: operations["get_case_api_v1_orgs__org_id__test_cases__case_ref__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-cases/{case_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Case */
+        delete: operations["delete_case_api_v1_orgs__org_id__test_cases__case_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Case */
+        patch: operations["update_case_api_v1_orgs__org_id__test_cases__case_id__patch"];
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/audit-events": {
         parameters: {
             query?: never;
@@ -792,6 +899,163 @@ export interface components {
             assignee_id?: string | null;
             /** Release Id */
             release_id?: string | null;
+        };
+        /** BulkCasesIn */
+        BulkCasesIn: {
+            /** Cases */
+            cases: components["schemas"]["CaseIn"][];
+            /** Ai Usage Id */
+            ai_usage_id?: string | null;
+        };
+        /** BulkCasesOut */
+        BulkCasesOut: {
+            /** Created */
+            created: components["schemas"]["CaseOut"][];
+        };
+        /** CaseIn */
+        CaseIn: {
+            /** Title */
+            title: string;
+            /**
+             * Preconditions
+             * @default
+             */
+            preconditions: string;
+            /** Steps */
+            steps: components["schemas"]["StepIn"][];
+            /** Tags */
+            tags?: string[];
+            /**
+             * Priority
+             * @default p3
+             * @enum {string}
+             */
+            priority: "p1" | "p2" | "p3" | "p4";
+            /**
+             * Case Type
+             * @default positive
+             * @enum {string}
+             */
+            case_type: "positive" | "negative" | "edge" | "other";
+            /**
+             * Ai Generated
+             * @default false
+             */
+            ai_generated: boolean;
+        };
+        /** CaseOut */
+        CaseOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Number */
+            number: number;
+            /**
+             * Suite Id
+             * Format: uuid
+             */
+            suite_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "p1" | "p2" | "p3" | "p4";
+            /**
+             * Case Type
+             * @enum {string}
+             */
+            case_type: "positive" | "negative" | "edge" | "other";
+            /** Tags */
+            tags: string[];
+            /** Step Count */
+            step_count: number;
+            /** Ai Generated */
+            ai_generated: boolean;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Preconditions */
+            preconditions: string;
+            /** Steps */
+            steps: components["schemas"]["StepOut"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** CaseSummaryOut */
+        CaseSummaryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Number */
+            number: number;
+            /**
+             * Suite Id
+             * Format: uuid
+             */
+            suite_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "p1" | "p2" | "p3" | "p4";
+            /**
+             * Case Type
+             * @enum {string}
+             */
+            case_type: "positive" | "negative" | "edge" | "other";
+            /** Tags */
+            tags: string[];
+            /** Step Count */
+            step_count: number;
+            /** Ai Generated */
+            ai_generated: boolean;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CaseUpdateIn
+         * @description Only the fields that are sent change. A case moves to another suite of the same project with `suite_id`.
+         */
+        CaseUpdateIn: {
+            /** Title */
+            title?: string | null;
+            /** Preconditions */
+            preconditions?: string | null;
+            /** Steps */
+            steps?: components["schemas"]["StepIn"][] | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Priority */
+            priority?: ("p1" | "p2" | "p3" | "p4") | null;
+            /** Case Type */
+            case_type?: ("positive" | "negative" | "edge" | "other") | null;
+            /** Suite Id */
+            suite_id?: string | null;
         };
         /** ComponentIn */
         ComponentIn: {
@@ -1180,6 +1444,17 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[CaseSummaryOut] */
+        Page_CaseSummaryOut_: {
+            /** Items */
+            items: components["schemas"]["CaseSummaryOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** Page[MemberOut] */
         Page_MemberOut_: {
             /** Items */
@@ -1195,6 +1470,17 @@ export interface components {
         Page_ProjectOut_: {
             /** Items */
             items: components["schemas"]["ProjectOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[SuiteOut] */
+        Page_SuiteOut_: {
+            /** Items */
+            items: components["schemas"]["SuiteOut"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -1382,6 +1668,94 @@ export interface components {
             /** Name */
             name: string;
             filters: components["schemas"]["SavedViewFilters"];
+        };
+        /**
+         * StepIn
+         * @description A step. Send the `id` of an existing step to keep it when steps are reordered; steps without one get a new id.
+         */
+        StepIn: {
+            /** Id */
+            id?: string | null;
+            /** Action */
+            action: string;
+            /** Expected */
+            expected: string;
+        };
+        /** StepOut */
+        StepOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Action */
+            action: string;
+            /** Expected */
+            expected: string;
+        };
+        /** SuiteIn */
+        SuiteIn: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Component Id */
+            component_id?: string | null;
+        };
+        /** SuiteOut */
+        SuiteOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Description */
+            description: string;
+            /** Component Id */
+            component_id: string | null;
+            /** Component */
+            component: string | null;
+            /** Case Count */
+            case_count: number;
+            /** Last Run Pass Rate */
+            last_run_pass_rate: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * SuiteUpdateIn
+         * @description Only the fields that are sent change. `component_id: null` clears the component.
+         */
+        SuiteUpdateIn: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Component Id */
+            component_id?: string | null;
         };
         /** TokensOut */
         TokensOut: {
@@ -3973,6 +4347,711 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suites_api_v1_orgs__org_id__test_suites_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                /** @description Page number, starting at 1 */
+                page?: number;
+                /** @description Items per page, at most 100 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_SuiteOut_"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_suite_api_v1_orgs__org_id__test_suites_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuiteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuiteOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_suite_api_v1_orgs__org_id__test_suites__suite_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suite_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuiteOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_suite_api_v1_orgs__org_id__test_suites__suite_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suite_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_suite_api_v1_orgs__org_id__test_suites__suite_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suite_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuiteUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuiteOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_cases_api_v1_orgs__org_id__test_suites__suite_id__cases_get: {
+        parameters: {
+            query?: {
+                tag?: string | null;
+                case_type?: ("positive" | "negative" | "edge" | "other") | null;
+                /** @description Page number, starting at 1 */
+                page?: number;
+                /** @description Items per page, at most 100 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                suite_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CaseSummaryOut_"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_case_api_v1_orgs__org_id__test_suites__suite_id__cases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suite_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaseIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_cases_bulk_api_v1_orgs__org_id__test_suites__suite_id__cases_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suite_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkCasesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkCasesOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_case_api_v1_orgs__org_id__test_cases__case_ref__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_ref: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_case_api_v1_orgs__org_id__test_cases__case_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_case_api_v1_orgs__org_id__test_cases__case_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaseUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
