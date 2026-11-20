@@ -296,3 +296,42 @@ Side by side images: `e2e/parity/stage4/i06/compare/*.png` (locked on the left, 
 | No locked screenshot | New suite, Edit suite and both delete confirmations; the long fixtures; a suite with no cases; the Developer read only editor and suites screen; the New case error banner; the not found state: in `i06-after/` (`tests-*`, `case-*`) |
 
 Backlog: none added in this part.
+
+### I-23 Password reset links and secrets out of URLs (REQ-010, BL-014; D-055)
+
+Backend: migration `0010_password_resets`, invitation endpoints with the token in the body (API-030, API-031), reset link, preview and confirm (API-151 to API-153), sessions that end on a reset or a password change, and a password change that returns a fresh token pair for the device used (commits `cfb9ba1`, `1af7cee`, `adc120f`, `b236d13`, `3552994`). Frontend: invite and reset links carry the token in the fragment, the Forgot password and Reset password pages, the Reset password action on Members with its link dialog, and the secret page headers.
+
+#### J. Checks
+
+| Check | Result |
+|---|---|
+| Ruff, mypy, pytest | Clean; clean; 638 passed (574 before I-23) |
+| Migration `0010_password_resets` | up, down, up, `alembic check` reports no drift |
+| Newman through `scripts/newman.ps1` | 291 requests, 478 assertions, 0 failed. The collection now removes the member it registers for the reset tests and checks that none is left |
+| Lint, typecheck, `next build` | Run in one off containers in WSL with the dev server stopped: clean; clean; builds. The route list has `/forgot-password`, `/invite` and `/reset-password` and no `/invite/[token]`. The `.next` volume was emptied afterwards, `/login` answers 200 |
+| Layout check through `with-wsl.ps1 -Up` | PASS, 725 states (645 before) at 360, 390, 768, 1024, 1280, 1440, 1920, 2560, 1280 zoom 200 and 1920 zoom 200 |
+| `e2e/scripts/check-reset-flow.mjs` | PASS: an Org Admin creates a link from the Members row (no Reset button on your own row; a person in two workspaces is refused with an explanation); the person opens it, the fragment leaves the address bar, weak and mismatched passwords are refused on the screen, the new password is set; the device that was signed in is signed out, the old password is refused and the new one signs in; the used link no longer works; the token appeared in no request URL, Referer header, console message or browser storage |
+| `e2e/scripts/check-members-flow.mjs` | PASS, now also: the invite token appears in no request URL, Referer header, console message or storage, and leaves `sessionStorage` on accept |
+| Second link in a tab that is already on the page | PASS in both flows. `/reset-password`: a valid link, then a bad link (the form must go), then a newer link that revokes the first (the form must return); the first link must fail in a fresh browser. `/invite`: bad, real, bad, real. After every change the address bar is clean |
+| `e2e/scripts/check-secret-page-headers.mjs` | PASS: `/invite`, `/reset-password` and `/forgot-password` send `Referrer-Policy: no-referrer` and `Cache-Control: no-store`; `/login` keeps `strict-origin-when-cross-origin` |
+| Bugs and tests flows | PASS, unchanged |
+
+Cleanup of test data: the flow script uses `flow-i23-<timestamp>` users and removes them in `finally`; the layout and capture scripts use `layout-i23@qapilot.test`. No reset link outlives a script: `e2e/scripts/revoke-reset-links.mjs` revokes the unused links of every person a script made one for (the fixture person, and the seeded person whose dialog is captured) and fails the run if one is still live. Evidence from the capture run: `layout-i23@qapilot.test` live before 1, after 0; `hana@lumenfreight.test` live before 1, after 0. The Members list is back to the 10 seeded people after Newman, the flows and the layout check, and the two "Newman Reset" members left by older runs were removed (matched by that exact name, dry run first).
+
+What the checks found on the way:
+* Opening a second link in a tab that is already on `/reset-password` or `/invite` only changes the hash, so the first version kept the old token and showed the old preview (the layout check timed out waiting for the form). Fixed in `lib/secret-link.ts` (it listens to `hashchange`) and by adding a generation number to the preview query key. The invite page had the same problem and gets the same fix. D-055 records it.
+* Removing a membership does not end that person's reset links; scripts now revoke them explicitly.
+* `$POSTGRES_USER` was expanded on the WSL side when the revoke helper ran `psql` through `wsl --`; `wsl --exec` skips that shell.
+
+#### K. Screens (no locked design exists for these)
+
+Screenshots at 1440 x 900 and 390 x 844 in `e2e/parity/stage4/i23/`, approved by the product owner: `forgot-password-*`, `reset-password-*` (form), `reset-password-errors-*`, `reset-password-invalid-*`, `members-reset-row-*`, `members-reset-confirm-*`, `members-reset-link-*` (the link field is masked), and `login-*` with the new "Forgot password?" link. The Members shots show the seeded people only.
+
+| Screen | Notes |
+|---|---|
+| Forgot password | Built from the auth card. No field and no request: three steps (ask an Org Admin, the link works once for an hour, every device is signed out), a sentence for people in more than one workspace (BL-019), and Back to sign in |
+| Reset password | The masked email ("l•••3@qapilot.test"), New password with the policy hint, Confirm new password, Set password; the success state with a Sign in link; the "This reset link no longer works" state for an expired, used or incomplete link |
+| Members | Reset password sits next to Remove on every row except your own; on mobile both are in the row's card. The confirm dialog names the person and says they are signed out everywhere; the link dialog shows the link once with Copy |
+| Login | The "Forgot password?" link sits on the password label |
+
+Backlog: none added. BL-014 is done (backend, frontend and headers); BL-018 stays closed; BL-019 (self service reset by email) is open.
