@@ -124,6 +124,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password-reset/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Password Reset */
+        post: operations["preview_password_reset_api_v1_auth_password_reset_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Password Reset */
+        post: operations["confirm_password_reset_api_v1_auth_password_reset_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs": {
         parameters: {
             query?: never;
@@ -230,24 +264,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/invitations/{token}": {
+    "/api/v1/invitations/preview": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Preview Invitation */
-        get: operations["preview_invitation_api_v1_invitations__token__get"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** Preview Invitation */
+        post: operations["preview_invitation_api_v1_invitations_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/invitations/{token}/accept": {
+    "/api/v1/invitations/accept": {
         parameters: {
             query?: never;
             header?: never;
@@ -257,7 +291,24 @@ export interface paths {
         get?: never;
         put?: never;
         /** Accept Invitation */
-        post: operations["accept_invitation_api_v1_invitations__token__accept_post"];
+        post: operations["accept_invitation_api_v1_invitations_accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/members/{membership_id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Password Reset Link */
+        post: operations["create_password_reset_link_api_v1_orgs__org_id__members__membership_id__password_reset_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1172,7 +1223,7 @@ export interface components {
             created_at: string;
             /**
              * Invite Url
-             * @description Shown once. Send it yourself; no email is sent (D-011).
+             * @description Shown once. Send it yourself; no email is sent (D-011). The token is in the URL fragment (`/invite#<token>`), which browsers never send to a server.
              */
             invite_url: string;
         };
@@ -1220,6 +1271,14 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /**
+         * InvitationTokenIn
+         * @description The token goes in the body, never in the path or the query (BL-014, D-055).
+         */
+        InvitationTokenIn: {
+            /** Token */
+            token: string;
         };
         /** LabelIn */
         LabelIn: {
@@ -1495,6 +1554,19 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** PasswordResetLinkOut */
+        PasswordResetLinkOut: {
+            /**
+             * Reset Url
+             * @description Shown once. Send it to the person yourself; no email is sent (D-045). The token is in the URL fragment (`/reset-password#<token>`).
+             */
+            reset_url: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
         /** ProfileIn */
         ProfileIn: {
             /** Full Name */
@@ -1596,6 +1668,31 @@ export interface components {
              * @description At least 10 characters with a letter and a number
              */
             password: string;
+        };
+        /** ResetConfirmIn */
+        ResetConfirmIn: {
+            /** Token */
+            token: string;
+            /**
+             * New Password
+             * @description At least 10 characters with a letter and a number
+             */
+            new_password: string;
+        };
+        /** ResetPreviewIn */
+        ResetPreviewIn: {
+            /** Token */
+            token: string;
+        };
+        /** ResetPreviewOut */
+        ResetPreviewOut: {
+            /** Email Masked */
+            email_masked: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
         };
         /**
          * Role
@@ -2129,6 +2226,106 @@ export interface operations {
             };
             /** @description Validation error */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    preview_password_reset_api_v1_auth_password_reset_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetPreviewOut"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirm_password_reset_api_v1_auth_password_reset_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2739,16 +2936,18 @@ export interface operations {
             };
         };
     };
-    preview_invitation_api_v1_invitations__token__get: {
+    preview_invitation_api_v1_invitations_preview_post: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                token: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationTokenIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -2779,16 +2978,18 @@ export interface operations {
             };
         };
     };
-    accept_invitation_api_v1_invitations__token__accept_post: {
+    accept_invitation_api_v1_invitations_accept_post: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                token: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationTokenIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -2842,6 +3043,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_password_reset_link_api_v1_orgs__org_id__members__membership_id__password_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetLinkOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
