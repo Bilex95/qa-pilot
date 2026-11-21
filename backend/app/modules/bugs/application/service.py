@@ -21,6 +21,7 @@ from app.core.permissions import Role, can
 from app.modules.audit.application import service as audit
 from app.modules.auth.application import service as auth
 from app.modules.bugs.application import hooks
+from app.modules.bugs.domain import workflow
 from app.modules.bugs.domain.filters import BugFilters
 from app.modules.bugs.domain.rules import DEFAULT_PRIORITY, DEFAULT_SEVERITY, sla_breached
 from app.modules.bugs.infrastructure import repository as repo
@@ -254,6 +255,58 @@ def delete_bug(db: Session, org_id: uuid.UUID, actor: Actor, bug_id: uuid.UUID) 
     audit.record(db, "bug.deleted", actor_id=actor.user_id, org_id=org_id, entity_type="bug", entity_id=bug.id,
                  data={"key": bug.key})
     db.commit()
+
+
+# Workflow (I-04, D-005, D-006, D-058) -------------------------------------
+
+def allowed_for(actor: Actor, bug: Bug) -> list[str]:
+    """The statuses this person may move this bug to: the moves of their role in the table, and for a Developer only on a bug
+    assigned to them or to nobody."""
+    return workflow.allowed_targets(bug.status, actor.role, assignee_is_me=bug.assignee_id == actor.user_id,
+                                    unassigned=bug.assignee_id is None)
+
+
+def transition_bug(db: Session, org_id: uuid.UUID, actor: Actor, bug_id: uuid.UUID, to_status: str,
+                   comment: str | None) -> Bug:
+    bug = repo.get_bug(db, org_id, bug_id, lock=True)  # the row lock makes two moves of one bug happen one after the other
+    if bug is None:
+        raise NotFound("Bug not found.")
+    allowed = allowed_for(actor, bug)
+    if workflow.find(bug.status, to_status) is None:
+        raise Conflict(f"A bug cannot move from {bug.status} to {to_status}.", code="invalid_transition",
+                       details={"from": bug.status, "to": to_status, "allowed": allowed})
+    if to_status not in allowed:
+        why = ("Only the assignee can move this bug." if actor.is_developer and bug.assignee_id not in (None, actor.user_id)
+               else "Your role cannot make this move.")
+        raise Forbidden(why, details={"action": "bug.transition", "role": actor.role.value, "from": bug.status,
+                                      "to": to_status})
+    now = utcnow()
+    came_from = bug.status
+    bug.status = to_status
+    bug.status_changed_at = now
+    bug.updated_at = now
+    for column, value in workflow.effects_of(to_status, now).items():
+        setattr(bug, column, value)
+    assigned = None
+    if to_status == "in_progress" and bug.assignee_id is None and actor.is_developer:
+        bug.assignee_id = actor.user_id  # starting work on an unassigned bug takes it (D-006)
+        assigned = {"from": None, "to": str(actor.user_id)}
+    data: dict[str, Any] = {"key": bug.key, "from": came_from, "to": to_status}
+    if comment:
+        data["comment"] = comment  # no comments table until I-05 (D-058)
+    audit.record(db, "bug.status_changed", actor_id=actor.user_id, org_id=org_id, entity_type="bug", entity_id=bug.id,
+                 data=data)
+    if assigned:
+        audit.record(db, "bug.assigned", actor_id=actor.user_id, org_id=org_id, entity_type="bug", entity_id=bug.id,
+                     data={"key": bug.key, **assigned})
+    db.commit()
+    return bug
+
+
+def board(db: Session, org_id: uuid.UUID, filters: BugFilters, per_column: int = 50) -> tuple[dict[str, int], list[Bug]]:
+    """(count per status, the first `per_column` bugs of every status). The filters are the board's: project, assignee,
+    severity and search; the status filter does not apply (the columns are the statuses)."""
+    return repo.board_rows(db, org_id, filters, utcnow(), per_column)
 
 
 # List ---------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""Bugs: API-060 to API-064 and saved views API-078 to API-080 (I-03)."""
+"""Bugs: API-060 to API-064 and saved views API-078 to API-080 (I-03); workflow and board API-065 to API-068 (I-04)."""
 
 import uuid
 from typing import Annotated
@@ -8,13 +8,23 @@ from fastapi import APIRouter, Depends, Query, status
 from app.core.deps import DB, OrgContext, require
 from app.core.errors import Unprocessable
 from app.core.pagination import Page, PageParams, page_params
+from app.core.permissions import Role
 from app.core.schemas import errors
 from app.modules.bugs.application import integration, service
+from app.modules.bugs.domain import workflow
 from app.modules.bugs.domain.filters import BugFilters
-from app.modules.bugs.domain.rules import SORT_FIELDS, Priority, Severity, Status
+from app.modules.bugs.domain.rules import SORT_FIELDS, STATUSES, Priority, Severity, Status
 from app.modules.bugs.infrastructure.models import Bug
 from app.modules.bugs.schemas.bugs import BugCreateIn, BugOut, BugSummaryOut, BugUpdateIn, LabelRef
 from app.modules.bugs.schemas.views import SavedViewIn, SavedViewOut
+from app.modules.bugs.schemas.workflow import (
+    BoardColumnOut,
+    BoardOut,
+    TransitionIn,
+    TransitionsOut,
+    WorkflowOut,
+    WorkflowTransitionOut,
+)
 
 integration.register()
 
@@ -81,6 +91,48 @@ def list_bugs(db: DB, ctx: Read, filters: Annotated[BugFilters, Depends(_filters
     bc = service.context_for(db, ctx.org_id, rows)
     items = [BugSummaryOut(**_summary_fields(b, bc)) for b in rows]
     return Page(items=items, page=params.page, page_size=params.page_size, total=total)
+
+
+BOARD_PER_COLUMN = 50
+
+
+@router.get("/orgs/{org_id}/bugs/board", response_model=BoardOut, responses=ERR)  # before /bugs/{bug_ref}
+def get_board(
+    db: DB, ctx: Read,
+    project_id: uuid.UUID | None = None,
+    assignee_id: uuid.UUID | None = None,
+    severity: Annotated[list[Severity] | None, Query(description="Repeat the parameter for several values")] = None,
+    q: Annotated[str | None, Query(max_length=200, description="Case insensitive match on key, title and description")] = None,
+) -> BoardOut:
+    filters = BugFilters(project_id=project_id, assignee_id=assignee_id, severity=list(severity or []), q=q)
+    counts, rows = service.board(db, ctx.org_id, filters, BOARD_PER_COLUMN)
+    bc = service.context_for(db, ctx.org_id, rows)
+    by_status: dict[str, list[BugSummaryOut]] = {s: [] for s in STATUSES}
+    for bug in rows:
+        by_status[bug.status].append(BugSummaryOut(**_summary_fields(bug, bc)))
+    return BoardOut(columns=[BoardColumnOut(status=s, total=counts.get(s, 0), items=by_status[s]) for s in STATUSES])
+
+
+@router.get("/orgs/{org_id}/bug-workflow", response_model=WorkflowOut, responses=errors(401, 403, 404))
+def get_workflow(ctx: Read) -> WorkflowOut:
+    """The nine statuses and every move with the roles that may make it. A Developer's moves also need the record rule."""
+    return WorkflowOut(
+        statuses=list(STATUSES),  # type: ignore[arg-type]
+        transitions=[WorkflowTransitionOut(from_status=t.from_status, to_status=t.to_status,  # type: ignore[arg-type]
+                                           roles=sorted(t.roles, key=list(Role).index), meaning=t.meaning)
+                     for t in workflow.TRANSITIONS])
+
+
+@router.get("/orgs/{org_id}/bugs/{bug_id}/transitions", response_model=TransitionsOut, responses=ERR)
+def get_transitions(bug_id: uuid.UUID, db: DB, ctx: Read) -> TransitionsOut:
+    bug = service.get_bug(db, ctx.org_id, bug_id)
+    return TransitionsOut(current=bug.status, allowed=service.allowed_for(_actor(ctx), bug))  # type: ignore[arg-type]
+
+
+@router.post("/orgs/{org_id}/bugs/{bug_id}/transitions", response_model=BugOut, responses=errors(401, 403, 404, 409, 422))
+def transition_bug(bug_id: uuid.UUID, body: TransitionIn, db: DB,
+                   ctx: Annotated[OrgContext, Depends(require("bug.transition"))]) -> BugOut:
+    return _detail(db, ctx, service.transition_bug(db, ctx.org_id, _actor(ctx), bug_id, body.to_status, body.comment))
 
 
 @router.post("/orgs/{org_id}/bugs", status_code=status.HTTP_201_CREATED, response_model=BugOut,

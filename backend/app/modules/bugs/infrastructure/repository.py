@@ -77,6 +77,23 @@ def bugs_query(org_id: uuid.UUID, f: BugFilters, now: datetime) -> Select[Bug]:
     return stmt.order_by(*_order(f.sort), Bug.id)
 
 
+def board_rows(db: Session, org_id: uuid.UUID, f: BugFilters, now: datetime,
+               per_column: int) -> tuple[dict[str, int], list[Bug]]:
+    """The board in two queries: how many bugs each status has, and the `per_column` most recently updated of each (a window
+    function ranks the bugs inside their status). The status filter is ignored; every other filter applies."""
+    base = bugs_query(org_id, BugFilters(**{**f.__dict__, "status": []}), now).order_by(None)
+    every = base.subquery()
+    counts: dict[str, int] = {status: int(n) for status, n in db.execute(
+        select(every.c.status, func.count()).group_by(every.c.status)).all()}
+    ranked = base.with_only_columns(
+        Bug.id.label("id"),
+        func.row_number().over(partition_by=Bug.status, order_by=(Bug.updated_at.desc(), Bug.id)).label("rn"),
+    ).subquery()
+    rows = db.scalars(select(Bug).join(ranked, ranked.c.id == Bug.id).where(ranked.c.rn <= per_column)
+                      .order_by(Bug.status, ranked.c.rn))
+    return counts, list(rows)
+
+
 def _order(sort: str) -> list[ColumnElement[object]]:
     desc = sort.startswith("-")
     field = sort.lstrip("-")
