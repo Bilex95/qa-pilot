@@ -1241,6 +1241,60 @@ folders = [
         req("Delete the release again (API-114 not found)", "DELETE", O + "/releases/{{releaseId}}", token="leadToken", tests=[status(404)]),
         req("Delete the suite of the release run (cleanup)", "DELETE", O + "/test-suites/{{relSuiteId}}", token="leadToken", tests=[status(204)]),
     ]},
+    {"name": "Dashboard and reports", "item": [
+        req("Dashboard as Viewer (API-130)", "GET", O + "/dashboard", token="viewerToken",
+            tests=[status(200), 'const d = pm.response.json();',
+                   'pm.test("every figure is there", () => { pm.expect(d).to.include.keys("has_data", "open_total", "finished_total", "open_by_severity", '
+                   '"critical_untriaged", "sla_breached", "trend", "pass_rate", "top_components", "releases", "my_assigned_count"); });',
+                   'pm.test("a 30 day trend, one point per day", () => { pm.expect(d.trend.length).to.eql(30); pm.expect(d.trend[0]).to.have.keys("date", "opened", "closed"); });',
+                   'pm.test("the severities add up to the open bugs", () => { const s = d.open_by_severity; pm.expect(s.critical + s.high + s.medium + s.low).to.eql(d.open_total); });']),
+        req("Dashboard for one project (API-130)", "GET", O + "/dashboard?project_id={{projectId}}", token="devToken",
+            tests=[status(200), 'pm.test("my bugs is a number", () => pm.expect(pm.response.json().my_assigned_count).to.be.a("number"));']),
+        req("Dashboard with a bad project id (API-130 invalid)", "GET", O + "/dashboard?project_id=not-a-uuid", token="viewerToken",
+            tests=[status(422), err("validation_error")]),
+        req("Dashboard without token (API-130 unauthorized)", "GET", O + "/dashboard", tests=[status(401)]),
+        req("Dashboard of another workspace (API-130 cross tenant)", "GET", O + "/dashboard", token="foreignToken",
+            tests=[status(404), err("org_not_found")]),
+        req("Dashboard through other org path (API-130 cross tenant)", "GET", F + "/dashboard", token="adminToken",
+            tests=[status(404), err("org_not_found")]),
+        req("Bug trend, last 30 days (API-131)", "GET", O + "/reports/bug-trend", token="viewerToken",
+            tests=[status(200), 'const t = pm.response.json();',
+                   'pm.test("30 points with the number open", () => { pm.expect(t.length).to.eql(30); pm.expect(t[0]).to.have.keys("date", "opened", "closed", "open_total"); });']),
+        req("Bug trend by week (API-131)", "GET", O + "/reports/bug-trend?interval=week&from=2026-01-05&to=2026-03-29", token="viewerToken",
+            tests=[status(200), 'pm.test("weekly points that start on a Monday", () => { const t = pm.response.json(); pm.expect(t.length).to.eql(12); '
+                   't.forEach(p => pm.expect(new Date(p.date + "T00:00:00Z").getUTCDay()).to.eql(1)); });']),
+        req("Bug trend over 366 days (API-131 invalid)", "GET", O + "/reports/bug-trend?from=2024-01-01&to=2026-01-01", token="viewerToken",
+            tests=[status(422), err("validation_error")]),
+        req("Bug trend with an unknown interval (API-131 invalid)", "GET", O + "/reports/bug-trend?interval=month", token="viewerToken",
+            tests=[status(422), err("validation_error")]),
+        req("Bug trend without token (API-131 unauthorized)", "GET", O + "/reports/bug-trend", tests=[status(401)]),
+        req("Bug trend of another workspace (API-131 cross tenant)", "GET", O + "/reports/bug-trend", token="foreignToken",
+            tests=[status(404), err("org_not_found")]),
+        req("Summary (API-132)", "GET", O + "/reports/summary", token="qaToken",
+            tests=[status(200), 'const s = pm.response.json();',
+                   'pm.test("every status and severity, Unassigned last", () => { pm.expect(s.by_status.length).to.eql(9); pm.expect(s.by_severity.length).to.eql(4); '
+                   'pm.expect(s.by_assignee[s.by_assignee.length - 1].name).to.eql("Unassigned"); pm.expect(s.by_status.reduce((a, x) => a + x.count, 0)).to.eql(s.total); });']),
+        req("Summary over 366 days (API-132 invalid)", "GET", O + "/reports/summary?from=2024-01-01&to=2026-01-01", token="qaToken",
+            tests=[status(422), err("validation_error")]),
+        req("Summary without token (API-132 unauthorized)", "GET", O + "/reports/summary", tests=[status(401)]),
+        req("Summary of another workspace (API-132 cross tenant)", "GET", O + "/reports/summary", token="foreignToken",
+            tests=[status(404), err("org_not_found")]),
+        req("A bug whose title looks like a formula (API-061)", "POST", O + "/bugs", token="leadToken",
+            body={"project_id": "{{projectId}}", "title": "=HYPERLINK(\"http://x\") csv check"},
+            tests=[status(201), 'pm.environment.set("csvBugId", pm.response.json().id);']),
+        req("Export bugs as CSV (API-133)", "GET", O + "/reports/bugs.csv?q=csv%20check", token="viewerToken",
+            tests=[status(200), 'pm.test("a CSV attachment", () => { pm.expect(pm.response.headers.get("Content-Type")).to.match(/^text\\/csv/); '
+                   'pm.expect(pm.response.headers.get("Content-Disposition")).to.eql(\'attachment; filename="bugs.csv"\'); });',
+                   'pm.test("the header row and the bug, the formula quoted", () => { const t = pm.response.text(); '
+                   'pm.expect(t.startsWith("Key,Title,Status,Severity,Priority,Component,Environment,Assignee,Reporter,Release,Created,Updated")).to.eql(true); '
+                   'pm.expect(t).to.include("\'=HYPERLINK"); pm.expect(t).to.not.include(",=HYPERLINK"); });']),
+        req("Export with a bad filter (API-133 invalid)", "GET", O + "/reports/bugs.csv?status=bogus", token="viewerToken",
+            tests=[status(422), err("validation_error")]),
+        req("Export without token (API-133 unauthorized)", "GET", O + "/reports/bugs.csv", tests=[status(401)]),
+        req("Export of another workspace (API-133 cross tenant)", "GET", O + "/reports/bugs.csv", token="foreignToken",
+            tests=[status(404), err("org_not_found")]),
+        req("Delete the CSV check bug (cleanup)", "DELETE", O + "/bugs/{{csvBugId}}", token="leadToken", tests=[status(204)]),
+    ]},
     {"name": "Sign out", "item": [
         req("Logout (API-013)", "POST", "/api/v1/auth/logout", token="adminToken", body={"refresh_token": "{{adminRefresh}}"},
             tests=[status(204)]),
@@ -1248,7 +1302,7 @@ folders = [
             tests=[status(401)]),
     ]},
 ]
-staged = [("Dashboard and reports", "Stage 4"), ("AI", "Stage 5")]
+staged = [("AI", "Stage 5")]
 for name, stage in staged:
     folders.append({"name": name, "description": f"Staged folder. Requests are added with the endpoints in {stage} (API_INVENTORY.md).",
                     "item": []})

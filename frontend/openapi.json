@@ -5289,6 +5289,371 @@
         }
       }
     },
+    "/api/v1/orgs/{org_id}/reports/bugs.csv": {
+      "get": {
+        "tags": [
+          "bugs"
+        ],
+        "summary": "Export Bugs Csv",
+        "description": "The bugs the list filters select (the same query parameters as API-060), at most 50,000 rows. A cell that starts with =, +, -, @ is\nprefixed with a quote so a spreadsheet shows it as text. Built before the response starts, so the database session is still open.",
+        "operationId": "export_bugs_csv_api_v1_orgs__org_id__reports_bugs_csv_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "new",
+                      "triaged",
+                      "in_progress",
+                      "fixed",
+                      "ready_for_retest",
+                      "verified",
+                      "closed",
+                      "reopened",
+                      "wont_fix"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeat the parameter for several values",
+              "title": "Status"
+            },
+            "description": "Repeat the parameter for several values"
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "critical",
+                      "high",
+                      "medium",
+                      "low"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "p1",
+                      "p2",
+                      "p3",
+                      "p4"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Priority"
+            }
+          },
+          {
+            "name": "assignee_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Assignee Id"
+            }
+          },
+          {
+            "name": "unassigned",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "true: only bugs nobody is assigned to. Not with assignee_id",
+              "title": "Unassigned"
+            },
+            "description": "true: only bugs nobody is assigned to. Not with assignee_id"
+          },
+          {
+            "name": "reporter_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reporter Id"
+            }
+          },
+          {
+            "name": "component_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Component Id"
+            }
+          },
+          {
+            "name": "environment_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment Id"
+            }
+          },
+          {
+            "name": "label_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Label Id"
+            }
+          },
+          {
+            "name": "release_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "sla_breached",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sla Breached"
+            }
+          },
+          {
+            "name": "open",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "true: only open bugs; false: only Verified, Closed and Won't fix",
+              "title": "Open"
+            },
+            "description": "true: only open bugs; false: only Verified, Closed and Won't fix"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Case insensitive match on key, title and description",
+              "title": "Q"
+            },
+            "description": "Case insensitive match on key, title and description"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^-?(updated_at|created_at|severity|priority)$",
+              "description": "updated_at, created_at, severity or priority; prefix - for descending",
+              "default": "-updated_at",
+              "title": "Sort"
+            },
+            "description": "updated_at, created_at, severity or priority; prefix - for descending"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The bugs as CSV",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/csv": {}
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{org_id}/saved-views": {
       "get": {
         "tags": [
@@ -8374,6 +8739,386 @@
         }
       }
     },
+    "/api/v1/orgs/{org_id}/dashboard": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Dashboard",
+        "description": "The headline numbers, the 30 day trend, the pass rate of the last 7 days, the components with most open bugs and the readiness of\nthe releases that are not released yet. `project_id` narrows everything to one project.",
+        "operationId": "get_dashboard_api_v1_orgs__org_id__dashboard_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/reports/bug-trend": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Bug Trend",
+        "description": "Bugs opened and closed per day or week, with the number open at the end of each. Default: the last 30 days. At most 366 days.",
+        "operationId": "get_bug_trend_api_v1_orgs__org_id__reports_bug_trend_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "day",
+                "week"
+              ],
+              "type": "string",
+              "default": "day",
+              "title": "Interval"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BugTrendPointOut"
+                  },
+                  "title": "Response Get Bug Trend Api V1 Orgs  Org Id  Reports Bug Trend Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/reports/summary": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Summary",
+        "description": "Breakdowns of the bugs created in the range (default: the last 30 days), and the pass rate of each run started in it.",
+        "operationId": "get_summary_api_v1_orgs__org_id__reports_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{org_id}/audit-events/actors": {
       "get": {
         "tags": [
@@ -8755,6 +9500,48 @@
           "created_at"
         ],
         "title": "ActivityOut"
+      },
+      "AssigneeRowOut": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "open": {
+            "type": "integer",
+            "title": "Open"
+          },
+          "critical": {
+            "type": "integer",
+            "title": "Critical"
+          },
+          "sla_breached": {
+            "type": "integer",
+            "title": "Sla Breached"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "user_id",
+          "name",
+          "open",
+          "critical",
+          "sla_breached"
+        ],
+        "title": "AssigneeRowOut"
       },
       "AttachmentOut": {
         "properties": {
@@ -9760,6 +10547,36 @@
         ],
         "title": "BugSummaryOut"
       },
+      "BugTrendPointOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "opened": {
+            "type": "integer",
+            "title": "Opened"
+          },
+          "closed": {
+            "type": "integer",
+            "title": "Closed"
+          },
+          "open_total": {
+            "type": "integer",
+            "title": "Open Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "opened",
+          "closed",
+          "open_total"
+        ],
+        "title": "BugTrendPointOut"
+      },
       "BugUpdateIn": {
         "properties": {
           "title": {
@@ -10418,6 +11235,25 @@
         ],
         "title": "CommentOut"
       },
+      "ComponentCountOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "count"
+        ],
+        "title": "ComponentCountOut"
+      },
       "ComponentIn": {
         "properties": {
           "name": {
@@ -10507,6 +11343,128 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ComponentUpdateIn"
+      },
+      "DashboardOut": {
+        "properties": {
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
+          },
+          "open_total": {
+            "type": "integer",
+            "title": "Open Total"
+          },
+          "finished_total": {
+            "type": "integer",
+            "title": "Finished Total"
+          },
+          "open_by_severity": {
+            "$ref": "#/components/schemas/OpenBySeverityOut"
+          },
+          "critical_untriaged": {
+            "type": "integer",
+            "title": "Critical Untriaged"
+          },
+          "sla_breached": {
+            "type": "integer",
+            "title": "Sla Breached"
+          },
+          "trend": {
+            "items": {
+              "$ref": "#/components/schemas/TrendDayOut"
+            },
+            "type": "array",
+            "title": "Trend"
+          },
+          "pass_rate": {
+            "$ref": "#/components/schemas/PassRateOut"
+          },
+          "top_components": {
+            "items": {
+              "$ref": "#/components/schemas/TopComponentOut"
+            },
+            "type": "array",
+            "title": "Top Components"
+          },
+          "releases": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardReleaseOut"
+            },
+            "type": "array",
+            "title": "Releases"
+          },
+          "my_assigned_count": {
+            "type": "integer",
+            "title": "My Assigned Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "has_data",
+          "open_total",
+          "finished_total",
+          "open_by_severity",
+          "critical_untriaged",
+          "sla_breached",
+          "trend",
+          "pass_rate",
+          "top_components",
+          "releases",
+          "my_assigned_count"
+        ],
+        "title": "DashboardOut"
+      },
+      "DashboardReleaseOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "readiness": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "at_risk",
+              "blocked"
+            ],
+            "title": "Readiness"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "target_date",
+          "readiness",
+          "reasons"
+        ],
+        "title": "DashboardReleaseOut"
       },
       "EnvironmentIn": {
         "properties": {
@@ -11319,6 +12277,35 @@
         ],
         "title": "OpenBySeverity"
       },
+      "OpenBySeverityOut": {
+        "properties": {
+          "critical": {
+            "type": "integer",
+            "title": "Critical"
+          },
+          "high": {
+            "type": "integer",
+            "title": "High"
+          },
+          "medium": {
+            "type": "integer",
+            "title": "Medium"
+          },
+          "low": {
+            "type": "integer",
+            "title": "Low"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ],
+        "title": "OpenBySeverityOut"
+      },
       "OrgCreateIn": {
         "properties": {
           "name": {
@@ -11787,6 +12774,32 @@
           "total"
         ],
         "title": "Page[SuiteOut]"
+      },
+      "PassRateOut": {
+        "properties": {
+          "last_7_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last 7 Days"
+          },
+          "runs": {
+            "type": "integer",
+            "title": "Runs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "last_7_days",
+          "runs"
+        ],
+        "title": "PassRateOut"
       },
       "PasswordChangeIn": {
         "properties": {
@@ -12972,6 +13985,30 @@
         ],
         "title": "RunOut"
       },
+      "RunRateOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "pass_rate": {
+            "type": "integer",
+            "title": "Pass Rate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "pass_rate"
+        ],
+        "title": "RunRateOut"
+      },
       "RunResultOut": {
         "properties": {
           "id": {
@@ -13532,6 +14569,31 @@
         ],
         "title": "SavedViewOut"
       },
+      "SeverityCountOut": {
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Severity"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "severity",
+          "count"
+        ],
+        "title": "SeverityCountOut"
+      },
       "SourceRunOut": {
         "properties": {
           "run_id": {
@@ -13562,6 +14624,36 @@
         ],
         "title": "SourceRunOut",
         "description": "The test run a bug was filed from (I-07): shown as a link to the run."
+      },
+      "StatusCountOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "triaged",
+              "in_progress",
+              "fixed",
+              "ready_for_retest",
+              "verified",
+              "closed",
+              "reopened",
+              "wont_fix"
+            ],
+            "title": "Status"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "count"
+        ],
+        "title": "StatusCountOut"
       },
       "StepIn": {
         "properties": {
@@ -13794,6 +14886,60 @@
         "title": "SuiteUpdateIn",
         "description": "Only the fields that are sent change. `component_id: null` clears the component."
       },
+      "SummaryOut": {
+        "properties": {
+          "by_status": {
+            "items": {
+              "$ref": "#/components/schemas/StatusCountOut"
+            },
+            "type": "array",
+            "title": "By Status"
+          },
+          "by_severity": {
+            "items": {
+              "$ref": "#/components/schemas/SeverityCountOut"
+            },
+            "type": "array",
+            "title": "By Severity"
+          },
+          "by_component": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentCountOut"
+            },
+            "type": "array",
+            "title": "By Component"
+          },
+          "by_assignee": {
+            "items": {
+              "$ref": "#/components/schemas/AssigneeRowOut"
+            },
+            "type": "array",
+            "title": "By Assignee"
+          },
+          "run_pass_rate": {
+            "items": {
+              "$ref": "#/components/schemas/RunRateOut"
+            },
+            "type": "array",
+            "title": "Run Pass Rate"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "by_status",
+          "by_severity",
+          "by_component",
+          "by_assignee",
+          "run_pass_rate",
+          "total"
+        ],
+        "title": "SummaryOut"
+      },
       "TokensOut": {
         "properties": {
           "access_token": {
@@ -13822,6 +14968,25 @@
           "expires_in"
         ],
         "title": "TokensOut"
+      },
+      "TopComponentOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "open": {
+            "type": "integer",
+            "title": "Open"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "open"
+        ],
+        "title": "TopComponentOut"
       },
       "TransitionIn": {
         "properties": {
@@ -13903,6 +15068,31 @@
           "allowed"
         ],
         "title": "TransitionsOut"
+      },
+      "TrendDayOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "opened": {
+            "type": "integer",
+            "title": "Opened"
+          },
+          "closed": {
+            "type": "integer",
+            "title": "Closed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "opened",
+          "closed"
+        ],
+        "title": "TrendDayOut"
       },
       "UserOut": {
         "properties": {

@@ -689,6 +689,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/reports/bugs.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Bugs Csv
+         * @description The bugs the list filters select (the same query parameters as API-060), at most 50,000 rows. A cell that starts with =, +, -, @ is
+         *     prefixed with a quote so a spreadsheet shows it as text. Built before the response starts, so the database session is still open.
+         */
+        get: operations["export_bugs_csv_api_v1_orgs__org_id__reports_bugs_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/saved-views": {
         parameters: {
             query?: never;
@@ -1051,6 +1072,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dashboard
+         * @description The headline numbers, the 30 day trend, the pass rate of the last 7 days, the components with most open bugs and the readiness of
+         *     the releases that are not released yet. `project_id` narrows everything to one project.
+         */
+        get: operations["get_dashboard_api_v1_orgs__org_id__dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/reports/bug-trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Bug Trend
+         * @description Bugs opened and closed per day or week, with the number open at the end of each. Default: the last 30 days. At most 366 days.
+         */
+        get: operations["get_bug_trend_api_v1_orgs__org_id__reports_bug_trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Summary
+         * @description Breakdowns of the bugs created in the range (default: the last 30 days), and the pass rate of each run started in it.
+         */
+        get: operations["get_summary_api_v1_orgs__org_id__reports_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/audit-events/actors": {
         parameters: {
             query?: never;
@@ -1127,6 +1209,19 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** AssigneeRowOut */
+        AssigneeRowOut: {
+            /** User Id */
+            user_id: string | null;
+            /** Name */
+            name: string;
+            /** Open */
+            open: number;
+            /** Critical */
+            critical: number;
+            /** Sla Breached */
+            sla_breached: number;
         };
         /** AttachmentOut */
         AttachmentOut: {
@@ -1487,6 +1582,20 @@ export interface components {
              */
             updated_at: string;
         };
+        /** BugTrendPointOut */
+        BugTrendPointOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Opened */
+            opened: number;
+            /** Closed */
+            closed: number;
+            /** Open Total */
+            open_total: number;
+        };
         /**
          * BugUpdateIn
          * @description Only the fields that are sent change. A field that is sent as null is cleared where that makes sense
@@ -1709,6 +1818,13 @@ export interface components {
             /** Edited At */
             edited_at: string | null;
         };
+        /** ComponentCountOut */
+        ComponentCountOut: {
+            /** Name */
+            name: string;
+            /** Count */
+            count: number;
+        };
         /** ComponentIn */
         ComponentIn: {
             /** Name */
@@ -1747,6 +1863,48 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+        };
+        /** DashboardOut */
+        DashboardOut: {
+            /** Has Data */
+            has_data: boolean;
+            /** Open Total */
+            open_total: number;
+            /** Finished Total */
+            finished_total: number;
+            open_by_severity: components["schemas"]["OpenBySeverityOut"];
+            /** Critical Untriaged */
+            critical_untriaged: number;
+            /** Sla Breached */
+            sla_breached: number;
+            /** Trend */
+            trend: components["schemas"]["TrendDayOut"][];
+            pass_rate: components["schemas"]["PassRateOut"];
+            /** Top Components */
+            top_components: components["schemas"]["TopComponentOut"][];
+            /** Releases */
+            releases: components["schemas"]["DashboardReleaseOut"][];
+            /** My Assigned Count */
+            my_assigned_count: number;
+        };
+        /** DashboardReleaseOut */
+        DashboardReleaseOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Target Date */
+            target_date: string | null;
+            /**
+             * Readiness
+             * @enum {string}
+             */
+            readiness: "ready" | "at_risk" | "blocked";
+            /** Reasons */
+            reasons: string[];
         };
         /** EnvironmentIn */
         EnvironmentIn: {
@@ -2089,6 +2247,17 @@ export interface components {
             /** Low */
             low: number;
         };
+        /** OpenBySeverityOut */
+        OpenBySeverityOut: {
+            /** Critical */
+            critical: number;
+            /** High */
+            high: number;
+            /** Medium */
+            medium: number;
+            /** Low */
+            low: number;
+        };
         /** OrgCreateIn */
         OrgCreateIn: {
             /** Name */
@@ -2255,6 +2424,13 @@ export interface components {
             page_size: number;
             /** Total */
             total: number;
+        };
+        /** PassRateOut */
+        PassRateOut: {
+            /** Last 7 Days */
+            last_7_days: number | null;
+            /** Runs */
+            runs: number;
         };
         /** PasswordChangeIn */
         PasswordChangeIn: {
@@ -2679,6 +2855,15 @@ export interface components {
             /** Results */
             results: components["schemas"]["RunResultOut"][];
         };
+        /** RunRateOut */
+        RunRateOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Pass Rate */
+            pass_rate: number;
+        };
         /** RunResultOut */
         RunResultOut: {
             /**
@@ -2847,6 +3032,16 @@ export interface components {
             name: string;
             filters: components["schemas"]["SavedViewFilters"];
         };
+        /** SeverityCountOut */
+        SeverityCountOut: {
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "critical" | "high" | "medium" | "low";
+            /** Count */
+            count: number;
+        };
         /**
          * SourceRunOut
          * @description The test run a bug was filed from (I-07): shown as a link to the run.
@@ -2863,6 +3058,16 @@ export interface components {
             run_name: string;
             /** Case Key */
             case_key: string;
+        };
+        /** StatusCountOut */
+        StatusCountOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /** Count */
+            count: number;
         };
         /**
          * StepIn
@@ -2952,6 +3157,21 @@ export interface components {
             /** Component Id */
             component_id?: string | null;
         };
+        /** SummaryOut */
+        SummaryOut: {
+            /** By Status */
+            by_status: components["schemas"]["StatusCountOut"][];
+            /** By Severity */
+            by_severity: components["schemas"]["SeverityCountOut"][];
+            /** By Component */
+            by_component: components["schemas"]["ComponentCountOut"][];
+            /** By Assignee */
+            by_assignee: components["schemas"]["AssigneeRowOut"][];
+            /** Run Pass Rate */
+            run_pass_rate: components["schemas"]["RunRateOut"][];
+            /** Total */
+            total: number;
+        };
         /** TokensOut */
         TokensOut: {
             /** Access Token */
@@ -2965,6 +3185,13 @@ export interface components {
             token_type: string;
             /** Expires In */
             expires_in: number;
+        };
+        /** TopComponentOut */
+        TopComponentOut: {
+            /** Name */
+            name: string;
+            /** Open */
+            open: number;
         };
         /** TransitionIn */
         TransitionIn: {
@@ -2985,6 +3212,18 @@ export interface components {
             current: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
             /** Allowed */
             allowed: ("new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix")[];
+        };
+        /** TrendDayOut */
+        TrendDayOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Opened */
+            opened: number;
+            /** Closed */
+            closed: number;
         };
         /** UserOut */
         UserOut: {
@@ -6422,6 +6661,87 @@ export interface operations {
             };
         };
     };
+    export_bugs_csv_api_v1_orgs__org_id__reports_bugs_csv_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                /** @description Repeat the parameter for several values */
+                status?: ("new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix")[] | null;
+                severity?: ("critical" | "high" | "medium" | "low")[] | null;
+                priority?: ("p1" | "p2" | "p3" | "p4")[] | null;
+                assignee_id?: string | null;
+                /** @description true: only bugs nobody is assigned to. Not with assignee_id */
+                unassigned?: boolean | null;
+                reporter_id?: string | null;
+                component_id?: string | null;
+                environment_id?: string | null;
+                label_id?: string | null;
+                release_id?: string | null;
+                sla_breached?: boolean | null;
+                /** @description true: only open bugs; false: only Verified, Closed and Won't fix */
+                open?: boolean | null;
+                /** @description Case insensitive match on key, title and description */
+                q?: string | null;
+                /** @description updated_at, created_at, severity or priority; prefix - for descending */
+                sort?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bugs as CSV */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     list_saved_views_api_v1_orgs__org_id__saved_views_get: {
         parameters: {
             query?: never;
@@ -8363,6 +8683,194 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_api_v1_orgs__org_id__dashboard_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_bug_trend_api_v1_orgs__org_id__reports_bug_trend_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                from?: string | null;
+                to?: string | null;
+                interval?: "day" | "week";
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BugTrendPointOut"][];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_summary_api_v1_orgs__org_id__reports_summary_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SummaryOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
