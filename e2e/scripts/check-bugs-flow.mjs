@@ -232,18 +232,18 @@ try {
   await qa.waitForSelector(`.views button[title="${viewName}"]`, { state: 'detached' });
   log('the view was deleted through the confirmation');
 
-  // 5. A key link opens the bug detail placeholder (I-05 builds the real screen)
+  // 5. A key link opens the bug detail (I-05)
   step = 'open the bug key link';
   await fillStable(qa, '#f-q', qaTitle);
   await (await findRow(qa, qaTitle)).locator('a').first().click();
-  await qa.waitForSelector(`h1:has-text("Bug ${key}")`);
-  await qa.waitForSelector('text=is on its way');
-  log('the key link opens the placeholder for the bug detail (I-05)');
+  await qa.waitForSelector(`.crumbs:has-text("${key}")`);
+  await qa.waitForSelector(`h1:has-text("${qaTitle}")`);
+  log('the key link opens the bug detail (I-05)');
 
   // 6. The label delete confirmation says how many bugs lose the label
   step = 'delete the label through the confirmation';
   const lead = await signIn(browser, 'amara@lumenfreight.test');
-  await lead.goto(`${BASE}/o/lumen/settings`);
+  await lead.goto(`${BASE}/o/lumen/settings?tab=labels`); // Organization is the first tab since I-11
   await lead.waitForSelector(`button[aria-label="Delete label ${labelName}"]`);
   await lead.click(`button[aria-label="Delete label ${labelName}"]`);
   await lead.waitForSelector('#delete-label-count');
