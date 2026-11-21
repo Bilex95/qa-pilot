@@ -31,6 +31,14 @@ try {
         [Console]::Error.WriteLine('with-wsl: bringing the stack up (waits for the healthchecks)')
         & wsl.exe -d $distro --cd ($holdScript -replace '/scripts/wsl-hold\.sh$', '') -- sh scripts/dc.sh up -d --wait 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "The stack did not come up (exit $LASTEXITCODE). Run scripts/dc.ps1 up -d --wait to see why." }
+        # `up --wait` can return while the database is still being restarted by the idle shutdown of the previous run: wait until the
+        # API answers with the database ok three times in a row, two seconds apart (at most a minute), before the command starts
+        $steady = 0
+        for ($i = 0; $i -lt 30 -and $steady -lt 3; $i++) {
+            try { $steady = if ((Invoke-RestMethod -Uri 'http://localhost:8000/api/v1/health' -TimeoutSec 5).db -eq 'ok') { $steady + 1 } else { 0 } } catch { $steady = 0 }
+            if ($steady -lt 3) { Start-Sleep -Seconds 2 }
+        }
+        if ($steady -lt 3) { throw 'The API never reported the database as ok after the stack came up.' }
     }
 
     $exe = $Command[0]

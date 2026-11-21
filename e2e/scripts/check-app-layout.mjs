@@ -226,6 +226,42 @@ async function ensureTestFixture() {
     title: `Layout fixture case number ${i + 1}`, steps: [step(1, false), step(2, false)], tags: ['discounts', 'layout'], case_type: ['positive', 'negative', 'edge'][i % 3],
     priority: ['p1', 'p2', 'p3', 'p4'][i % 4] })) })), 'create the bulk cases');
 }
+// Test run fixtures (I-07): a run in progress and a completed run with a 120 character name, both from the 31 case suite (the first case
+// has 50 steps). A run cannot be deleted in v1 (BL-027), so the two runs are created once and found again by name on later runs;
+// their cases are snapshots, so deleting the fixture suite afterwards does not touch them.
+const RUN_A = 'Layout run in progress';
+const RUN_B = `Layout completed run ${'with a very long name that must wrap or truncate '.repeat(3)}`.slice(0, 120).trim();
+const RUN_FIX = { key: '', id: '', resultId: '', doneKey: '' };
+async function ensureRunFixture() {
+  const { h, org } = await bugApi();
+  const projects = await must(await fetch(`${org}/projects?include_archived=true&page_size=100`, { headers: h }), 'list projects');
+  const project = projects.items.find((p) => p.key === BUG_PROJECT.key);
+  const suites = await must(await fetch(`${org}/test-suites?project_id=${project.id}&page_size=100`, { headers: h }), 'list suites');
+  const suite = suites.items.find((s) => s.name === SUITE_A);
+  const envs = await must(await fetch(`${org}/projects/${project.id}/environments`, { headers: h }), 'list environments');
+  const post = (path, body, method = 'POST') => fetch(`${org}${path}`, { method, headers: h, body: JSON.stringify(body) });
+  const existing = await must(await fetch(`${org}/test-runs?page_size=100`, { headers: h }), 'list runs');
+  const start = async (name) => {
+    const found = existing.items.find((r) => r.name === name);
+    if (found) return must(await fetch(`${org}/test-runs/${found.id}`, { headers: h }), 'get run');
+    return must(await post('/test-runs', { project_id: project.id, name, environment_id: envs[0].id, suite_ids: [suite.id] }), `start ${name}`);
+  };
+  const a = await start(RUN_A);
+  if (a.status === 'in_progress' && a.counts.untested === a.total) {
+    const set = async (i, body) => must(await post(`/test-runs/${a.id}/results/${a.results[i].id}`, body, 'PATCH'), 'set result');
+    await set(0, { result: 'fail', failed_step_index: 2, actual_result: `Total went up by 4.20 ${'and the discount code disappeared '.repeat(8)}`.trim() });
+    await set(1, { result: 'pass', note: 'Fine' }); await set(2, { result: 'blocked' }); await set(3, { result: 'skipped' });
+    for (let i = 4; i < 12; i++) await set(i, { result: 'pass' });
+  }
+  const shown = await start(RUN_A);
+  RUN_FIX.key = shown.key; RUN_FIX.id = shown.id; RUN_FIX.resultId = shown.results[0].id;
+  const b = await start(RUN_B);
+  if (b.status === 'in_progress') {
+    for (let i = 0; i < 6; i++) await must(await post(`/test-runs/${b.id}/results/${b.results[i].id}`, { result: i % 3 === 2 ? 'fail' : 'pass' }, 'PATCH'), 'set result');
+    await must(await post(`/test-runs/${b.id}`, { status: 'completed' }, 'PATCH'), 'complete the run');
+  }
+  RUN_FIX.doneKey = b.key;
+}
 async function removeBugFixture() {
   const { h, org, project } = await clearBugFixture();
   if (project) await fetch(`${org}/projects/${project.id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ archived: true }) });
@@ -377,6 +413,7 @@ try {
   await ensureLabelFixture();
   await ensureBugFixture();
   await ensureTestFixture();
+  await ensureRunFixture();
   await ensureResetFixture();
 } catch (e) { // a fixture that was half created is removed before the run stops
   console.log(`FAIL: could not create the fixtures: ${String(e.message || e).split(/\r?\n/)[0]}`);
@@ -406,6 +443,7 @@ let browser = await chromium.launch();
   for (const path of ['/login', '/register', '/invite#not-a-real-token-000', '/forgot-password', '/reset-password', '/onboarding/org', '/o/lumen/dashboard',
     '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs', '/o/lumen/bugs/new', `/o/lumen/bugs/${BUG_FIX.key}`,
     '/o/lumen/tests', '/o/lumen/tests/cases/new', `/o/lumen/tests/cases/${TEST_FIX.caseKey}`, '/o/lumen/board',
+    '/o/lumen/runs', `/o/lumen/runs/${RUN_FIX.key}`,
     '/o/lumen/this-page-does-not-exist']) {
     await go(warm, path).catch(() => {});
   }
@@ -971,6 +1009,87 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.waitForSelector('text=was not found');
   await check('bug detail: not found', { shot: 'bug-detail-not-found' });
 
+  // Test runs (I-07): the list with its states, the New test run dialog, a run in progress (a 50 step failed case open), the Complete run
+  // dialog, a completed run with a 120 character name, loading, error and not found, and the New bug form drafted from the failed step
+  step = 'open the test runs list';
+  await go(page, '/o/lumen/runs');
+  await page.waitForSelector('table.t tbody tr');
+  await check('/o/lumen/runs', { shot: 'runs' });
+  step = 'open the New test run dialog';
+  await page.getByRole('button', { name: 'New test run' }).first().click();
+  await page.waitForSelector('.modal');
+  await page.selectOption('#nr-p', { label: BUG_PROJECT.name });
+  await check('runs: New test run dialog', { popup: '.modal', shot: 'run-dialog' });
+  await page.getByRole('button', { name: /^Start run with/ }).click();
+  await page.waitForSelector('.modal .err');
+  await check('runs: New test run dialog errors', { popup: '.modal', shot: 'run-dialog-error' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'show the runs loading, empty and error states';
+  const runsUrl = /\/api\/v1\/orgs\/[^/]+\/test-runs(\?|$)/;
+  await page.route(runsUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/runs`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Test runs")');
+  await page.waitForSelector('.sk');
+  await check('runs: loading', { shot: 'runs-loading' });
+  await page.waitForSelector('table.t tbody tr');
+  await page.unroute(runsUrl);
+  await page.route(runsUrl, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { items: [], page: 1, page_size: 25, total: 0 } });
+  });
+  await go(page, '/o/lumen/runs');
+  await page.waitForSelector('text=No test runs yet');
+  await check('runs: empty', { shot: 'runs-empty' });
+  await page.unroute(runsUrl);
+  await page.route(runsUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i07' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/runs');
+  await page.waitForSelector('.state-box.error');
+  await check('runs: error', { shot: 'runs-error' });
+  await page.unroute(runsUrl);
+  step = 'open a run in progress';
+  const runPath = `/o/lumen/runs/${RUN_FIX.key}`;
+  await go(page, runPath);
+  await page.waitForSelector('.case-row .steps-t');
+  await check('run (in progress)', { shot: 'run' });
+  step = 'open the Complete run dialog';
+  await page.getByRole('button', { name: 'Complete run' }).click();
+  await page.waitForSelector('.modal');
+  await check('run: Complete run dialog', { popup: '.modal', shot: 'run-complete-dialog' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'open a completed run';
+  await go(page, `/o/lumen/runs/${RUN_FIX.doneKey}`);
+  await page.waitForSelector('.case-row');
+  await check('run (completed, long name)', { shot: 'run-completed' });
+  step = 'show the run loading, error and not found states';
+  const runOne = /\/api\/v1\/orgs\/[^/]+\/test-runs\/R-\d+$/;
+  await page.route(runOne, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}${runPath}`, { waitUntil: 'commit' });
+  await page.waitForSelector('.crumbs');
+  await page.waitForSelector('.sk');
+  await check('run: loading', { shot: 'run-loading' });
+  await page.waitForSelector('.case-row');
+  await page.unroute(runOne);
+  await page.route(runOne, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i07' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, runPath);
+  await page.waitForSelector('.state-box.error');
+  await check('run: error', { shot: 'run-error' });
+  await page.unroute(runOne);
+  await go(page, '/o/lumen/runs/R-999999');
+  await page.waitForSelector('text=was not found');
+  await check('run: not found', { shot: 'run-not-found' });
+  step = 'open the New bug form drafted from the failed step';
+  await go(page, `/o/lumen/bugs/new?from_run=${RUN_FIX.id}&result=${RUN_FIX.resultId}`);
+  await page.waitForSelector('text=Prefilled from a failed step of');
+  await check('/o/lumen/bugs/new (from a failed step)', { shot: 'bug-new-from-run' });
+
   // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
   step = 'sign out to sign in as the QA Lead';
   await page.click('.user-btn');
@@ -1035,6 +1154,17 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     note(vp, 'bug detail (Developer)', ['the Developer sees a delete bug or remove file control that is not theirs']);
   }
   await check('bug detail (Developer)', { shot: 'bug-detail-developer' });
+  step = 'open the runs as the Developer';
+  await go(page, '/o/lumen/runs');
+  await page.waitForSelector('table.t tbody tr');
+  if (await page.getByRole('button', { name: 'New test run' }).count()) note(vp, 'runs (Developer)', ['the Developer sees New test run']);
+  await check('/o/lumen/runs (Developer)', { shot: 'runs-developer' });
+  await go(page, `/o/lumen/runs/${RUN_FIX.key}`);
+  await page.waitForSelector('.case-row');
+  if (await page.locator('.result-btns, button:has-text("Complete run"), a:has-text("Create bug from failed step")').count()) {
+    note(vp, 'run (Developer)', ['the Developer sees result, Complete run or Create bug controls']);
+  }
+  await check('run (Developer, read only)', { shot: 'run-developer' });
   await signInAs(page, 'hana@lumenfreight.test');
   step = 'open the bug list as the Viewer';
   await go(page, '/o/lumen/bugs');
