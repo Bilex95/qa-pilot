@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-function psql(sql) {
+export function psql(sql) {
   const inner = 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -v ON_ERROR_STOP=1';
   const exec = ['compose', 'exec', '-T', 'db', 'sh', '-c', inner];
   if (process.platform === 'win32') {
