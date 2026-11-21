@@ -7363,6 +7363,1017 @@
         }
       }
     },
+    "/api/v1/orgs/{org_id}/releases": {
+      "get": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "List Releases",
+        "operationId": "list_releases_api_v1_orgs__org_id__releases_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "planned",
+                    "in_progress",
+                    "released"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number, starting at 1",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, starting at 1"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page, at most 100",
+              "default": 25,
+              "title": "Page Size"
+            },
+            "description": "Items per page, at most 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ReleaseSummaryOut_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Create Release",
+        "operationId": "create_release_api_v1_orgs__org_id__releases_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/releases/{release_id}": {
+      "get": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Get Release",
+        "operationId": "get_release_api_v1_orgs__org_id__releases__release_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Update Release",
+        "operationId": "update_release_api_v1_orgs__org_id__releases__release_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Delete Release",
+        "description": "Unlinks its bugs and runs. A released release cannot be deleted (409 `released`).",
+        "operationId": "delete_release_api_v1_orgs__org_id__releases__release_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/releases/{release_id}/readiness": {
+      "get": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Get Readiness",
+        "operationId": "get_readiness_api_v1_orgs__org_id__releases__release_id__readiness_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/releases/{release_id}/bugs": {
+      "post": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Link Bugs",
+        "description": "Links bugs of the release's project to it (a bug in another release moves). All or nothing.",
+        "operationId": "link_bugs_api_v1_orgs__org_id__releases__release_id__bugs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkBugsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/releases/{release_id}/bugs/{bug_id}": {
+      "delete": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Unlink Bug",
+        "operationId": "unlink_bug_api_v1_orgs__org_id__releases__release_id__bugs__bug_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "bug_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Bug Id"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/releases/{release_id}/runs": {
+      "post": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Link Runs",
+        "description": "Links runs of the release's project to it (completed runs too). All or nothing.",
+        "operationId": "link_runs_api_v1_orgs__org_id__releases__release_id__runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRunsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/releases/{release_id}/runs/{run_id}": {
+      "delete": {
+        "tags": [
+          "releases"
+        ],
+        "summary": "Unlink Run",
+        "operationId": "unlink_run_api_v1_orgs__org_id__releases__release_id__runs__run_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{org_id}/audit-events/actors": {
       "get": {
         "tags": [
@@ -8464,6 +9475,17 @@
               }
             ]
           },
+          "release_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Name"
+          },
           "ai_assisted": {
             "type": "boolean",
             "title": "Ai Assisted"
@@ -8534,6 +9556,7 @@
           "actual_result",
           "source_run_result_id",
           "source_run",
+          "release_name",
           "ai_assisted",
           "status_changed_at",
           "resolved_at",
@@ -9876,6 +10899,159 @@
         ],
         "title": "LabelRef"
       },
+      "LinkBugsIn": {
+        "properties": {
+          "bug_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Bug Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bug_ids"
+        ],
+        "title": "LinkBugsIn"
+      },
+      "LinkRunsIn": {
+        "properties": {
+          "run_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Run Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_ids"
+        ],
+        "title": "LinkRunsIn"
+      },
+      "LinkedBugOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "triaged",
+              "in_progress",
+              "fixed",
+              "ready_for_retest",
+              "verified",
+              "closed",
+              "reopened",
+              "wont_fix"
+            ],
+            "title": "Status"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Severity"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "p1",
+              "p2",
+              "p3",
+              "p4"
+            ],
+            "title": "Priority"
+          },
+          "assignee_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Id"
+          },
+          "assignee_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Name"
+          },
+          "sla_breached": {
+            "type": "boolean",
+            "title": "Sla Breached"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "title",
+          "status",
+          "severity",
+          "priority",
+          "assignee_id",
+          "assignee_name",
+          "sla_breached",
+          "updated_at"
+        ],
+        "title": "LinkedBugOut"
+      },
+      "LinkedOut": {
+        "properties": {
+          "linked": {
+            "type": "integer",
+            "title": "Linked"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "linked"
+        ],
+        "title": "LinkedOut"
+      },
       "LoginIn": {
         "properties": {
           "email": {
@@ -10113,6 +11289,35 @@
           "role"
         ],
         "title": "MyOrgOut"
+      },
+      "OpenBySeverity": {
+        "properties": {
+          "critical": {
+            "type": "integer",
+            "title": "Critical"
+          },
+          "high": {
+            "type": "integer",
+            "title": "High"
+          },
+          "medium": {
+            "type": "integer",
+            "title": "Medium"
+          },
+          "low": {
+            "type": "integer",
+            "title": "Low"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ],
+        "title": "OpenBySeverity"
       },
       "OrgCreateIn": {
         "properties": {
@@ -10490,6 +11695,37 @@
         ],
         "title": "Page[ProjectOut]"
       },
+      "Page_ReleaseSummaryOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseSummaryOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ],
+        "title": "Page[ReleaseSummaryOut]"
+      },
       "Page_RunSummaryOut_": {
         "properties": {
           "items": {
@@ -10809,6 +12045,72 @@
         "type": "object",
         "title": "ProjectUpdateIn"
       },
+      "ReadinessMetrics": {
+        "properties": {
+          "open_by_severity": {
+            "$ref": "#/components/schemas/OpenBySeverity"
+          },
+          "pass_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pass Rate"
+          },
+          "runs_in_progress": {
+            "type": "integer",
+            "title": "Runs In Progress"
+          },
+          "linked_runs": {
+            "type": "integer",
+            "title": "Linked Runs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "open_by_severity",
+          "pass_rate",
+          "runs_in_progress",
+          "linked_runs"
+        ],
+        "title": "ReadinessMetrics"
+      },
+      "ReadinessOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "at_risk",
+              "blocked"
+            ],
+            "title": "Status"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/ReadinessMetrics"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "reasons",
+          "metrics"
+        ],
+        "title": "ReadinessOut"
+      },
       "RefreshIn": {
         "properties": {
           "refresh_token": {
@@ -10855,6 +12157,423 @@
           "password"
         ],
         "title": "RegisterIn"
+      },
+      "ReleaseIn": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "project_id",
+          "name"
+        ],
+        "title": "ReleaseIn"
+      },
+      "ReleaseOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_progress",
+              "released"
+            ],
+            "title": "Status"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "released_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released At"
+          },
+          "readiness": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "at_risk",
+              "blocked"
+            ],
+            "title": "Readiness"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "open_bug_count": {
+            "type": "integer",
+            "title": "Open Bug Count"
+          },
+          "linked_bug_count": {
+            "type": "integer",
+            "title": "Linked Bug Count"
+          },
+          "linked_run_count": {
+            "type": "integer",
+            "title": "Linked Run Count"
+          },
+          "pass_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pass Rate"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/ReadinessMetrics"
+          },
+          "bugs": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedBugOut"
+            },
+            "type": "array",
+            "title": "Bugs"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunSummaryOut"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "ai_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Summary"
+          },
+          "ai_summary_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Summary At"
+          },
+          "ai_summary_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Summary By Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "project_id",
+          "description",
+          "status",
+          "target_date",
+          "released_at",
+          "readiness",
+          "reasons",
+          "open_bug_count",
+          "linked_bug_count",
+          "linked_run_count",
+          "pass_rate",
+          "created_at",
+          "metrics",
+          "bugs",
+          "runs",
+          "ai_summary",
+          "ai_summary_at",
+          "ai_summary_by_name"
+        ],
+        "title": "ReleaseOut"
+      },
+      "ReleaseSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_progress",
+              "released"
+            ],
+            "title": "Status"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "released_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released At"
+          },
+          "readiness": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "at_risk",
+              "blocked"
+            ],
+            "title": "Readiness"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "open_bug_count": {
+            "type": "integer",
+            "title": "Open Bug Count"
+          },
+          "linked_bug_count": {
+            "type": "integer",
+            "title": "Linked Bug Count"
+          },
+          "linked_run_count": {
+            "type": "integer",
+            "title": "Linked Run Count"
+          },
+          "pass_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pass Rate"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "project_id",
+          "description",
+          "status",
+          "target_date",
+          "released_at",
+          "readiness",
+          "reasons",
+          "open_bug_count",
+          "linked_bug_count",
+          "linked_run_count",
+          "pass_rate",
+          "created_at"
+        ],
+        "title": "ReleaseSummaryOut"
+      },
+      "ReleaseUpdateIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "planned",
+                  "in_progress",
+                  "released"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "ai_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Summary"
+          },
+          "ai_usage_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Usage Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReleaseUpdateIn",
+        "description": "Only the fields that are sent change. `target_date: null` clears the date. `status` only moves forward (planned, in progress,\nreleased). The AI summary fields arrive with I-18; until then sending them is a 422."
       },
       "ResetConfirmIn": {
         "properties": {
@@ -11166,6 +12885,17 @@
             ],
             "title": "Release Id"
           },
+          "release_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Name"
+          },
           "counts": {
             "$ref": "#/components/schemas/RunCountsOut"
           },
@@ -11230,6 +12960,7 @@
           "environment_id",
           "environment",
           "release_id",
+          "release_name",
           "counts",
           "total",
           "pass_rate",
@@ -11437,6 +13168,17 @@
             ],
             "title": "Release Id"
           },
+          "release_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Name"
+          },
           "counts": {
             "$ref": "#/components/schemas/RunCountsOut"
           },
@@ -11494,6 +13236,7 @@
           "environment_id",
           "environment",
           "release_id",
+          "release_name",
           "counts",
           "total",
           "pass_rate",

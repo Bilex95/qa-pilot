@@ -920,6 +920,137 @@ export interface paths {
         patch: operations["update_case_api_v1_orgs__org_id__test_cases__case_id__patch"];
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Releases */
+        get: operations["list_releases_api_v1_orgs__org_id__releases_get"];
+        put?: never;
+        /** Create Release */
+        post: operations["create_release_api_v1_orgs__org_id__releases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/releases/{release_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Release */
+        get: operations["get_release_api_v1_orgs__org_id__releases__release_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Release
+         * @description Unlinks its bugs and runs. A released release cannot be deleted (409 `released`).
+         */
+        delete: operations["delete_release_api_v1_orgs__org_id__releases__release_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Release */
+        patch: operations["update_release_api_v1_orgs__org_id__releases__release_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/releases/{release_id}/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Readiness */
+        get: operations["get_readiness_api_v1_orgs__org_id__releases__release_id__readiness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/releases/{release_id}/bugs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link Bugs
+         * @description Links bugs of the release's project to it (a bug in another release moves). All or nothing.
+         */
+        post: operations["link_bugs_api_v1_orgs__org_id__releases__release_id__bugs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/releases/{release_id}/bugs/{bug_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink Bug */
+        delete: operations["unlink_bug_api_v1_orgs__org_id__releases__release_id__bugs__bug_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/releases/{release_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link Runs
+         * @description Links runs of the release's project to it (completed runs too). All or nothing.
+         */
+        post: operations["link_runs_api_v1_orgs__org_id__releases__release_id__runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/releases/{release_id}/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink Run */
+        delete: operations["unlink_run_api_v1_orgs__org_id__releases__release_id__runs__run_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/audit-events/actors": {
         parameters: {
             query?: never;
@@ -1263,6 +1394,8 @@ export interface components {
             /** Source Run Result Id */
             source_run_result_id: string | null;
             source_run: components["schemas"]["SourceRunOut"] | null;
+            /** Release Name */
+            release_name: string | null;
             /** Ai Assisted */
             ai_assisted: boolean;
             /**
@@ -1788,6 +1921,59 @@ export interface components {
             /** Color */
             color: string;
         };
+        /** LinkBugsIn */
+        LinkBugsIn: {
+            /** Bug Ids */
+            bug_ids: string[];
+        };
+        /** LinkRunsIn */
+        LinkRunsIn: {
+            /** Run Ids */
+            run_ids: string[];
+        };
+        /** LinkedBugOut */
+        LinkedBugOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "critical" | "high" | "medium" | "low";
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "p1" | "p2" | "p3" | "p4";
+            /** Assignee Id */
+            assignee_id: string | null;
+            /** Assignee Name */
+            assignee_name: string | null;
+            /** Sla Breached */
+            sla_breached: boolean;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** LinkedOut */
+        LinkedOut: {
+            /** Linked */
+            linked: number;
+        };
         /** LoginIn */
         LoginIn: {
             /** Email */
@@ -1891,6 +2077,17 @@ export interface components {
         MyOrgOut: {
             org: components["schemas"]["OrgOut"];
             role: components["schemas"]["Role"];
+        };
+        /** OpenBySeverity */
+        OpenBySeverity: {
+            /** Critical */
+            critical: number;
+            /** High */
+            high: number;
+            /** Medium */
+            medium: number;
+            /** Low */
+            low: number;
         };
         /** OrgCreateIn */
         OrgCreateIn: {
@@ -2026,6 +2223,17 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[ReleaseSummaryOut] */
+        Page_ReleaseSummaryOut_: {
+            /** Items */
+            items: components["schemas"]["ReleaseSummaryOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** Page[RunSummaryOut] */
         Page_RunSummaryOut_: {
             /** Items */
@@ -2153,6 +2361,27 @@ export interface components {
             /** Archived */
             archived?: boolean | null;
         };
+        /** ReadinessMetrics */
+        ReadinessMetrics: {
+            open_by_severity: components["schemas"]["OpenBySeverity"];
+            /** Pass Rate */
+            pass_rate: number | null;
+            /** Runs In Progress */
+            runs_in_progress: number;
+            /** Linked Runs */
+            linked_runs: number;
+        };
+        /** ReadinessOut */
+        ReadinessOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "at_risk" | "blocked";
+            /** Reasons */
+            reasons: string[];
+            metrics: components["schemas"]["ReadinessMetrics"];
+        };
         /** RefreshIn */
         RefreshIn: {
             /** Refresh Token */
@@ -2169,6 +2398,145 @@ export interface components {
              * @description At least 10 characters with a letter and a number
              */
             password: string;
+        };
+        /** ReleaseIn */
+        ReleaseIn: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Name */
+            name: string;
+            /** Target Date */
+            target_date?: string | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+        };
+        /** ReleaseOut */
+        ReleaseOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Description */
+            description: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "planned" | "in_progress" | "released";
+            /** Target Date */
+            target_date: string | null;
+            /** Released At */
+            released_at: string | null;
+            /**
+             * Readiness
+             * @enum {string}
+             */
+            readiness: "ready" | "at_risk" | "blocked";
+            /** Reasons */
+            reasons: string[];
+            /** Open Bug Count */
+            open_bug_count: number;
+            /** Linked Bug Count */
+            linked_bug_count: number;
+            /** Linked Run Count */
+            linked_run_count: number;
+            /** Pass Rate */
+            pass_rate: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            metrics: components["schemas"]["ReadinessMetrics"];
+            /** Bugs */
+            bugs: components["schemas"]["LinkedBugOut"][];
+            /** Runs */
+            runs: components["schemas"]["RunSummaryOut"][];
+            /** Ai Summary */
+            ai_summary: string | null;
+            /** Ai Summary At */
+            ai_summary_at: string | null;
+            /** Ai Summary By Name */
+            ai_summary_by_name: string | null;
+        };
+        /** ReleaseSummaryOut */
+        ReleaseSummaryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Description */
+            description: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "planned" | "in_progress" | "released";
+            /** Target Date */
+            target_date: string | null;
+            /** Released At */
+            released_at: string | null;
+            /**
+             * Readiness
+             * @enum {string}
+             */
+            readiness: "ready" | "at_risk" | "blocked";
+            /** Reasons */
+            reasons: string[];
+            /** Open Bug Count */
+            open_bug_count: number;
+            /** Linked Bug Count */
+            linked_bug_count: number;
+            /** Linked Run Count */
+            linked_run_count: number;
+            /** Pass Rate */
+            pass_rate: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ReleaseUpdateIn
+         * @description Only the fields that are sent change. `target_date: null` clears the date. `status` only moves forward (planned, in progress,
+         *     released). The AI summary fields arrive with I-18; until then sending them is a 422.
+         */
+        ReleaseUpdateIn: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Target Date */
+            target_date?: string | null;
+            /** Status */
+            status?: ("planned" | "in_progress" | "released") | null;
+            /** Ai Summary */
+            ai_summary?: string | null;
+            /** Ai Usage Id */
+            ai_usage_id?: string | null;
         };
         /** ResetConfirmIn */
         ResetConfirmIn: {
@@ -2287,6 +2655,8 @@ export interface components {
             environment: string | null;
             /** Release Id */
             release_id: string | null;
+            /** Release Name */
+            release_name: string | null;
             counts: components["schemas"]["RunCountsOut"];
             /** Total */
             total: number;
@@ -2380,6 +2750,8 @@ export interface components {
             environment: string | null;
             /** Release Id */
             release_id: string | null;
+            /** Release Name */
+            release_name: string | null;
             counts: components["schemas"]["RunCountsOut"];
             /** Total */
             total: number;
@@ -7347,6 +7719,650 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_releases_api_v1_orgs__org_id__releases_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                status?: ("planned" | "in_progress" | "released") | null;
+                /** @description Page number, starting at 1 */
+                page?: number;
+                /** @description Items per page, at most 100 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ReleaseSummaryOut_"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_release_api_v1_orgs__org_id__releases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReleaseIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_release_api_v1_orgs__org_id__releases__release_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_release_api_v1_orgs__org_id__releases__release_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_release_api_v1_orgs__org_id__releases__release_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReleaseUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_readiness_api_v1_orgs__org_id__releases__release_id__readiness_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    link_bugs_api_v1_orgs__org_id__releases__release_id__bugs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkBugsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlink_bug_api_v1_orgs__org_id__releases__release_id__bugs__bug_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                bug_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_runs_api_v1_orgs__org_id__releases__release_id__runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkRunsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlink_run_api_v1_orgs__org_id__releases__release_id__runs__run_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+                run_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

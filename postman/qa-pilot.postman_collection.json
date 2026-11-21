@@ -22495,6 +22495,3613 @@
       ]
     },
     {
+      "name": "Releases",
+      "item": [
+        {
+          "name": "Plan a release as QA Lead (API-111)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"{{releaseName}}\",\n  \"target_date\": \"2026-12-24\",\n  \"description\": \"Newman: a planned release\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const r = pm.response.json(); pm.environment.set(\"releaseId\", r.id);",
+                  "pm.test(\"planned, at risk with no runs\", () => { pm.expect(r.status).to.eql(\"planned\"); pm.expect(r.readiness).to.eql(\"at_risk\"); pm.expect(r.reasons).to.eql([\"No test runs linked\"]); pm.expect(r.target_date).to.eql(\"2026-12-24\"); pm.expect(r.bugs).to.eql([]); pm.expect(r.runs).to.eql([]); });"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"releaseName\", \"Newman release \" + Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Plan a second release (API-111)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"{{releaseTwoName}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"releaseTwoId\", pm.response.json().id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"releaseTwoName\", \"Newman second \" + Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Plan a release with the same name (API-111 conflict)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"{{releaseName}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"error envelope name_taken\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"name_taken\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Plan a release with a one character name (API-111 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Plan a release as QA Engineer (API-111 forbidden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"Nope release\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Plan a release without token (API-111 unauthorized)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"Nope release\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Plan a release in another workspace (API-111 cross tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"Nope release\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope org_not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"org_not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Plan a release for a project of another workspace (API-111 cross tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"Nope release\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bugs for the release: a Critical one (API-061)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman release critical bug\",\n  \"severity\": \"critical\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"relBugId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bugs for the release: a High one (API-061)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"title\": \"Newman release high bug\",\n  \"severity\": \"high\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"relBugTwoId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link both bugs (API-116)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"bug_ids\": [\"{{relBugId}}\", \"{{relBugTwoId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"two linked\", () => pm.expect(pm.response.json()).to.eql({linked: 2}));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link the same bugs again (API-116)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"bug_ids\": [\"{{relBugId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"nothing changed\", () => pm.expect(pm.response.json()).to.eql({linked: 0}));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link no bugs (API-116 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bug_ids\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link a bug that does not exist (API-116 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bug_ids\": [\n    \"00000000-0000-4000-8000-000000000000\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link bugs as Developer (API-116 forbidden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"bug_ids\": [\"{{relBugId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link bugs without token (API-116 unauthorized)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"bug_ids\": [\"{{relBugId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link bugs through other org path (API-116 cross tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases/{{releaseId}}/bugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"bug_ids\": [\"{{relBugId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The bug shows its release (API-063)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{relBugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{relBugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"release id and name\", () => { const b = pm.response.json(); pm.expect(b.release_id).to.eql(pm.environment.get(\"releaseId\")); pm.expect(b.release_name).to.eql(pm.environment.get(\"releaseName\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness: a Critical bug blocks, no runs is a risk (API-115)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/readiness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "readiness"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test(\"blocked with the reasons\", () => { pm.expect(d.status).to.eql(\"blocked\"); pm.expect(d.reasons).to.eql([\"1 open Critical bug\", \"1 open High bug\", \"No test runs linked\"]); });",
+                  "pm.test(\"metrics\", () => { pm.expect(d.metrics.open_by_severity).to.eql({critical: 1, high: 1, medium: 0, low: 0}); pm.expect(d.metrics.pass_rate).to.eql(null); pm.expect(d.metrics.linked_runs).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness of an unknown release (API-115 not found)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/00000000-0000-4000-8000-000000000000/readiness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "00000000-0000-4000-8000-000000000000",
+                "readiness"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness through other org path (API-115 cross tenant)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases/{{releaseId}}/readiness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases",
+                "{{releaseId}}",
+                "readiness"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness without token (API-115 unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/readiness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "readiness"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A suite and a case for the release run (API-091, API-096)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/test-suites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "test-suites"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"{{relSuiteName}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"relSuiteId\", pm.response.json().id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"relSuiteName\", \"Newman release suite \" + Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A case for the release run (API-096)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/test-suites/{{relSuiteId}}/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "test-suites",
+                "{{relSuiteId}}",
+                "cases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman release case\",\n  \"steps\": [\n    {\n      \"action\": \"Open it\",\n      \"expected\": \"It opens\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start a run in the release (API-102)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/test-runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "test-runs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"name\": \"Newman release run\",\n  \"suite_ids\": [\n    \"{{relSuiteId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "const run = pm.response.json(); pm.environment.set(\"relRunId\", run.id); pm.environment.set(\"relRunResultId\", run.results[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pass the case (API-105)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/test-runs/{{relRunId}}/results/{{relRunResultId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "test-runs",
+                "{{relRunId}}",
+                "results",
+                "{{relRunResultId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"result\": \"pass\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link the run (API-118)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"run_ids\": [\"{{relRunId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"one linked\", () => pm.expect(pm.response.json()).to.eql({linked: 1}));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link no runs (API-118 invalid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"run_ids\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link a run as QA Engineer (API-118 forbidden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"run_ids\": [\"{{relRunId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link a run without token (API-118 unauthorized)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"run_ids\": [\"{{relRunId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Link a run through other org path (API-118 cross tenant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases/{{releaseId}}/runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"run_ids\": [\"{{relRunId}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness with a run in progress (API-115)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/readiness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "readiness"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"still blocked, the run is in progress\", () => { const d = pm.response.json(); pm.expect(d.status).to.eql(\"blocked\"); pm.expect(d.reasons).to.eql([\"1 open Critical bug\", \"1 open High bug\", \"1 run still in progress\"]); pm.expect(d.metrics.pass_rate).to.eql(100); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complete the run (API-104)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/test-runs/{{relRunId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "test-runs",
+                "{{relRunId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink the Critical bug (API-117)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs/{{relBugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs",
+                "{{relBugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink the same bug again (API-117)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs/{{relBugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs",
+                "{{relBugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink a bug as Viewer (API-117 forbidden)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs/{{relBugTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs",
+                "{{relBugTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink a bug without token (API-117 unauthorized)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/bugs/{{relBugTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs",
+                "{{relBugTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink a bug through other org path (API-117 cross tenant)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases/{{releaseId}}/bugs/{{relBugTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases",
+                "{{releaseId}}",
+                "bugs",
+                "{{relBugTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness: only a High bug is left (API-115)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/readiness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "readiness"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"at risk because of the High bug\", () => { const d = pm.response.json(); pm.expect(d.status).to.eql(\"at_risk\"); pm.expect(d.reasons).to.eql([\"1 open High bug\"]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the High bug (API-064)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{relBugTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{relBugTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the Critical bug (API-064)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/bugs/{{relBugId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "bugs",
+                "{{relBugId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness: nothing open and a completed run is ready (API-115)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/readiness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "readiness"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"ready\", () => { const d = pm.response.json(); pm.expect(d.status).to.eql(\"ready\"); pm.expect(d.reasons).to.eql([\"No open Critical or High bugs, pass rate 100%\"]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink the run (API-119)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/runs/{{relRunId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs",
+                "{{relRunId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink a run as Developer (API-119 forbidden)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/runs/{{relRunId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs",
+                "{{relRunId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink a run without token (API-119 unauthorized)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}/runs/{{relRunId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs",
+                "{{relRunId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unlink a run through other org path (API-119 cross tenant)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases/{{releaseId}}/runs/{{relRunId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases",
+                "{{releaseId}}",
+                "runs",
+                "{{relRunId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List releases as Viewer (API-110)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases?project_id={{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ],
+              "query": [
+                {
+                  "key": "project_id",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"both releases with readiness and counts\", () => { const items = pm.response.json().items; const r = items.find(x => x.id === pm.environment.get(\"releaseId\")); pm.expect(r).to.be.ok; pm.expect(r).to.include.keys(\"readiness\", \"reasons\", \"open_bug_count\", \"linked_run_count\", \"pass_rate\"); pm.expect(items.map(x => x.id)).to.include(pm.environment.get(\"releaseTwoId\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List releases with an unknown status (API-110 invalid)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases?status=later",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "later"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List releases without token (API-110 unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List releases of another workspace (API-110 cross tenant)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope org_not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"org_not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get a release (API-112)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"the release with its lists\", () => { const r = pm.response.json(); pm.expect(r.id).to.eql(pm.environment.get(\"releaseId\")); pm.expect(r).to.include.keys(\"bugs\", \"runs\", \"metrics\", \"ai_summary\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get an unknown release (API-112 not found)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/00000000-0000-4000-8000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "00000000-0000-4000-8000-000000000000"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{viewerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get a release through other org path (API-112 cross tenant)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get a release without token (API-112 unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Move the release to in progress (API-113)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"in progress\", () => pm.expect(pm.response.json().status).to.eql(\"in_progress\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Move the release back to planned (API-113 invalid)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"planned\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rename the release and clear its date (API-113)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{releaseName}} renamed\",\n  \"target_date\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"renamed, no date\", () => { const r = pm.response.json(); pm.expect(r.name).to.include(\"renamed\"); pm.expect(r.target_date).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rename to the name of the other release (API-113 conflict)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{releaseTwoName}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"error envelope name_taken\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"name_taken\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change a release with an empty body (API-113 invalid)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send an AI summary (API-113 invalid until I-18)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ai_summary\": \"A summary\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error envelope validation_error\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"validation_error\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change a release as Developer (API-113 forbidden)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{devToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nope\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change a release without token (API-113 unauthorized)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nope\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change a release through other org path (API-113 cross tenant)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nope\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete a release as QA Engineer (API-114 forbidden)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"error envelope forbidden\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"forbidden\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete a release without token (API-114 unauthorized)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete a release through other org path (API-114 cross tenant)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{foreignOrgId}}/releases/{{releaseTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{foreignOrgId}}",
+                "releases",
+                "{{releaseTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{foreignToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the second release (API-114)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseTwoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseTwoId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the first release (API-114)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The deleted release is gone (API-114)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error envelope not_found\", () => { const e = pm.response.json().error; pm.expect(e.code).to.eql(\"not_found\"); pm.expect(e).to.have.keys(\"code\",\"message\",\"details\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the release again (API-114 not found)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "releases",
+                "{{releaseId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the suite of the release run (cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/test-suites/{{relSuiteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "test-suites",
+                "{{relSuiteId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{leadToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Sign out",
       "item": [
         {
@@ -22601,11 +26208,6 @@
           ]
         }
       ]
-    },
-    {
-      "name": "Releases",
-      "description": "Staged folder. Requests are added with the endpoints in Stage 4 (API_INVENTORY.md).",
-      "item": []
     },
     {
       "name": "Dashboard and reports",
