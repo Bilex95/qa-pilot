@@ -18,6 +18,7 @@ import { useRefreshBug, type BugDetail } from "../detail-hooks";
 import { useComponents, useEnvironments, useMemberOptions } from "../hooks";
 import { PRIORITY_OPTIONS, SEVERITY_OPTIONS } from "../schemas";
 import { StatusBadge } from "./bug-badges";
+import { BugLabels } from "./bug-editors";
 
 type Changes = Schemas["BugUpdateIn"];
 
@@ -136,17 +137,7 @@ export function BugDetailsPanel({ bug }: { bug: BugDetail }) {
           <dt>Release</dt>
           <dd><span className="muted">{bug.release_id ? "Linked" : "None"}</span></dd>
           <dt>Labels</dt>
-          <dd>
-            {bug.labels.length ? (
-              <span className="row" style={{ gap: 4 }}>
-                {bug.labels.map((l) => (
-                  <span key={l.id} className="label-chip" title={l.name} style={{ maxWidth: 160 }}>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{l.name}</span>
-                  </span>
-                ))}
-              </span>
-            ) : <span className="muted">None</span>}
-          </dd>
+          <dd><BugLabels bug={bug} canEdit={canEdit} /></dd>
           <dt>Reporter</dt>
           <dd>
             <span className="who">

@@ -31,6 +31,7 @@ export const STEP_MAX = 50;
 export const STEP_LENGTH = 1000;
 export const RESULT_MAX = 5000;
 export const LABEL_MAX = 20;
+export const DESCRIPTION_MAX = 20000;
 export const COMMENT_MAX = 5000; // REQ-023: 1 to 5,000 characters
 
 /** The message to show when a comment cannot be sent, or null when it can (the API checks again). */

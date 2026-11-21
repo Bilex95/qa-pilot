@@ -20,6 +20,7 @@ import { useOrg } from "@/modules/shell/org-context";
 
 import { PriorityTag, SeverityBadge, SlaBadge, StatusBadge } from "./components/bug-badges";
 import { BugDetailsPanel } from "./components/bug-details-panel";
+import { BugDescription, BugHeadline } from "./components/bug-editors";
 import { BugFiles } from "./components/bug-files";
 import { BugTimeline } from "./components/bug-timeline";
 import { useBug, useRefreshBug, type BugDetail } from "./detail-hooks";
@@ -91,6 +92,8 @@ function Loaded({ bug, crumbs }: { bug: BugDetail; crumbs: React.ReactNode }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const who = { role: org.role, userId: me?.user.id };
   const targets = allowedTargets(workflow.data, bug, who);
+  // Title, description and labels: anyone who may edit bugs; a Developer only on a bug they reported (D-006, API-063)
+  const canEdit = can(org.role, "bug.update_fields") && (org.role !== "developer" || bug.reporter_id === me?.user.id);
 
   const move = useMutation({
     mutationFn: (to: string) =>
@@ -131,19 +134,17 @@ function Loaded({ bug, crumbs }: { bug: BugDetail; crumbs: React.ReactNode }) {
     <>
       {crumbs}
       <div className="page-head">
-        <div className="grow">
-          <div className="row" style={{ marginBottom: 8 }}>
-            <span className="mono muted">{bug.key}</span>
-            <StatusBadge status={bug.status} />
-            <SeverityBadge severity={bug.severity} />
-            <PriorityTag priority={bug.priority} />
-            {bug.sla_breached ? <SlaBadge severity={bug.severity} /> : null}
-          </div>
-          <h1 style={{ overflowWrap: "anywhere" }}>{bug.title}</h1>
-          <p>
-            Reported by {bug.reporter_name} {timeAgo(bug.created_at)}. Updated {timeAgo(bug.updated_at)}.
-          </p>
-        </div>
+        <BugHeadline bug={bug} canEdit={canEdit}
+          badges={(
+            <>
+              <span className="mono muted">{bug.key}</span>
+              <StatusBadge status={bug.status} />
+              <SeverityBadge severity={bug.severity} />
+              <PriorityTag priority={bug.priority} />
+              {bug.sla_breached ? <SlaBadge severity={bug.severity} /> : null}
+            </>
+          )}
+          byline={<p>Reported by {bug.reporter_name} {timeAgo(bug.created_at)}. Updated {timeAgo(bug.updated_at)}.</p>} />
         <div className="actions" aria-busy={move.isPending}>
           {workflow.isPending ? null : targets.length ? targets.map((t, i) => (
             <Button key={t} variant={i === 0 ? "primary" : "default"} disabled={move.isPending} onClick={() => move.mutate(t)}>
@@ -162,8 +163,7 @@ function Loaded({ bug, crumbs }: { bug: BugDetail; crumbs: React.ReactNode }) {
         <div className="stack">
           <section className="panel">
             <div className="panel-body prose">
-              <h3>Description</h3>
-              {bug.description ? <p style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{bug.description}</p> : <p className="muted">No description.</p>}
+              <BugDescription bug={bug} canEdit={canEdit} />
               <h3>Steps to reproduce</h3>
               {steps.length ? (
                 <ol style={{ listStyle: "decimal" }}>{steps.map((s, i) => <li key={i} style={{ overflowWrap: "anywhere" }}>{s}</li>)}</ol>
