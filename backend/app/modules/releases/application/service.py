@@ -79,6 +79,14 @@ def list_releases(db: Session, org_id: uuid.UUID, params: PageParams, *, project
     return paginate(db, repo.releases_query(org_id, project_id=project_id, status=status), params)
 
 
+def unreleased_readiness(db: Session, org_id: uuid.UUID, project_id: uuid.UUID | None, limit: int = 8) -> list[tuple[Release, Evaluation]]:
+    """Public contract for the dashboard: the releases that are not released yet (soonest target first) with their readiness."""
+    stmt = repo.releases_query(org_id, project_id=project_id, status=None).where(Release.status != "released").limit(limit)
+    rows = list(db.scalars(stmt))
+    evals = evaluate_many(db, org_id, rows)
+    return [(r, evals[r.id]) for r in rows]
+
+
 def names_of(db: Session, org_id: uuid.UUID, ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:
     """Public contract: the names of the releases that exist (bugs and runs show them)."""
     return {r.id: r.name for r in repo.get_releases(db, org_id, ids)}

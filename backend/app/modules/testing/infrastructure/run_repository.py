@@ -1,6 +1,7 @@
 """Test run persistence. Every query takes org_id (NFR-TEN-02)."""
 
 import uuid
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Select, func, or_, select
@@ -90,6 +91,17 @@ def existing_suite_ids(db: Session, org_id: uuid.UUID, project_id: uuid.UUID, su
         return set()
     return set(db.scalars(select(TestSuite.id).where(TestSuite.org_id == org_id, TestSuite.project_id == project_id,
                                                       TestSuite.deleted_at.is_(None), TestSuite.id.in_(suite_ids))))
+
+
+def runs_started_between(db: Session, org_id: uuid.UUID, project_id: uuid.UUID | None, since: datetime,
+                         until: datetime | None = None) -> list[TestRun]:
+    """Runs started from `since` (inclusive) to `until` (exclusive), newest first."""
+    stmt = select(TestRun).where(TestRun.org_id == org_id, TestRun.started_at >= since)
+    if until is not None:
+        stmt = stmt.where(TestRun.started_at < until)
+    if project_id:
+        stmt = stmt.where(TestRun.project_id == project_id)
+    return list(db.scalars(stmt.order_by(TestRun.started_at.desc(), TestRun.id)))
 
 
 def release_run_counts(db: Session, org_id: uuid.UUID, release_ids: list[uuid.UUID]) -> tuple[

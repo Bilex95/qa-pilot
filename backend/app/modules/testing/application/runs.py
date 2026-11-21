@@ -7,6 +7,7 @@ import contextlib
 import re
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -118,6 +119,28 @@ def summaries(db: Session, org_id: uuid.UUID, rows: list[TestRun]) -> list[RunSu
             total=sum(counts.values()), pass_rate=rate_of(counts), created_by_id=r.created_by_id,
             created_by_name=rc.names.get(r.created_by_id, ""), started_at=r.started_at, completed_at=r.completed_at))
     return out
+
+
+# Dashboard and reports (I-09) -----------------------------------------------
+
+def pass_rate_since(db: Session, org_id: uuid.UUID, project_id: uuid.UUID | None, since: datetime) -> tuple[int | None, int]:
+    """(combined pass rate, number of runs) of the runs started since `since`, all their results counted together."""
+    runs = repo.runs_started_between(db, org_id, project_id, since)
+    counts = repo.counts_by_run(db, org_id, [r.id for r in runs])
+    total: dict[str, int] = {}
+    for per in counts.values():
+        for k, n in per.items():
+            total[k] = total.get(k, 0) + n
+    return pass_rate(total), len(runs)
+
+
+def rates_per_run(db: Session, org_id: uuid.UUID, project_id: uuid.UUID | None, since: datetime, until: datetime,
+                  limit: int = 12) -> list[tuple[str, str, int]]:
+    """(key, name, pass rate) of the runs started in the range that have a decided result, oldest first, at most the `limit` newest."""
+    runs = repo.runs_started_between(db, org_id, project_id, since, until)
+    counts = repo.counts_by_run(db, org_id, [r.id for r in runs])
+    rows = [(run_key(r.number), r.name, rate) for r in runs if (rate := pass_rate(counts.get(r.id, {}))) is not None]
+    return list(reversed(rows[:limit]))
 
 
 # Releases (I-08) ------------------------------------------------------------

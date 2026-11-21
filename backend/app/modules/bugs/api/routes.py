@@ -5,14 +5,14 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from app.core.deps import DB, OrgContext, require
 from app.core.errors import AppError, Unprocessable
 from app.core.pagination import Page, PageParams, page_params
 from app.core.permissions import Role
 from app.core.schemas import errors
-from app.modules.bugs.application import detail, hooks, integration, service
+from app.modules.bugs.application import detail, hooks, integration, reporting, service
 from app.modules.bugs.domain import workflow
 from app.modules.bugs.domain.filters import BugFilters
 from app.modules.bugs.domain.rules import SORT_FIELDS, STATUSES, Priority, Severity, Status
@@ -260,9 +260,22 @@ def list_activity(bug_id: uuid.UUID, db: DB, ctx: Read, params: Annotated[PagePa
     return Page(items=items, page=params.page, page_size=params.page_size, total=total)
 
 
+# CSV export (API-133, I-09) -------------------------------------------------
+
+@router.get("/orgs/{org_id}/reports/bugs.csv", response_model=None,
+            responses={**errors(401, 403, 404, 422), 200: {"description": "The bugs as CSV", "content": {"text/csv": {}}}})
+def export_bugs_csv(db: DB, ctx: Annotated[OrgContext, Depends(require("report.export"))],
+                    filters: Annotated[BugFilters, Depends(_filters)]) -> Response:
+    """The bugs the list filters select (the same query parameters as API-060), at most 50,000 rows. A cell that starts with =, +, -, @ is
+    prefixed with a quote so a spreadsheet shows it as text. Built before the response starts, so the database session is still open."""
+    body = "".join(reporting.csv_rows(db, ctx.org_id, filters))
+    return Response(body, media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="bugs.csv"', "Cache-Control": "private, no-store"})
+
+
 # Saved views --------------------------------------------------------------
 
-Views =Annotated[OrgContext, Depends(require("saved_view.manage"))]
+Views = Annotated[OrgContext, Depends(require("saved_view.manage"))]
 
 
 @router.get("/orgs/{org_id}/saved-views", response_model=list[SavedViewOut], responses=errors(401, 403, 404))
