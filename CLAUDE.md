@@ -9,6 +9,29 @@ AI powered bug tracking and QA management app. Plan: `docs/BUILD_PLAN.md`. Deliv
 * If a command fails 3 times with different fixes, log it in `docs/BLOCKERS.md` with the exact error and fix steps for the human, pick a fallback, and move on.
 * Never start a blocking foreground process. Use `docker compose up -d`, background dev servers, and timeouts on long commands. Stop what you started.
 
+## Autonomy rules (product owner, 2026-11-21; they replace the stop at each review)
+
+### Part 1: no permission prompts
+* Read and search only with the Read, Grep and Glob tools, with absolute paths under `C:/Users/HP/qa-pilot`. Never use cat, sed, head, tail, cut, wc, ls or grep in Bash to read files.
+* Write code only with the Edit and Write tools. Never write files with `cat >>`, heredocs or echo redirects.
+* Bash and PowerShell: one plain command per call. No cd (use absolute paths or `git -C C:/Users/HP/qa-pilot`), no pipes, no parentheses, no `;` or `&&` chains, no loops, no `$(...)` or variables in paths.
+* Gate output goes to `C:/Users/HP/qa-pilot/.gate/<name>.txt` by redirect. Take the exit code from the tool result and read the file with the Read tool.
+* In the PowerShell tool call scripts as `& C:\Users\HP\qa-pilot\scripts\<name>.ps1` (never a nested `powershell` process). `with-wsl.ps1` runs its target directly, so `& ...\with-wsl.ps1 -Up & ...\py-checks.ps1` style calls work.
+* Helper scripts live in `C:/Users/HP/qa-pilot/scripts/` only (never the scratchpad or `.gate`).
+* `.claude/settings.local.json` holds the allow, ask and deny lists for this machine. It is not committed (it is in `.gitignore`).
+
+### Part 2: one review at the end
+* Work through every remaining Stage 4 issue, then Stage 5, then Stage 6, in DAG order, without stopping for review between issues. For each issue: build, test, run all checks, capture parity screenshots, write its review section, update PROGRESS, BACKLOG and the DAG, commit in logical pieces and push the stage branch with `bash scripts/safe-push.sh <branch>`. Then start the next issue.
+* Decide reasonable things alone and record each one in `docs/DECISIONS.md`.
+* Stop and ask only when: an action would permanently delete or overwrite data or work that cannot be recovered; a security problem needs a product decision (fix and log the ones with an obvious fix); a change would alter the locked prototype in a way not already approved; or truly blocked (a check still fails after two honest fix attempts, or the machine runs out of memory twice).
+* When everything is finished, stop once with one final review: what was built per issue, every decision, all check results (pytest, Newman, lint, typecheck, build, layout, flows, Playwright), the parity screenshot folders, known gaps and anything to decide.
+
+### Part 3: lighter layout runs
+* Run the full layout check once per issue, at the end of the issue. While working, check only the changed screens at 390 and 1440.
+* Before each full run: `wsl --shutdown`, bring the containers up, and run nothing else at the same time (`scripts/layout-check.ps1` does this).
+* If a run is killed for memory, retry once with fewer parallel pages. If it fails again, log it in PROGRESS, continue with the next issue and include it in the final review.
+* Every script that creates fixtures cleans them up in `finally`, including revoking any reset links.
+
 ## Source of truth
 * Requirements: `docs/requirements/`
 * Locked design: `design/reference/approved.html` and `design/screenshots/`. After Stage 2 approval, do not redesign; match layout, tokens and interactions.
