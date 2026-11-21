@@ -247,10 +247,10 @@ export function validateNewBug(v: NewBugValues): FieldErrors {
 
 /**
  * The request body for API-061. Developers may not send severity or priority at all: the API answers 403 even for the
- * default values (D-032, D-050), so for them the keys are left out and the server forces Medium and P3. A release and a
- * source run are never sent: those modules do not exist yet (I-08, I-07) and the API refuses their ids.
+ * default values (D-032, D-050), so for them the keys are left out and the server forces Medium and P3. A release is only sent when
+ * a run draft carries one, and the source run result only for a bug drafted from a failed step (I-07).
  */
-export function buildCreateBody(role: Role, v: NewBugValues): Schemas["BugCreateIn"] {
+export function buildCreateBody(role: Role, v: NewBugValues, source?: { resultId: string; releaseId: string | null }): Schemas["BugCreateIn"] {
   // The generated type marks the fields with server defaults as required, so the plain ones are always sent
   const body: Schemas["BugCreateIn"] = {
     project_id: v.project_id, title: v.title.trim(), description: "", expected_result: v.expected_result.trim(),
@@ -262,6 +262,10 @@ export function buildCreateBody(role: Role, v: NewBugValues): Schemas["BugCreate
   if (v.environment_id) body.environment_id = v.environment_id;
   if (v.assignee_id) body.assignee_id = v.assignee_id;
   if (v.label_ids.length) body.label_ids = v.label_ids;
+  if (source) { // a bug drafted from a failed step of a test run links back to that result (I-07)
+    body.source_run_result_id = source.resultId;
+    if (source.releaseId) body.release_id = source.releaseId;
+  }
   if (can(role, "bug.set_severity_priority")) {
     body.severity = v.severity;
     body.priority = v.priority;

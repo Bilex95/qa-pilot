@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 
 import { IconUser } from "@/components/icons";
@@ -145,6 +146,15 @@ export function BugDetailsPanel({ bug }: { bug: BugDetail }) {
               <span style={{ overflowWrap: "anywhere" }}>{bug.reporter_name}</span>
             </span>
           </dd>
+          {bug.source_run ? (
+            <>
+              <dt>Found in</dt>
+              <dd>
+                <Link href={`/o/${org.slug}/runs/${bug.source_run.run_key}`} className="mono" title={bug.source_run.run_name}>{bug.source_run.run_key}</Link>{" "}
+                <span className="muted small">{bug.source_run.case_key}</span>
+              </dd>
+            </>
+          ) : null}
         </dl>
       </div>
     </section>

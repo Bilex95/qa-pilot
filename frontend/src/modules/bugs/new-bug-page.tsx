@@ -1,8 +1,8 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { IconLock, IconPlus } from "@/components/icons";
@@ -50,17 +50,44 @@ export function NewBugPage() {
   const canCreate = can(org.role, "bug.create");
   const setsSeverity = can(org.role, "bug.set_severity_priority");
 
+  // A bug drafted from a failed step of a test run (API-106): the form is filled once the draft arrives, nothing is saved until Save bug
+  const params = useSearchParams();
+  const fromRun = params.get("from_run");
+  const fromResult = params.get("result");
+  const draft = useQuery({
+    queryKey: ["bug-draft", org.id, fromRun, fromResult],
+    enabled: !!fromRun && !!fromResult && can(org.role, "run.bug_from_failure"),
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+    queryFn: () =>
+      unwrap(api.GET("/api/v1/orgs/{org_id}/test-runs/{run_id}/results/{result_id}/bug-draft", {
+        params: { path: { org_id: org.id, run_id: fromRun as string, result_id: fromResult as string } },
+      })),
+  });
+  const [prefilled, setPrefilled] = useState<string | null>(null);
+  if (draft.data && prefilled !== draft.data.source_run_result_id) { // fill the form once when the draft arrives (state set while rendering)
+    const d = draft.data;
+    setPrefilled(d.source_run_result_id);
+    setValues((v) => ({
+      ...v, project_id: d.project_id, component_id: d.component_id ?? "", title: d.title,
+      steps: d.steps_to_reproduce.length ? d.steps_to_reproduce : [""], expected_result: d.expected_result, actual_result: d.actual_result,
+      environment_id: d.environment_id ?? "",
+    }));
+  }
+  const source = draft.data ? { resultId: draft.data.source_run_result_id, releaseId: draft.data.release_id } : undefined;
+
   const create = useMutation({
     mutationFn: (v: NewBugValues) =>
-      unwrap(api.POST("/api/v1/orgs/{org_id}/bugs", { params: { path: { org_id: org.id } }, body: buildCreateBody(org.role, v) })),
+      unwrap(api.POST("/api/v1/orgs/{org_id}/bugs", { params: { path: { org_id: org.id } }, body: buildCreateBody(org.role, v, source) })),
     onSuccess: async (bug) => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["bugs", org.id] }),
         qc.invalidateQueries({ queryKey: ["projects", org.id] }),
         qc.invalidateQueries({ queryKey: ["labels", org.id] }),
+        qc.invalidateQueries({ queryKey: ["test-run", org.id] }),
       ]);
       toast(`Bug ${bug.key} reported`);
-      router.push(`/o/${org.slug}/bugs`);
+      router.push(source ? `/o/${org.slug}/bugs/${bug.key}` : `/o/${org.slug}/bugs`); // a bug from a run opens, to show its link back
     },
     onError: (err) => {
       const fields = isApiError(err) ? err.fieldErrors() : {};
@@ -124,6 +151,17 @@ export function NewBugPage() {
       ) : (
         <form className="panel" style={{ maxWidth: 860 }} onSubmit={submit} noValidate>
           <div className="panel-body stack">
+            {draft.data ? (
+              <Banner kind="info">
+                Prefilled from a failed step of <b>{draft.data.case_key}</b> in run{" "}
+                <Link href={`/o/${org.slug}/runs/${draft.data.run_key}`}>{draft.data.run_key}</Link>. Review before saving. The bug will link back to the run.
+              </Banner>
+            ) : draft.isError ? (
+              <Banner kind="warn">
+                {isApiError(draft.error, "result_not_failed") ? "That result is not failed any more, so there is nothing to prefill."
+                  : "The failed step could not be loaded, so the form is empty."} You can still report the bug.
+              </Banner>
+            ) : null}
             {failed && errorCount > 0 ? (
               <Banner kind="error">
                 Fix {errorCount} {errorCount === 1 ? "field" : "fields"} before saving:{" "}
@@ -237,7 +275,7 @@ export function NewBugPage() {
               </div>
             </div>
             <div className="row">
-              <Button variant="primary" type="submit" disabled={create.isPending}>
+              <Button variant="primary" type="submit" disabled={create.isPending || (draft.isPending && draft.fetchStatus !== "idle")}>
                 {create.isPending ? <Spinner /> : null}
                 Save bug
               </Button>
