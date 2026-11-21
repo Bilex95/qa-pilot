@@ -1,9 +1,6 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
-      "Bash",
-      "PowerShell",
       "Read",
       "Edit",
       "Write",
