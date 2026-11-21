@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/toast";
 import { api, unwrap } from "@/lib/api/client";
 import { isApiError } from "@/lib/api/errors";
 import { useEnvironments } from "@/modules/bugs/hooks";
+import { useProjectReleases } from "@/modules/releases/hooks";
 import { useOrg } from "@/modules/shell/org-context";
 
 import { useProjectList, useSuites } from "../hooks";
@@ -18,8 +19,8 @@ import { RUN_NAME_MAX, RUN_NAME_MIN, type Run } from "../runs";
 type Errors = Partial<Record<"name" | "project_id" | "suite_ids" | "environment_id", string>>;
 
 /**
- * New test run (API-102, SCR-14). The prototype's fields plus a Project, because a run belongs to one project. The release field
- * arrives with the releases module (I-08). Every chosen suite adds all of its cases; the run copies them when it starts.
+ * New test run (API-102, SCR-14). The prototype's fields plus a Project, because a run belongs to one project. The release is one of
+ * the project's releases that is not released yet. Every chosen suite adds all of its cases; the run copies them when it starts.
  */
 export function NewRunDialog({ defaultProjectId, onClose, onCreated }: {
   defaultProjectId?: string;
@@ -34,10 +35,12 @@ export function NewRunDialog({ defaultProjectId, onClose, onCreated }: {
   const [projectId, setProjectId] = useState(defaultProjectId ?? "");
   const [name, setName] = useState("");
   const [environmentId, setEnvironmentId] = useState("");
+  const [releaseId, setReleaseId] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [errors, setErrors] = useState<Errors>({});
   const project = projectId || projects.data?.items[0]?.id || "";
   const environments = useEnvironments(project || undefined);
+  const releases = useProjectReleases(project || undefined);
   const inProject = (suites.data?.items ?? []).filter((s) => s.project_id === project);
   const chosen = inProject.filter((s) => picked.includes(s.id));
   const caseCount = chosen.reduce((n, s) => n + s.case_count, 0);
@@ -46,7 +49,7 @@ export function NewRunDialog({ defaultProjectId, onClose, onCreated }: {
     mutationFn: () =>
       unwrap(api.POST("/api/v1/orgs/{org_id}/test-runs", {
         params: { path: { org_id: org.id } },
-        body: { project_id: project, name: name.trim(), environment_id: environmentId || null, suite_ids: chosen.map((s) => s.id), case_ids: [] },
+        body: { project_id: project, name: name.trim(), environment_id: environmentId || null, release_id: releaseId || null, suite_ids: chosen.map((s) => s.id), case_ids: [] },
       })),
     onSuccess: async (run) => {
       await qc.invalidateQueries({ queryKey: ["test-runs", org.id] });
@@ -92,7 +95,7 @@ export function NewRunDialog({ defaultProjectId, onClose, onCreated }: {
       <form id="run-form" className="modal-body stack" onSubmit={submit} noValidate>
         <Field id="nr-p" label="Project" error={errors.project_id}>
           {(aria) => (
-            <Select {...aria} value={project} onChange={(e) => { setProjectId(e.target.value); setPicked([]); setEnvironmentId(""); }}>
+            <Select {...aria} value={project} onChange={(e) => { setProjectId(e.target.value); setPicked([]); setEnvironmentId(""); setReleaseId(""); }}>
               {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </Select>
           )}
@@ -108,6 +111,14 @@ export function NewRunDialog({ defaultProjectId, onClose, onCreated }: {
             <Select {...aria} value={environmentId} onChange={(e) => setEnvironmentId(e.target.value)}>
               <option value="">None</option>
               {(environments.data ?? []).map((env) => <option key={env.id} value={env.id}>{env.name}</option>)}
+            </Select>
+          )}
+        </Field>
+        <Field id="nr-r" label="Release">
+          {(aria) => (
+            <Select {...aria} value={releaseId} onChange={(e) => setReleaseId(e.target.value)}>
+              <option value="">None</option>
+              {(releases.data?.items ?? []).filter((r) => r.status !== "released").map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </Select>
           )}
         </Field>

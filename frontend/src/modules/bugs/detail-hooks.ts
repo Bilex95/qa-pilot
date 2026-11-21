@@ -74,5 +74,6 @@ export function useRefreshBug() {
     if (files) void qc.invalidateQueries({ queryKey: ["bug-files", org.id, bugId] });
     void qc.invalidateQueries({ queryKey: ["bugs", org.id] });
     void qc.invalidateQueries({ queryKey: ["board", org.id] });
+    void qc.invalidateQueries({ queryKey: ["releases", org.id] }); // a status or severity change moves the readiness of its release
   };
 }

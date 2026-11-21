@@ -104,6 +104,7 @@ function Loaded({ run, runRef, crumbs }: { run: Run; runRef: string; crumbs: Rea
     void qc.invalidateQueries({ queryKey: ["test-run", org.id] });
     void qc.invalidateQueries({ queryKey: ["test-runs", org.id] });
     void qc.invalidateQueries({ queryKey: ["test-suites", org.id] });
+    void qc.invalidateQueries({ queryKey: ["releases", org.id] }); // results and completion move the readiness of the run's release
   };
 
   const mark = useMutation({
@@ -158,7 +159,8 @@ function Loaded({ run, runRef, crumbs }: { run: Run; runRef: string; crumbs: Rea
         <div className="grow">
           <h1 style={{ overflowWrap: "anywhere" }}>{run.name}</h1>
           <p>
-            {runStatusName(run.status)}{envText ? <> on {envText}</> : null}. Started by {run.created_by_name}.
+            {runStatusName(run.status)}{envText ? <> on {envText}</> : null}.
+            {run.release_id ? <> Linked to <Link href={`/o/${org.slug}/releases/${run.release_id}`}>{run.release_name}</Link>.</> : null} Started by {run.created_by_name}.
           </p>
         </div>
         {can(org.role, "run.complete") && running ? (

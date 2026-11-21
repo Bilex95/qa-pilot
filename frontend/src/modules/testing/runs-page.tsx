@@ -95,7 +95,9 @@ export function RunsPage() {
                   </td>
                   <td data-label="Status"><span className={`badge ${r.status === "completed" ? "st-verified" : "st-in_progress"}`}>{runStatusName(r.status)}</span></td>
                   <td data-label="Environment">{r.environment ? <span className="mono small" style={{ overflowWrap: "anywhere" }}>{r.environment}</span> : <span className="muted">None</span>}</td>
-                  <td data-label="Release">{r.release_id ? "Linked" : <span className="muted">None</span>}</td>
+                  <td data-label="Release">
+                    {r.release_id ? <span style={{ overflowWrap: "anywhere" }}>{r.release_name}</span> : <span className="muted">None</span>}
+                  </td>
                   <td data-label="Progress">
                     <ProgressBar counts={r.counts} />
                     <div className="xs muted" style={{ marginTop: 4 }}>{executedCount(r.counts)} of {r.total} executed</div>

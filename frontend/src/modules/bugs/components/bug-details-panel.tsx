@@ -15,6 +15,8 @@ import { can } from "@/lib/permissions";
 import { useSession } from "@/lib/session/session-provider";
 import { useOrg } from "@/modules/shell/org-context";
 
+import { useProjectReleases } from "@/modules/releases/hooks";
+
 import { useRefreshBug, type BugDetail } from "../detail-hooks";
 import { useComponents, useEnvironments, useMemberOptions } from "../hooks";
 import { PRIORITY_OPTIONS, SEVERITY_OPTIONS } from "../schemas";
@@ -35,6 +37,7 @@ export function BugDetailsPanel({ bug }: { bug: BugDetail }) {
   const members = useMemberOptions();
   const components = useComponents(bug.project_id);
   const environments = useEnvironments(bug.project_id);
+  const releases = useProjectReleases(bug.project_id);
   const [pending, setPending] = useState<Changes>({});
 
   const patch = useMutation({
@@ -63,6 +66,7 @@ export function BugDetailsPanel({ bug }: { bug: BugDetail }) {
     assignee_id: pending.assignee_id !== undefined ? pending.assignee_id : bug.assignee_id,
     component_id: pending.component_id !== undefined ? pending.component_id : bug.component_id,
     environment_id: pending.environment_id !== undefined ? pending.environment_id : bug.environment_id,
+    release_id: pending.release_id !== undefined ? pending.release_id : bug.release_id,
   };
   const role = org.role;
   const mine = me?.user.id;
@@ -136,7 +140,17 @@ export function BugDetailsPanel({ bug }: { bug: BugDetail }) {
             </Select>
           </dd>
           <dt>Release</dt>
-          <dd><span className="muted">{bug.release_id ? "Linked" : "None"}</span></dd>
+          <dd>
+            {sel("d-rel", "Release")}
+            <Select id="d-rel" value={shown.release_id ?? ""} disabled={!canEdit || busy}
+              onChange={(e) => change({ release_id: e.target.value || null })}>
+              <option value="">None</option>
+              {shown.release_id && !(releases.data?.items ?? []).some((r) => r.id === shown.release_id)
+                ? <option value={shown.release_id}>{bug.release_name ?? "Release"}</option> : null}
+              {(releases.data?.items ?? []).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </Select>
+            {bug.release_id ? <Link className="small" href={`/o/${org.slug}/releases/${bug.release_id}`}>Open the release</Link> : null}
+          </dd>
           <dt>Labels</dt>
           <dd><BugLabels bug={bug} canEdit={canEdit} /></dd>
           <dt>Reporter</dt>
