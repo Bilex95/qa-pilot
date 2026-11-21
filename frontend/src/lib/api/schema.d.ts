@@ -724,6 +724,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/test-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Runs */
+        get: operations["list_runs_api_v1_orgs__org_id__test_runs_get"];
+        put?: never;
+        /** Create Run */
+        post: operations["create_run_api_v1_orgs__org_id__test_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-runs/{run_ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Run
+         * @description `run_ref` is the id or the key (R-31).
+         */
+        get: operations["get_run_api_v1_orgs__org_id__test_runs__run_ref__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Run */
+        patch: operations["update_run_api_v1_orgs__org_id__test_runs__run_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-runs/{run_id}/results/{result_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Result */
+        patch: operations["update_result_api_v1_orgs__org_id__test_runs__run_id__results__result_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/test-runs/{run_id}/results/{result_id}/bug-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bug Draft */
+        get: operations["bug_draft_api_v1_orgs__org_id__test_runs__run_id__results__result_id__bug_draft_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/test-suites": {
         parameters: {
             query?: never;
@@ -1065,6 +1154,40 @@ export interface components {
              */
             ai_assisted: boolean;
         };
+        /**
+         * BugDraftOut
+         * @description What the New bug form is filled with (the same fields as API-061); nothing is saved by asking for it.
+         */
+        BugDraftOut: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Title */
+            title: string;
+            /** Steps To Reproduce */
+            steps_to_reproduce: string[];
+            /** Expected Result */
+            expected_result: string;
+            /** Actual Result */
+            actual_result: string;
+            /** Environment Id */
+            environment_id: string | null;
+            /** Component Id */
+            component_id: string | null;
+            /** Release Id */
+            release_id: string | null;
+            /**
+             * Source Run Result Id
+             * Format: uuid
+             */
+            source_run_result_id: string;
+            /** Case Key */
+            case_key: string;
+            /** Run Key */
+            run_key: string;
+        };
         /** BugOut */
         BugOut: {
             /**
@@ -1139,6 +1262,7 @@ export interface components {
             actual_result: string;
             /** Source Run Result Id */
             source_run_result_id: string | null;
+            source_run: components["schemas"]["SourceRunOut"] | null;
             /** Ai Assisted */
             ai_assisted: boolean;
             /**
@@ -1154,6 +1278,16 @@ export interface components {
             comment_count: number;
             /** Attachment Count */
             attachment_count: number;
+        };
+        /** BugRefOut */
+        BugRefOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
         };
         /** BugSummaryOut */
         BugSummaryOut: {
@@ -1892,6 +2026,17 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[RunSummaryOut] */
+        Page_RunSummaryOut_: {
+            /** Items */
+            items: components["schemas"]["RunSummaryOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** Page[SuiteOut] */
         Page_SuiteOut_: {
             /** Items */
@@ -2051,6 +2196,23 @@ export interface components {
             expires_at: string;
         };
         /**
+         * ResultUpdateIn
+         * @description `failed_step_index` (from 0) and `actual_result` only go with `fail`; any other result clears them.
+         */
+        ResultUpdateIn: {
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "untested" | "pass" | "fail" | "blocked" | "skipped";
+            /** Failed Step Index */
+            failed_step_index?: number | null;
+            /** Actual Result */
+            actual_result?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
          * Role
          * @enum {string}
          */
@@ -2058,6 +2220,197 @@ export interface components {
         /** RoleIn */
         RoleIn: {
             role: components["schemas"]["Role"];
+        };
+        /**
+         * RunCountsOut
+         * @description `pass` is a Python keyword, so the field is `pass_` here and `pass` in the JSON.
+         */
+        RunCountsOut: {
+            /** Pass */
+            pass: number;
+            /** Fail */
+            fail: number;
+            /** Blocked */
+            blocked: number;
+            /** Skipped */
+            skipped: number;
+            /** Untested */
+            untested: number;
+        };
+        /**
+         * RunCreateIn
+         * @description The cases of the run are every case of `suite_ids` plus every case of `case_ids`, each once.
+         */
+        RunCreateIn: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Name */
+            name: string;
+            /** Environment Id */
+            environment_id?: string | null;
+            /** Release Id */
+            release_id?: string | null;
+            /** Suite Ids */
+            suite_ids?: string[];
+            /** Case Ids */
+            case_ids?: string[];
+        };
+        /** RunOut */
+        RunOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Number */
+            number: number;
+            /** Name */
+            name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_progress" | "completed";
+            /** Environment Id */
+            environment_id: string | null;
+            /** Environment */
+            environment: string | null;
+            /** Release Id */
+            release_id: string | null;
+            counts: components["schemas"]["RunCountsOut"];
+            /** Total */
+            total: number;
+            /** Pass Rate */
+            pass_rate: number | null;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Completed At */
+            completed_at: string | null;
+            /** Results */
+            results: components["schemas"]["RunResultOut"][];
+        };
+        /** RunResultOut */
+        RunResultOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Case Id
+             * Format: uuid
+             */
+            case_id: string;
+            /** Case Key */
+            case_key: string;
+            /** Case Title */
+            case_title: string;
+            /** Position */
+            position: number;
+            /** Preconditions */
+            preconditions: string;
+            /** Steps */
+            steps: components["schemas"]["StepOut"][];
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "untested" | "pass" | "fail" | "blocked" | "skipped";
+            /** Failed Step Index */
+            failed_step_index: number | null;
+            /** Actual Result */
+            actual_result: string;
+            /** Note */
+            note: string;
+            /** Executed By Id */
+            executed_by_id: string | null;
+            /** Executed By Name */
+            executed_by_name: string | null;
+            /** Executed At */
+            executed_at: string | null;
+            /** Bugs */
+            bugs: components["schemas"]["BugRefOut"][];
+        };
+        /** RunSummaryOut */
+        RunSummaryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Number */
+            number: number;
+            /** Name */
+            name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "in_progress" | "completed";
+            /** Environment Id */
+            environment_id: string | null;
+            /** Environment */
+            environment: string | null;
+            /** Release Id */
+            release_id: string | null;
+            counts: components["schemas"]["RunCountsOut"];
+            /** Total */
+            total: number;
+            /** Pass Rate */
+            pass_rate: number | null;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Completed At */
+            completed_at: string | null;
+        };
+        /**
+         * RunUpdateIn
+         * @description Only the fields that are sent change. `status: completed` ends the run (it cannot be reopened). `release_id: null` unlinks.
+         */
+        RunUpdateIn: {
+            /** Name */
+            name?: string | null;
+            /** Status */
+            status?: "completed" | null;
+            /** Release Id */
+            release_id?: string | null;
         };
         /**
          * SavedViewFilters
@@ -2121,6 +2474,23 @@ export interface components {
             /** Name */
             name: string;
             filters: components["schemas"]["SavedViewFilters"];
+        };
+        /**
+         * SourceRunOut
+         * @description The test run a bug was filed from (I-07): shown as a link to the run.
+         */
+        SourceRunOut: {
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /** Run Key */
+            run_key: string;
+            /** Run Name */
+            run_name: string;
+            /** Case Key */
+            case_key: string;
         };
         /**
          * StepIn
@@ -5851,6 +6221,413 @@ export interface operations {
             };
             /** @description Not found, or not a member of the org */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_api_v1_orgs__org_id__test_runs_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                status?: ("in_progress" | "completed") | null;
+                release_id?: string | null;
+                /** @description Page number, starting at 1 */
+                page?: number;
+                /** @description Items per page, at most 100 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_RunSummaryOut_"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_run_api_v1_orgs__org_id__test_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_run_api_v1_orgs__org_id__test_runs__run_ref__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_ref: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_run_api_v1_orgs__org_id__test_runs__run_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_result_api_v1_orgs__org_id__test_runs__run_id__results__result_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                result_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunResultOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bug_draft_api_v1_orgs__org_id__test_runs__run_id__results__result_id__bug_draft_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                result_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BugDraftOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

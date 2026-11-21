@@ -10,7 +10,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A stage branch push does not cancel the previous run: the full layout check takes about 50 minutes and its result is the evidence
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/stage/') }}
 
 jobs:
   secret-scan:
