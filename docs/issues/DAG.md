@@ -110,7 +110,7 @@ flowchart LR
 | I-05 | Done | e3cb3fd, 3cfb1a9 |
 | I-06 | Done | 20bfae6, c23000f, 0c960f3, c19719f |
 | I-07 | Done | 98428b5, 6c272ce |
-| I-08 | Planned |  |
+| I-08 | Done | 6e17626, cf32393 |
 | I-09 | Planned |  |
 | I-10 | Done | 870e66a, 1e226d1, d4d776d, 111036e |
 | I-11 | Done | e1de501, 2e5b26c, 816a2a2, 305989c, 8002211, 5aab6b0 |

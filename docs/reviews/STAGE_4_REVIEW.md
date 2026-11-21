@@ -449,3 +449,31 @@ Side by side: `e2e/parity/stage4/i07/compare/*.png` (locked on the left, app on 
 | Loading, error | Same skeletons and error box (request id shown); a run that does not exist shows a "was not found" panel |
 
 Backlog: BL-027 (delete a run).
+
+### I-08 Releases and readiness (SCR-16, SCR-17; REQ-035, REQ-036, REQ-037; D-063)
+
+Migration `0013_releases`, API-110 to API-119, the readiness rules of D-014, the Releases list, the Release detail screen, and the Release select on the bug page and in the New test run dialog.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Migration `0013_releases` | down to 0012, up to head, `alembic check`: no new operations; foreign keys on `bugs.release_id` and `test_runs.release_id` unlink on delete |
+| Readiness rules | 20 unit tests: every rule and the boundaries 79, 80, 94 and 95 percent, reasons and their order, the acceptance input (open Critical bugs plus a 63% pass rate gives Blocked with two blocking reasons first) |
+| Backend suites | ruff and mypy clean, pytest 1414 passed (API tests for every endpoint and role, real bugs and runs feeding readiness, forward only status, released releases stay, links inside a project, cross tenant), Newman 518 requests and 886 assertions, 0 failed, OpenAPI regenerated |
+| Lint, typecheck, `next build` | Clean; `/o/[org]/releases` and `/o/[org]/releases/[id]` in the route list |
+| Design validation | `scripts/validate-design.ps1` PASS after the prototype change (Edit release, Delete and the Remove column) |
+| `e2e/scripts/check-releases-flow.mjs` | PASS. Plan a release (name validated, At risk because no runs are linked); link two bugs (Blocked by the Critical bug, the High bug and "no runs" after it); link a run: Blocked with two blocking reasons (open Critical bug, pass rate 33% below 80%) then the risks; Remove the Critical bug and its reason goes; the Release select on the bug page clears and sets it; the run names its release; the list shows Blocked with the reason; Mark released warns that it is Blocked, Cancel keeps it, confirming releases it and removes Mark released and Delete; Edit and Delete a second release (Cancel keeps it); Developer and Viewer see no controls; an unknown release shows the not found state |
+| Layout (local, 390 and 1440 px only) | PASS at both: the list with its dialog errors, loading, empty and error states, a planned release with every fixture bug and the fixture run linked (60 character name, 1000 character description), the five dialogs, a released release, loading, error, not found, and the Developer view. The first run found a 21 px link in the runs table; it is plain text now. The full layout run is the CI job (D-060) |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side: `e2e/parity/stage4/i08/compare/*.png` (locked on the left, app on the right); app captures in `e2e/parity/stage4/i08/app/`, which also holds the Link bugs and Mark released dialogs.
+
+| State | Result |
+|---|---|
+| Releases, default, desktop and mobile | Same columns, readiness badges and the reasons in "Why". New release opens a dialog (the prototype only showed a toast); a project column shows the project name |
+| Release, default | Same title with the badge, reasons panel with the explainer, linked bugs table, linked runs table and the summary panel. Added by decision: Edit release, Delete and a Remove column (prototype first, locked screenshot regenerated). The AI summary panel arrives with I-18 |
+| Loading, error | Same skeletons and error box (request id shown); an unknown release shows a "was not found" panel |
+
+Backlog: none added. BL-026 is closed by D-063 (release names on bugs, runs and the timeline).

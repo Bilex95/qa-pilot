@@ -1,6 +1,6 @@
 # I-08 Releases and readiness
 
-**Stage:** 4 | **Batch:** 4D (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4D (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

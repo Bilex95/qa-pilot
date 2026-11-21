@@ -36,11 +36,13 @@
 
 * I-05 follow ups and I-07 (D-060 to D-062): CI runs the full layout check, every screen flow and every parity capture on each stage push and uploads the results; inline editing of the title, description and labels on the bug detail (prototype first, D-061); `python -m app.maintenance orphan-uploads`. I-07 test runs: migration 0012, API-101 to API-106, case snapshots, results, completion, the bug draft of a failed step with the link back, Test runs list and Test run screen. Verified: ruff, mypy, pytest 1318 passed, migration up/down/up with no drift, Newman 447 requests and 770 assertions, lint, typecheck and `next build` clean, runs flow PASS, layout at 390 and 1440 PASS for the changed screens, parity captured. Backlog BL-027.
 
+* I-08 Releases and readiness (D-063): migration 0013, API-110 to API-119, readiness rules with boundaries, forward only status, links inside a project, release names on bugs, runs and the timeline, Releases list and Release detail, the Release select on the bug page and in the New test run dialog. Verified: ruff, mypy, pytest 1414 passed, migration up/down/up with no drift, Newman 518 requests and 886 assertions, lint, typecheck and `next build` clean, releases flow PASS, design validation PASS, layout at 390 and 1440 PASS for the changed screens, parity captured. BL-026 closed.
+
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs (done, see Done); I-06 suites and cases (done, see Done); I-11 settings (done, see Done); I-23 password reset (done, see Done)
 - [ ] 4C: I-04 workflow and board (done, see Done); I-05 bug detail (done, see Done); I-07 runs (done, see Done)
-- [ ] 4D: I-08 releases
+- [ ] 4D: I-08 releases (done, see Done)
 - [ ] 4E: I-09 dashboard and reports; I-12 seed data
 - [ ] 4F: I-13 parity and states pass
 - [ ] Gate: review, before and after screenshots at each width (D-044), push, PR
