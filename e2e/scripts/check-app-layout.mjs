@@ -262,6 +262,35 @@ async function ensureRunFixture() {
   }
   RUN_FIX.doneKey = b.key;
 }
+// Release fixtures (I-08): a planned release with a 60 character name and a 1000 character description that holds every fixture bug and
+// the fixture run (it is deleted again at the end, unlinking them), and a released release created once (a released release cannot be
+// deleted in v1, so it is found again by name on later runs).
+const REL_PLANNED = 'Layout planned release with a very long version name 2026.11.24'.slice(0, 60).trim();
+const REL_DONE = 'Layout released release';
+const REL_FIX = { id: '', doneId: '' };
+async function ensureReleaseFixture() {
+  await removeReleaseFixture(); // one left by a killed run would make the name taken
+  const { h, org } = await bugApi();
+  const projects = await must(await fetch(`${org}/projects?include_archived=true&page_size=100`, { headers: h }), 'list projects');
+  const project = projects.items.find((p) => p.key === BUG_PROJECT.key);
+  const post = (path, body, method = 'POST') => fetch(`${org}${path}`, { method, headers: h, body: JSON.stringify(body) });
+  const planned = await must(await post('/releases', { project_id: project.id, name: REL_PLANNED, target_date: '2026-11-24',
+    description: 'What ships in this release and why it matters to the people waiting for it. '.repeat(13).slice(0, 1000).trim() }), 'plan the release');
+  REL_FIX.id = planned.id;
+  const bugs = await must(await fetch(`${org}/bugs?project_id=${project.id}&page_size=100`, { headers: h }), 'list bugs');
+  await must(await post(`/releases/${planned.id}/bugs`, { bug_ids: bugs.items.map((b) => b.id) }), 'link the bugs');
+  await must(await post(`/releases/${planned.id}/runs`, { run_ids: [RUN_FIX.id] }), 'link the run');
+  const all = await must(await fetch(`${org}/releases?project_id=${project.id}&page_size=100`, { headers: h }), 'list releases');
+  const done = all.items.find((r) => r.name === REL_DONE)
+    ?? await must(await post('/releases', { project_id: project.id, name: REL_DONE, target_date: '2026-10-01', description: 'Shipped.' }), 'plan the released release');
+  if (done.status !== 'released') await must(await post(`/releases/${done.id}`, { status: 'released' }, 'PATCH'), 'release it');
+  REL_FIX.doneId = done.id;
+}
+async function removeReleaseFixture() {
+  const { h, org } = await bugApi();
+  const all = await must(await fetch(`${org}/releases?page_size=100`, { headers: h }), 'list releases');
+  for (const r of all.items.filter((x) => x.name === REL_PLANNED)) await fetch(`${org}/releases/${r.id}`, { method: 'DELETE', headers: h });
+}
 async function removeBugFixture() {
   const { h, org, project } = await clearBugFixture();
   if (project) await fetch(`${org}/projects/${project.id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ archived: true }) });
@@ -414,9 +443,11 @@ try {
   await ensureBugFixture();
   await ensureTestFixture();
   await ensureRunFixture();
+  await ensureReleaseFixture();
   await ensureResetFixture();
 } catch (e) { // a fixture that was half created is removed before the run stops
   console.log(`FAIL: could not create the fixtures: ${String(e.message || e).split(/\r?\n/)[0]}`);
+  await removeReleaseFixture().catch(() => {});
   await removeResetFixture().catch(() => {});
   await removeBugFixture().catch(() => {});
   await removeLabelFixture().catch(() => {});
@@ -430,6 +461,7 @@ let cleaned = false;
 async function cleanupAll() { // runs once, at the end and also when the run stops on an error or Ctrl+C
   if (cleaned) return;
   cleaned = true;
+  await removeReleaseFixture().catch((e) => console.log(`note: could not remove the release fixture: ${e.message}`));
   await removeResetFixture().catch((e) => console.log(`note: could not remove the reset fixture member: ${e.message}`));
   await removeBugFixture().catch((e) => console.log(`note: could not remove the bug fixture: ${e.message}`));
   await removeLabelFixture().catch((e) => console.log(`note: could not remove the label fixture: ${e.message}`));
@@ -443,7 +475,7 @@ let browser = await chromium.launch();
   for (const path of ['/login', '/register', '/invite#not-a-real-token-000', '/forgot-password', '/reset-password', '/onboarding/org', '/o/lumen/dashboard',
     '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs', '/o/lumen/bugs/new', `/o/lumen/bugs/${BUG_FIX.key}`,
     '/o/lumen/tests', '/o/lumen/tests/cases/new', `/o/lumen/tests/cases/${TEST_FIX.caseKey}`, '/o/lumen/board',
-    '/o/lumen/runs', `/o/lumen/runs/${RUN_FIX.key}`,
+    '/o/lumen/runs', `/o/lumen/runs/${RUN_FIX.key}`, '/o/lumen/releases', `/o/lumen/releases/${REL_FIX.id}`,
     '/o/lumen/this-page-does-not-exist']) {
     await go(warm, path).catch(() => {});
   }
@@ -1090,6 +1122,86 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.waitForSelector('text=Prefilled from a failed step of');
   await check('/o/lumen/bugs/new (from a failed step)', { shot: 'bug-new-from-run' });
 
+  // Releases (I-08): the list and its states, the New release dialog, a planned release with every fixture bug and the fixture run linked
+  // (long name and description), its dialogs, a released release, loading, error and not found
+  step = 'open the releases list';
+  await go(page, '/o/lumen/releases');
+  await page.waitForSelector('table.t tbody tr');
+  await check('/o/lumen/releases', { shot: 'releases' });
+  step = 'open the New release dialog';
+  await page.getByRole('button', { name: 'New release' }).first().click();
+  await page.waitForSelector('.modal');
+  await page.selectOption('#rl-p', { label: BUG_PROJECT.name });
+  await page.getByRole('button', { name: 'Plan release' }).click();
+  await page.waitForSelector('.modal .err');
+  await check('releases: New release dialog errors', { popup: '.modal', shot: 'release-dialog-error' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'show the releases loading, empty and error states';
+  const relUrl = /\/api\/v1\/orgs\/[^/]+\/releases(\?|$)/;
+  await page.route(relUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/releases`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Releases")');
+  await page.waitForSelector('.sk');
+  await check('releases: loading', { shot: 'releases-loading' });
+  await page.waitForSelector('table.t tbody tr');
+  await page.unroute(relUrl);
+  await page.route(relUrl, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { items: [], page: 1, page_size: 25, total: 0 } });
+  });
+  await go(page, '/o/lumen/releases');
+  await page.waitForSelector('text=No releases planned');
+  await check('releases: empty', { shot: 'releases-empty' });
+  await page.unroute(relUrl);
+  await page.route(relUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i08' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/releases');
+  await page.waitForSelector('.state-box.error');
+  await check('releases: error', { shot: 'releases-error' });
+  await page.unroute(relUrl);
+  step = 'open a release with bugs and a run linked';
+  const relPath = `/o/lumen/releases/${REL_FIX.id}`;
+  await go(page, relPath);
+  await page.waitForSelector('.page-head h1 .badge');
+  await page.waitForSelector('text=Linked test runs');
+  await check('release (blocked, long text)', { shot: 'release' });
+  for (const [name, selector, shot] of [['Link bugs', '.modal', 'release-link-bugs'], ['Link run', '.modal', 'release-link-run'],
+    ['Edit release', '.modal', 'release-edit'], ['Mark released', '.modal', 'release-mark-released'], ['Delete release', '.modal', 'release-delete']]) {
+    step = `open the ${name} dialog`;
+    await page.getByRole('button', { name }).first().click();
+    await page.waitForSelector(selector);
+    await check(`release: ${name} dialog`, { popup: selector, shot });
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.modal', { state: 'detached' });
+  }
+  step = 'open a released release';
+  await go(page, `/o/lumen/releases/${REL_FIX.doneId}`);
+  await page.waitForSelector('.page-head h1 .badge');
+  await check('release (released)', { shot: 'release-released' });
+  step = 'show the release loading, error and not found states';
+  const relOne = /\/api\/v1\/orgs\/[^/]+\/releases\/[0-9a-f-]{36}$/;
+  await page.route(relOne, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}${relPath}`, { waitUntil: 'commit' });
+  await page.waitForSelector('.crumbs');
+  await page.waitForSelector('.sk');
+  await check('release: loading', { shot: 'release-loading' });
+  await page.waitForSelector('.page-head h1 .badge');
+  await page.unroute(relOne);
+  await page.route(relOne, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i08' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, relPath);
+  await page.waitForSelector('.state-box.error');
+  await check('release: error', { shot: 'release-error' });
+  await page.unroute(relOne);
+  await go(page, '/o/lumen/releases/00000000-0000-4000-8000-000000000000');
+  await page.waitForSelector('text=This release was not found');
+  await check('release: not found', { shot: 'release-not-found' });
+
   // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
   step = 'sign out to sign in as the QA Lead';
   await page.click('.user-btn');
@@ -1165,6 +1277,13 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     note(vp, 'run (Developer)', ['the Developer sees result, Complete run or Create bug controls']);
   }
   await check('run (Developer, read only)', { shot: 'run-developer' });
+  step = 'open the releases as the Developer';
+  await go(page, `/o/lumen/releases/${REL_FIX.id}`);
+  await page.waitForSelector('.page-head h1 .badge');
+  if (await page.locator('.page-head .actions button, button:has-text("Remove")').count()) {
+    note(vp, 'release (Developer)', ['the Developer sees release controls']);
+  }
+  await check('release (Developer, read only)', { shot: 'release-developer' });
   await signInAs(page, 'hana@lumenfreight.test');
   step = 'open the bug list as the Viewer';
   await go(page, '/o/lumen/bugs');

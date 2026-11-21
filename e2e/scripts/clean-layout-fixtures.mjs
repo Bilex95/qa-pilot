@@ -82,6 +82,10 @@ for (const l of (await call(`${O}/labels`)).json.filter((x) => LABELS.includes(x
 if (project && !project.archived_at) {
   removed.project = `LAYT archived (${(await call(`${O}/projects/${project.id}`, { method: 'PATCH', body: JSON.stringify({ archived: true }) })).status})`;
 }
+// The planned release of the layout check (a released one cannot be deleted and stays; the layout check finds it again by name)
+for (const r of (await call(`${O}/releases?page_size=100`)).json.items.filter((x) => x.name.startsWith('Layout planned release'))) {
+  if ((await call(`${O}/releases/${r.id}`, { method: 'DELETE' })).status === 204) removed.releases = (removed.releases ?? 0) + 1;
+}
 console.log('removed:', JSON.stringify(removed));
 // Files on the upload volume that no attachment row points to (a killed run, or bugs deleted with files in place): removed by the
 // backend's maintenance command, run in the backend container (through WSL on the Windows build machine, D-001)
