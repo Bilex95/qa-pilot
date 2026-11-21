@@ -4,6 +4,22 @@
 **Branch:** stage/4-core-features
 **Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
+## Resume here (paused 2026-11-22, resume Monday)
+
+**Current issue: I-09 Dashboard and reports. Current step: the browser flow `e2e/scripts/check-dashboard-flow.mjs` fails on its first step** (the heading "Dashboard" is not found at `/o/lumen/dashboard`; the page was rewritten in I-09 and has never been looked at in a browser). Start there: open the page, read the console, fix, rerun the flow.
+
+* **Done and pushed or committed on `stage/4-core-features`:** I-04, I-05 (with inline editing of title, description and labels, D-061), I-07 test runs (D-062), I-08 releases and readiness (D-063). I-09 backend (API-130 to API-133, tests, Postman, OpenAPI) is committed. The user's note called I-07 unfinished: it is finished; the only unfinished work is I-09.
+* **I-09 left in a `wip(I-09)` commit:** dashboard page, reports page, chart components, hooks, the flow script, and the prototype's custom range date inputs on the Reports filters (prototype edit in `design/reference/approved.html`; `globals.css` unchanged, the locked Reports screenshots were not regenerated yet).
+* **I-09 next:** (1) fix the flow; (2) `check-app-layout.mjs` states for dashboard and reports (default, empty, loading, error, Developer, custom range error) plus 390 and 1440 local runs; (3) `capture-dashboard-parity.mjs` against the locked screenshots; (4) NFR-PERF-02 (dashboard p95 under 500 ms) is only meaningful on the baseline seed of I-12: measure there; (5) D-064 (trend definition: opened by created date, closed by the timeline's moves into Verified, Closed or Won't fix, reopens add back; range at most 366 days; CSV capped at 50,000 rows and built before the response starts), review section, PROGRESS, DAG entry (`scripts/build_issues.py`: add "I-09"), commit, push.
+* **Then in DAG order:** I-12 seed data (the `release-blocked` scenario with WEB 2.4.0 Blocked with two reasons; seed history must be written through the services so the timeline and trend have data), I-13 parity and states pass, Stage 5 (I-14 to I-19), Stage 6 (I-20 to I-22), one final review.
+* **Open items:**
+  * Layout CI job (D-060): the `responsive` job runs the full layout check, every screen flow and every parity capture on each push. Its full layout check passed once; the flows step failed twice in CI on `check-bugs-flow` (the bugs flow was stale for I-05 and I-11 and is fixed; one failure was a 60 s timeout on a cold dev server, so a warm up step was added). Look at the latest run of `stage/4-core-features` first (`gh run list --branch stage/4-core-features`) and fix what it reports. The I-04, I-05, I-07, I-08 and I-11 states have only had local 390 and 1440 runs plus the CI layout pass.
+  * Bug inline editing: done (D-061). Steps, expected and actual result stay read only (BL-023).
+  * Orphaned uploads: `python -m app.maintenance orphan-uploads`, run by `clean-layout-fixtures.mjs` (done).
+  * Exact pytest count: the last full green run was 1414 passed (I-08). With I-09 the full run showed 1433 passed and 19 failures that were a SQL grouping bug in the trend query; after the fix the dashboard file passes on its own (about 38 tests), so the full suite should be about 1452. It has not been rerun in one go: run `scripts/py-checks.ps1` first thing and record the exact number. Newman after I-09 passed (540 requests).
+  * Known flaky: `with-wsl.ps1 -Up` now waits for the API to report the database ok three times; scripts started right after another run used to fail with 500s.
+* **Fixtures:** test runs and the released flow release cannot be deleted in v1 (BL-027): leftovers are named `flow-i0x ...`, `Newman ...`, `parity-i0x` or `Layout ...`; a reseed removes them. The layout check's planned release is deleted by `clean-layout-fixtures.mjs`. No live reset links were left at the last cleanup.
+
 ## Done
 * Stages 0 to 3 approved. Stage 3 merged as PR #2 (merge commit 287b4d1, CI run 44095091211 green on 459a371), tagged `stage-3-approved`.
 * Stage 3 gate feedback applied: menus inside the viewport, 44 px inputs restored, content cap 1600 px (D-046), responsive standing rule with CI job (D-044), refresh reuse interval (D-039), password reset planned (I-23, D-045), Docker network root cause planned (I-24).
