@@ -1,21 +1,24 @@
-"""Bugs: API-060 to API-064 and saved views API-078 to API-080 (I-03); workflow and board API-065 to API-068 (I-04)."""
+"""Bugs: API-060 to API-064 and saved views API-078 to API-080 (I-03); workflow and board API-065 to API-068 (I-04);
+comments, attachments and activity API-069 to API-077 (I-05)."""
 
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
+from fastapi.responses import FileResponse
 
 from app.core.deps import DB, OrgContext, require
-from app.core.errors import Unprocessable
+from app.core.errors import AppError, Unprocessable
 from app.core.pagination import Page, PageParams, page_params
 from app.core.permissions import Role
 from app.core.schemas import errors
-from app.modules.bugs.application import integration, service
+from app.modules.bugs.application import detail, integration, service
 from app.modules.bugs.domain import workflow
 from app.modules.bugs.domain.filters import BugFilters
 from app.modules.bugs.domain.rules import SORT_FIELDS, STATUSES, Priority, Severity, Status
-from app.modules.bugs.infrastructure.models import Bug
+from app.modules.bugs.infrastructure.models import Attachment, Bug, Comment
 from app.modules.bugs.schemas.bugs import BugCreateIn, BugOut, BugSummaryOut, BugUpdateIn, LabelRef
+from app.modules.bugs.schemas.detail import ActivityOut, AttachmentOut, CommentIn, CommentOut
 from app.modules.bugs.schemas.views import SavedViewIn, SavedViewOut
 from app.modules.bugs.schemas.workflow import (
     BoardColumnOut,
@@ -51,10 +54,12 @@ def _summary_fields(bug: Bug, bc: service.BugContext) -> dict[str, object]:
 
 def _detail(db: DB, ctx: OrgContext, bug: Bug) -> BugOut:
     bc = service.context_for(db, ctx.org_id, [bug])
+    comments, files = service.detail_counts(db, bug.id)
     return BugOut(**_summary_fields(bug, bc), description=bug.description, steps_to_reproduce=bug.steps_to_reproduce,
                   expected_result=bug.expected_result, actual_result=bug.actual_result,
                   source_run_result_id=bug.source_run_result_id, ai_assisted=bug.ai_assisted,
-                  status_changed_at=bug.status_changed_at, resolved_at=bug.resolved_at, closed_at=bug.closed_at)
+                  status_changed_at=bug.status_changed_at, resolved_at=bug.resolved_at, closed_at=bug.closed_at,
+                  comment_count=comments, attachment_count=files)
 
 
 def _filters(
@@ -160,9 +165,100 @@ def delete_bug(bug_id: uuid.UUID, db: DB, ctx: Annotated[OrgContext, Depends(req
     service.delete_bug(db, ctx.org_id, _actor(ctx), bug_id)
 
 
+# Comments, attachments and the timeline (I-05) ------------------------------
+
+def _comment_out(db: DB, rows: list[Comment]) -> list[CommentOut]:
+    names = detail.names_of(db, {c.author_id for c in rows})
+    return [CommentOut(id=c.id, bug_id=c.bug_id, author_id=c.author_id, author_name=names.get(c.author_id, ""), body=c.body,
+                       created_at=c.created_at, edited_at=c.edited_at) for c in rows]
+
+
+def _attachment_out(db: DB, rows: list[Attachment]) -> list[AttachmentOut]:
+    names = detail.names_of(db, {a.uploaded_by_id for a in rows})
+    return [AttachmentOut(id=a.id, bug_id=a.bug_id, filename=a.filename, content_type=a.content_type, size_bytes=a.size_bytes,
+                          uploaded_by_id=a.uploaded_by_id, uploaded_by_name=names.get(a.uploaded_by_id, ""),
+                          created_at=a.created_at) for a in rows]
+
+
+@router.get("/orgs/{org_id}/bugs/{bug_id}/comments", response_model=Page[CommentOut], responses=ERR)
+def list_comments(bug_id: uuid.UUID, db: DB, ctx: Read, params: Annotated[PageParams, Depends(page_params)]) -> Page[CommentOut]:
+    """Newest first."""
+    rows, total = detail.list_comments(db, ctx.org_id, bug_id, params)
+    return Page(items=_comment_out(db, rows), page=params.page, page_size=params.page_size, total=total)
+
+
+@router.post("/orgs/{org_id}/bugs/{bug_id}/comments", status_code=status.HTTP_201_CREATED, response_model=CommentOut,
+             responses=errors(401, 403, 404, 422))
+def add_comment(bug_id: uuid.UUID, body: CommentIn, db: DB,
+                ctx: Annotated[OrgContext, Depends(require("comment.create"))]) -> CommentOut:
+    return _comment_out(db, [detail.add_comment(db, ctx.org_id, _actor(ctx), bug_id, body.body)])[0]
+
+
+@router.patch("/orgs/{org_id}/comments/{comment_id}", response_model=CommentOut, responses=errors(401, 403, 404, 422))
+def edit_comment(comment_id: uuid.UUID, body: CommentIn, db: DB,
+                 ctx: Annotated[OrgContext, Depends(require("comment.update"))]) -> CommentOut:
+    return _comment_out(db, [detail.edit_comment(db, ctx.org_id, _actor(ctx), comment_id, body.body)])[0]
+
+
+@router.delete("/orgs/{org_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT,
+               responses=errors(401, 403, 404))
+def delete_comment(comment_id: uuid.UUID, db: DB, ctx: Annotated[OrgContext, Depends(require("comment.delete"))]) -> None:
+    detail.delete_comment(db, ctx.org_id, _actor(ctx), comment_id)
+
+
+@router.get("/orgs/{org_id}/bugs/{bug_id}/attachments", response_model=list[AttachmentOut], responses=ERR)
+def list_attachments(bug_id: uuid.UUID, db: DB, ctx: Read) -> list[AttachmentOut]:
+    return _attachment_out(db, detail.list_attachments(db, ctx.org_id, bug_id))
+
+
+@router.post("/orgs/{org_id}/bugs/{bug_id}/attachments", status_code=status.HTTP_201_CREATED, response_model=AttachmentOut,
+             responses=errors(401, 403, 404, 409, 413, 415, 422))
+def upload_attachment(bug_id: uuid.UUID, request: Request, file: UploadFile, db: DB,
+                      ctx: Annotated[OrgContext, Depends(require("attachment.upload"))]) -> AttachmentOut:
+    """Multipart form with one `file`. At most 10 MB and 10 files per bug; the type is checked by extension and by the first
+    bytes (D-009)."""
+    limit = detail.max_upload_bytes()
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > limit + 1024 * 1024:  # the file plus the form overhead
+        raise AppError(f"A file can be at most {limit // (1024 * 1024)} MB.", code="file_too_large", status_code=413,
+                       details={"max_bytes": limit})
+    data = file.file.read(limit + 1)  # one byte more than the limit is enough to know it is too big
+    attachment = detail.add_attachment(db, ctx.org_id, _actor(ctx), bug_id, file.filename or "", data)
+    return _attachment_out(db, [attachment])[0]
+
+
+@router.get("/orgs/{org_id}/attachments/{attachment_id}/download", response_model=None,
+            responses={**errors(401, 403, 404), 200: {"description": "The file", "content": {"application/octet-stream": {}}}})
+def download_attachment(attachment_id: uuid.UUID, db: DB,
+                        ctx: Annotated[OrgContext, Depends(require("attachment.download"))]) -> FileResponse:
+    """Authenticated and tenant checked. Always `Content-Disposition: attachment` and `nosniff`; never a public path."""
+    attachment, path = detail.open_attachment(db, ctx.org_id, attachment_id)
+    return FileResponse(path, media_type=attachment.content_type, filename=attachment.filename,
+                        content_disposition_type="attachment",
+                        headers={"X-Content-Type-Options": "nosniff", "Cache-Control": "private, no-store"})
+
+
+@router.delete("/orgs/{org_id}/attachments/{attachment_id}", status_code=status.HTTP_204_NO_CONTENT,
+               responses=errors(401, 403, 404))
+def delete_attachment(attachment_id: uuid.UUID, db: DB,
+                      ctx: Annotated[OrgContext, Depends(require("attachment.delete"))]) -> None:
+    detail.delete_attachment(db, ctx.org_id, _actor(ctx), attachment_id)
+
+
+@router.get("/orgs/{org_id}/bugs/{bug_id}/activity", response_model=Page[ActivityOut], responses=ERR)
+def list_activity(bug_id: uuid.UUID, db: DB, ctx: Read, params: Annotated[PageParams, Depends(page_params)]) -> Page[ActivityOut]:
+    """Every change of the bug, newest first: creation, field changes with the old and new value, status moves, assignments,
+    comments and files."""
+    rows, total = detail.list_activity(db, ctx.org_id, bug_id, params)
+    names = detail.names_of(db, {a.actor_id for a in rows})
+    items = [ActivityOut(id=a.id, kind=a.kind, actor_id=a.actor_id, actor_name=names.get(a.actor_id, ""),  # type: ignore[arg-type]
+                         field=a.field, old_value=a.old_value, new_value=a.new_value, created_at=a.created_at) for a in rows]
+    return Page(items=items, page=params.page, page_size=params.page_size, total=total)
+
+
 # Saved views --------------------------------------------------------------
 
-Views = Annotated[OrgContext, Depends(require("saved_view.manage"))]
+Views =Annotated[OrgContext, Depends(require("saved_view.manage"))]
 
 
 @router.get("/orgs/{org_id}/saved-views", response_model=list[SavedViewOut], responses=errors(401, 403, 404))

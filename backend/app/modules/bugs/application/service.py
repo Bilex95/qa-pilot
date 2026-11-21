@@ -25,7 +25,7 @@ from app.modules.bugs.domain import workflow
 from app.modules.bugs.domain.filters import BugFilters
 from app.modules.bugs.domain.rules import DEFAULT_PRIORITY, DEFAULT_SEVERITY, sla_breached
 from app.modules.bugs.infrastructure import repository as repo
-from app.modules.bugs.infrastructure.models import Bug, SavedView
+from app.modules.bugs.infrastructure.models import Bug, Comment, SavedView
 from app.modules.bugs.schemas.bugs import BugCreateIn
 from app.modules.bugs.schemas.views import SavedViewFilters
 from app.modules.orgs.application import service as orgs
@@ -100,6 +100,11 @@ def context_for(db: Session, org_id: uuid.UUID, bugs: list[Bug]) -> BugContext:
     return BugContext(labels=labels, names=names, now=utcnow())
 
 
+def detail_counts(db: Session, bug_id: uuid.UUID) -> tuple[int, int]:
+    """(comments, attachments) of a bug, for the detail output."""
+    return repo.detail_counts(db, bug_id)
+
+
 # Validation of references -------------------------------------------------
 
 def _invalid(field: str, message: str) -> Unprocessable:
@@ -168,6 +173,7 @@ def create_bug(db: Session, org_id: uuid.UUID, actor: Actor, body: BugCreateIn) 
     db.add(bug)
     db.flush()
     repo.replace_labels(db, org_id, bug.id, list(dict.fromkeys(body.label_ids)))
+    repo.add_activity(db, org_id, bug.id, actor.user_id, "created", at=bug.created_at)
     audit.record(db, "bug.created", actor_id=actor.user_id, org_id=org_id, entity_type="bug", entity_id=bug.id,
                  data={"key": bug.key, "title": bug.title, "severity": bug.severity, "priority": bug.priority})
     db.commit()
@@ -206,6 +212,29 @@ def _jsonable(value: Any) -> Any:
     return value
 
 
+def _name_of(db: Session, org_id: uuid.UUID, field: str, value: Any) -> str | None:
+    """How a changed value reads in the timeline: people, components and environments by the name they have now (the entry
+    keeps it even after a rename or a delete), everything else as it is. A release is kept as its id until I-08 can name it."""
+    if value is None:
+        return None
+    try:
+        if field == "component_id":
+            return projects.get_component(db, org_id, value).name
+        if field == "environment_id":
+            return projects.get_environment(db, org_id, value).name
+    except NotFound:
+        return None
+    if field == "assignee_id":
+        user = auth.get_users_by_ids(db, [value]).get(value)
+        return user.full_name if user else None
+    return str(value)
+
+
+def _label_names(db: Session, org_id: uuid.UUID, ids: list[uuid.UUID]) -> str | None:
+    names = sorted((label.name for label in projects.get_labels(db, org_id, ids)), key=str.lower) if ids else []
+    return ", ".join(names) or None
+
+
 def update_bug(db: Session, org_id: uuid.UUID, actor: Actor, bug_id: uuid.UUID, changes: dict[str, Any]) -> Bug:
     bug = repo.get_bug(db, org_id, bug_id, lock=True)
     if bug is None:
@@ -215,6 +244,7 @@ def update_bug(db: Session, org_id: uuid.UUID, actor: Actor, bug_id: uuid.UUID, 
 
     diff: dict[str, Any] = {}
     assigned: dict[str, Any] | None = None
+    trail: list[tuple[str, str, str | None, str | None]] = []  # the timeline entries (I-05): kind, field, old, new
     for name, new in changes.items():
         if name == "label_ids":
             current = sorted(repo.label_ids_by_bug(db, [bug.id])[bug.id], key=str)
@@ -222,6 +252,7 @@ def update_bug(db: Session, org_id: uuid.UUID, actor: Actor, bug_id: uuid.UUID, 
             if current != wanted:
                 repo.replace_labels(db, org_id, bug.id, wanted)
                 diff[name] = {"from": _jsonable(current), "to": _jsonable(wanted)}
+                trail.append(("field_changed", "labels", _label_names(db, org_id, current), _label_names(db, org_id, wanted)))
             continue
         old = getattr(bug, name)
         if name == "steps_to_reproduce":
@@ -231,12 +262,22 @@ def update_bug(db: Session, org_id: uuid.UUID, actor: Actor, bug_id: uuid.UUID, 
         setattr(bug, name, new)
         if name == "assignee_id":
             assigned = {"from": _jsonable(old), "to": _jsonable(new)}
+            trail.append(("assigned", "assignee", _name_of(db, org_id, name, old), _name_of(db, org_id, name, new)))
         elif name in LONG_TEXT:
             diff[name] = {"changed": True}
+            trail.append(("field_changed", name, None, None))
         else:
             diff[name] = {"from": _jsonable(old), "to": _jsonable(new)}
+            if name == "release_id":
+                trail.append(("linked_release", "release", _name_of(db, org_id, name, old), _name_of(db, org_id, name, new)))
+            else:
+                shown = {"component_id": "component", "environment_id": "environment"}.get(name, name)
+                trail.append(("field_changed", shown, _name_of(db, org_id, name, old), _name_of(db, org_id, name, new)))
     if diff or assigned:
-        bug.updated_at = utcnow()  # label only edits touch no column of the row itself
+        now = utcnow()
+        bug.updated_at = now  # label only edits touch no column of the row itself
+        for kind, field, was, now_value in trail:
+            repo.add_activity(db, org_id, bug.id, actor.user_id, kind, field=field, old=was, new=now_value, at=now)
         if diff:
             audit.record(db, "bug.updated", actor_id=actor.user_id, org_id=org_id, entity_type="bug", entity_id=bug.id,
                          data={"key": bug.key, "changes": diff})
@@ -292,8 +333,16 @@ def transition_bug(db: Session, org_id: uuid.UUID, actor: Actor, bug_id: uuid.UU
         bug.assignee_id = actor.user_id  # starting work on an unassigned bug takes it (D-006)
         assigned = {"from": None, "to": str(actor.user_id)}
     data: dict[str, Any] = {"key": bug.key, "from": came_from, "to": to_status}
+    comment = comment.strip() if comment else None
     if comment:
-        data["comment"] = comment  # no comments table until I-05 (D-058)
+        data["comment"] = comment
+    repo.add_activity(db, org_id, bug.id, actor.user_id, "status_changed", field="status", old=came_from, new=to_status, at=now)
+    if assigned:
+        repo.add_activity(db, org_id, bug.id, actor.user_id, "assigned", field="assignee", old=None,
+                          new=_name_of(db, org_id, "assignee_id", actor.user_id), at=now)
+    if comment:  # the reason given for the move is a real comment now that the table exists (D-059)
+        db.add(Comment(org_id=org_id, bug_id=bug.id, author_id=actor.user_id, body=comment))
+        repo.add_activity(db, org_id, bug.id, actor.user_id, "commented", at=now)
     audit.record(db, "bug.status_changed", actor_id=actor.user_id, org_id=org_id, entity_type="bug", entity_id=bug.id,
                  data=data)
     if assigned:

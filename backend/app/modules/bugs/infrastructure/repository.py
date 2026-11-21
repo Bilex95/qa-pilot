@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.bugs.domain.filters import BugFilters
 from app.modules.bugs.domain.rules import FINISHED_STATUSES, SLA_HOURS, SLA_STOPPED_STATUSES
-from app.modules.bugs.infrastructure.models import Bug, BugLabel, SavedView
+from app.modules.bugs.infrastructure.models import Attachment, Bug, BugActivity, BugLabel, Comment, SavedView
 
 # Shared definitions -------------------------------------------------------
 
@@ -126,6 +126,54 @@ def replace_labels(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID, label_ids:
     db.execute(delete(BugLabel).where(BugLabel.bug_id == bug_id))
     for label_id in label_ids:
         db.add(BugLabel(bug_id=bug_id, label_id=label_id, org_id=org_id))
+
+
+# Comments, attachments, activity (I-05) -------------------------------------
+
+def add_activity(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID, actor_id: uuid.UUID, kind: str, *,
+                 field: str | None = None, old: str | None = None, new: str | None = None,
+                 at: datetime | None = None) -> BugActivity:
+    entry = BugActivity(org_id=org_id, bug_id=bug_id, actor_id=actor_id, kind=kind, field=field, old_value=old,
+                        new_value=new, **({"created_at": at} if at else {}))
+    db.add(entry)
+    return entry
+
+
+def activity_query(org_id: uuid.UUID, bug_id: uuid.UUID) -> Select[BugActivity]:
+    return (select(BugActivity).where(BugActivity.org_id == org_id, BugActivity.bug_id == bug_id)
+            .order_by(BugActivity.created_at.desc(), BugActivity.id.desc()))
+
+
+def comments_query(org_id: uuid.UUID, bug_id: uuid.UUID) -> Select[Comment]:
+    return (select(Comment).where(Comment.org_id == org_id, Comment.bug_id == bug_id, Comment.deleted_at.is_(None))
+            .order_by(Comment.created_at.desc(), Comment.id.desc()))
+
+
+def get_comment(db: Session, org_id: uuid.UUID, comment_id: uuid.UUID, *, lock: bool = False) -> Comment | None:
+    """A comment of a bug that still exists. Another org's comment, a deleted comment and the comment of a deleted bug
+    are all None."""
+    stmt = (select(Comment).join(Bug, Bug.id == Comment.bug_id)
+            .where(Comment.org_id == org_id, Comment.id == comment_id, Comment.deleted_at.is_(None), Bug.deleted_at.is_(None)))
+    return db.scalar(stmt.with_for_update(of=Comment) if lock else stmt)
+
+
+def attachments_of(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID) -> list[Attachment]:
+    return list(db.scalars(select(Attachment).where(Attachment.org_id == org_id, Attachment.bug_id == bug_id)
+                           .order_by(Attachment.created_at, Attachment.id)))
+
+
+def get_attachment(db: Session, org_id: uuid.UUID, attachment_id: uuid.UUID) -> Attachment | None:
+    stmt = (select(Attachment).join(Bug, Bug.id == Attachment.bug_id)
+            .where(Attachment.org_id == org_id, Attachment.id == attachment_id, Bug.deleted_at.is_(None)))
+    return db.scalar(stmt)
+
+
+def detail_counts(db: Session, bug_id: uuid.UUID) -> tuple[int, int]:
+    """(comments, attachments) of one bug: what the detail page shows next to its tabs."""
+    comments = db.scalar(select(func.count()).select_from(Comment).where(
+        Comment.bug_id == bug_id, Comment.deleted_at.is_(None))) or 0
+    files = db.scalar(select(func.count()).select_from(Attachment).where(Attachment.bug_id == bug_id)) or 0
+    return int(comments), int(files)
 
 
 # Counters for the projects module hooks ------------------------------------

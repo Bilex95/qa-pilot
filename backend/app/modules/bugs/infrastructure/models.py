@@ -92,6 +92,61 @@ class BugLabel(Base):
     org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
 
 
+ACTIVITY_KINDS = ("created", "field_changed", "status_changed", "assigned", "commented", "attachment_added",
+                  "attachment_removed", "linked_release")
+
+
+class Comment(IdMixin, TimestampMixin, Base):
+    """DOMAIN_MODEL 1.3. Plain text, 1 to 5,000 characters (REQ-023). A deleted comment keeps its row (`deleted_at`)."""
+
+    __tablename__ = "comments"
+    __table_args__ = (Index("ix_comments_bug_created", "bug_id", text("created_at DESC")),)
+
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    bug_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bugs.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    body: Mapped[str] = mapped_column(Text)
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Attachment(IdMixin, TimestampMixin, Base):
+    """DOMAIN_MODEL 1.3, D-009. `storage_key` is a random name on the upload volume; the original `filename` is only a label.
+    A deleted attachment loses its row and its file."""
+
+    __tablename__ = "attachments"
+    __table_args__ = (Index("ix_attachments_bug", "bug_id"),)
+
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    bug_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bugs.id", ondelete="CASCADE"))
+    uploaded_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    filename: Mapped[str] = mapped_column(String(255))
+    content_type: Mapped[str] = mapped_column(String(100))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    storage_key: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class BugActivity(IdMixin, Base):
+    """The timeline of a bug (REQ-025, D-059). Append only. Values are text: status, severity and priority keep their raw
+    key; people, components, environments and labels keep the name they had at that moment, so the history survives a rename
+    or a delete; long text fields keep no values (the row only says the field changed)."""
+
+    __tablename__ = "bug_activity"
+    __table_args__ = (
+        CheckConstraint(_in("kind", ACTIVITY_KINDS), name="kind"),
+        Index("ix_bug_activity_bug_created", "bug_id", text("created_at DESC")),
+    )
+
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
+    bug_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bugs.id", ondelete="CASCADE"))
+    actor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    kind: Mapped[str] = mapped_column(String(20))
+    field: Mapped[str | None] = mapped_column(String(40))
+    old_value: Mapped[str | None] = mapped_column(Text)
+    new_value: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
 class SavedView(IdMixin, TimestampMixin, Base):
     """A named filter set, private to its owner inside one org (D-017). `filters` carries a version number."""
 

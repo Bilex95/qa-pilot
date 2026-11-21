@@ -53,6 +53,8 @@ class BugOut(BugSummaryOut):
     status_changed_at: datetime
     resolved_at: datetime | None
     closed_at: datetime | None
+    comment_count: int  # comments that are not deleted (REQ-018)
+    attachment_count: int
 
 
 class BugCreateIn(ApiModel):
