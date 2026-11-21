@@ -128,7 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {user.full_name}, {ROLE_NAMES[org.role]}
                 </DropdownMenuLabel>
                 <DropdownMenuItem asChild>
-                  <Link href={`${base}/settings`}>
+                  <Link href={`${base}/settings?tab=profile`}>
                     <IconUser />
                     My profile
                   </Link>
