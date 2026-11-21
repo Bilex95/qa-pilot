@@ -1,6 +1,6 @@
 # I-11 Settings: organization, AI switch, audit log and profile
 
-**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
