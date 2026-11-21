@@ -179,6 +179,11 @@ jobs:
       - name: Install Playwright
         working-directory: e2e
         run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Warm up the dev server (the first compile of a route can take minutes on a cold runner)
+        run: |
+          for p in /login /register /o/lumen/dashboard /o/lumen/bugs /o/lumen/bugs/new /o/lumen/bugs/WEB-1 /o/lumen/board /o/lumen/tests /o/lumen/runs /o/lumen/runs/R-1 /o/lumen/releases /o/lumen/settings /o/lumen/members; do
+            curl -s -o /dev/null --max-time 300 "http://localhost:3000$p" || echo "warm up of $p did not finish"
+          done
       - name: Browser login smoke
         working-directory: e2e
         run: node scripts/smoke-login.mjs
