@@ -480,6 +480,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/bugs/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Board */
+        get: operations["get_board_api_v1_orgs__org_id__bugs_board_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/bug-workflow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow
+         * @description The nine statuses and every move with the roles that may make it. A Developer's moves also need the record rule.
+         */
+        get: operations["get_workflow_api_v1_orgs__org_id__bug_workflow_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/bugs/{bug_id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Transitions */
+        get: operations["get_transitions_api_v1_orgs__org_id__bugs__bug_id__transitions_get"];
+        put?: never;
+        /** Transition Bug */
+        post: operations["transition_bug_api_v1_orgs__org_id__bugs__bug_id__transitions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/bugs/{bug_ref}": {
         parameters: {
             query?: never;
@@ -758,6 +813,23 @@ export interface components {
             /** Expires In */
             expires_in: number;
             user: components["schemas"]["UserOut"];
+        };
+        /** BoardColumnOut */
+        BoardColumnOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["BugSummaryOut"][];
+        };
+        /** BoardOut */
+        BoardOut: {
+            /** Columns */
+            columns: components["schemas"]["BoardColumnOut"][];
         };
         /** BugCreateIn */
         BugCreateIn: {
@@ -1906,6 +1978,26 @@ export interface components {
             /** Expires In */
             expires_in: number;
         };
+        /** TransitionIn */
+        TransitionIn: {
+            /**
+             * To Status
+             * @enum {string}
+             */
+            to_status: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /** Comment */
+            comment?: string | null;
+        };
+        /** TransitionsOut */
+        TransitionsOut: {
+            /**
+             * Current
+             * @enum {string}
+             */
+            current: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /** Allowed */
+            allowed: ("new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix")[];
+        };
         /** UserOut */
         UserOut: {
             /**
@@ -1935,6 +2027,30 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WorkflowOut */
+        WorkflowOut: {
+            /** Statuses */
+            statuses: ("new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix")[];
+            /** Transitions */
+            transitions: components["schemas"]["WorkflowTransitionOut"][];
+        };
+        /** WorkflowTransitionOut */
+        WorkflowTransitionOut: {
+            /**
+             * From
+             * @enum {string}
+             */
+            from: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /**
+             * To
+             * @enum {string}
+             */
+            to: "new" | "triaged" | "in_progress" | "fixed" | "ready_for_retest" | "verified" | "closed" | "reopened" | "wont_fix";
+            /** Roles */
+            roles: components["schemas"]["Role"][];
+            /** Meaning */
+            meaning: string;
         };
     };
     responses: never;
@@ -4274,6 +4390,264 @@ export interface operations {
             };
             /** @description Not found, or not a member of the org */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_board_api_v1_orgs__org_id__bugs_board_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                assignee_id?: string | null;
+                /** @description Repeat the parameter for several values */
+                severity?: ("critical" | "high" | "medium" | "low")[] | null;
+                /** @description Case insensitive match on key, title and description */
+                q?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_workflow_api_v1_orgs__org_id__bug_workflow_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_transitions_api_v1_orgs__org_id__bugs__bug_id__transitions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bug_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransitionsOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    transition_bug_api_v1_orgs__org_id__bugs__bug_id__transitions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bug_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransitionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BugOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
