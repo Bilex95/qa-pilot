@@ -396,3 +396,30 @@ Side by side images: `e2e/parity/stage4/i04/compare/*.png` (locked on the left, 
 | Move to menu | No locked screenshot: a menu "Move KEY to" lists the 8 other statuses, with "(not allowed)" and disabled for moves the role or the bug does not permit |
 
 Backlog: none added. The bug detail transition buttons come with I-05 (D-058).
+
+### I-05 Bug detail: comments, attachments and activity (SCR-10; REQ-018, REQ-023, REQ-024, REQ-025; D-059)
+
+Migration `0011_bug_detail`, API-069 to API-077, and the Bug detail screen.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Migration `0011_bug_detail` | down to 0010, up to head, `alembic check`: no new operations. Existing bugs get a `created` timeline entry |
+| Backend suites | ruff and mypy clean, pytest 1249+ passed (comments, files, timeline, contract list), Newman 394 requests and 669 assertions, 0 failed, OpenAPI regenerated, traceability PASS |
+| Files | Every allowed type accepted; 15 refused cases (unknown type, name and bytes disagree, NUL in text, bad UTF-8, no extension); exactly 10 MB accepted and 10 MB plus one is 413 with nothing stored; the eleventh file is 409; random stored names in a folder per workspace; download is authenticated, `attachment`, `nosniff`, `no-store`, 404 across workspaces |
+| Roles | Viewer comments and cannot upload; nobody edits another person's comment; only an Org Admin deletes any comment; QA Lead and Org Admin remove any file, QA Engineer and Developer their own |
+| Lint, typecheck, `next build` | Clean; `/o/[org]/bugs/[key]` in the route list |
+| `e2e/scripts/check-bug-detail-flow.mjs` | PASS as QA Lead (status button, severity and assignee in the timeline, comment with line break, tabs, edit, upload and download unchanged, bad type, over 10 MB and fake PNG refused, ten file limit, delete confirm), Developer (no controls on someone else's bug, Start work, takes an unassigned bug, own file), Viewer (read only, downloads, comments), Org Admin (deletes another's comment) and QA Engineer (403 on another's file). Cleanup removes files, bugs and the project |
+| Layout | 390 px run PASS: 105 states including the bug detail with long text, 32 comments and 10 long named files, its three dialogs, editing, older entries, loading, error, not found, Developer and Viewer. The first run found a sideways scroll from long file names and 11.96 px key text; both fixed. **The full run was killed for low memory** (see PROGRESS) |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side: `e2e/parity/stage4/i05/compare/*.png`; app captures in `e2e/parity/stage4/i05/app/` (also the delete dialog and the Viewer).
+
+| State | Result |
+|---|---|
+| Default, desktop and mobile | Same header, status buttons, description, numbered steps, expected and actual boxes, Details panel and thread. Differences: attachment chips carry a Remove button; the thread shows a character count and Edit and Delete on own comments; Release reads "None"; no "View as" control; no AI triage panel (I-16) |
+| Loading, error | Same skeleton; the error state is the "was not found" panel with a way back |
+
+Backlog: BL-023 to BL-026.

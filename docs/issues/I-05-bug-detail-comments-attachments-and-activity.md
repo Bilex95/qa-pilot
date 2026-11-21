@@ -1,6 +1,6 @@
 # I-05 Bug detail: comments, attachments and activity
 
-**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
