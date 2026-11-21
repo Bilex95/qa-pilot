@@ -13,6 +13,10 @@ def _root() -> Path:
     return Path(get_settings().upload_dir)
 
 
+def upload_root() -> Path:
+    return _root()
+
+
 def path_for(org_id: uuid.UUID, storage_key: str) -> Path:
     return _root() / str(org_id) / storage_key
 

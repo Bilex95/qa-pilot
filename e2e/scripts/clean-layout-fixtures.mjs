@@ -6,6 +6,7 @@
 // (membership removed and every live reset link revoked first), the invitation layout-i10@qapilot.test, the fixture labels, the
 // suites, bugs and saved views of the LAYT project (which is archived again). The long names workspace stays: the layout check
 // reuses it. Reads SEED_USER_PASSWORD from ../.env and never prints it.
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -82,4 +83,16 @@ if (project && !project.archived_at) {
   removed.project = `LAYT archived (${(await call(`${O}/projects/${project.id}`, { method: 'PATCH', body: JSON.stringify({ archived: true }) })).status})`;
 }
 console.log('removed:', JSON.stringify(removed));
+// Files on the upload volume that no attachment row points to (a killed run, or bugs deleted with files in place): removed by the
+// backend's maintenance command, run in the backend container (through WSL on the Windows build machine, D-001)
+{
+  const args = ['compose', 'exec', '-T', 'backend', 'python', '-m', 'app.maintenance', 'orphan-uploads'];
+  const tries = process.platform === 'win32'
+    ? [['wsl.exe', ['-d', process.env.QAP_WSL_DISTRO || 'Ubuntu', '--cd', `/mnt/${root[0].toLowerCase()}${root.slice(2).replace(/\\/g, '/')}`, '--exec', 'docker', ...args]]]
+    : [['docker', args]];
+  for (const [cmd, a] of tries) {
+    const r = spawnSync(cmd, a, { encoding: 'utf8' });
+    console.log(r.status === 0 ? `uploads: ${r.stdout.trim()}` : `uploads: could not run the maintenance command (${(r.stderr || r.error?.message || '').trim().split(/\r?\n/).pop()})`);
+  }
+}
 console.log('live reset links at the end:', JSON.stringify(liveResetLinks([RESET_EMAIL])));

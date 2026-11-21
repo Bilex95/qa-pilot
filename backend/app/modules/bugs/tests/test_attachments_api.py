@@ -256,6 +256,26 @@ def test_deleting_twice_is_a_404_and_a_slot_is_freed(client, world, bug) -> None
     assert attach(client, world.a, bug).status_code == 201
 
 
+# Maintenance: orphaned files ----------------------------------------------------------------
+
+def test_orphan_uploads_removes_files_without_a_row_and_a_dry_run_removes_nothing(uploads) -> None:
+    from app.maintenance import orphan_uploads
+
+    folder = uploads / str(uuid.uuid4())
+    folder.mkdir()
+    (folder / ("a" * 32)).write_bytes(b"left behind")
+    assert orphan_uploads(dry_run=True) == [f"{folder.name}/{'a' * 32}".replace("/", __import__("os").sep)]
+    assert len(files_on_disk(uploads)) == 1
+    assert len(orphan_uploads()) == 1 and files_on_disk(uploads) == []
+
+
+def test_maintenance_refuses_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app import maintenance
+
+    monkeypatch.setattr(get_settings(), "app_env", "production")
+    assert maintenance.main(["orphan-uploads", "--dry-run"]) == 2
+
+
 # The pure rules ----------------------------------------------------------------------------
 
 def test_clean_filename_drops_folders_and_control_characters() -> None:
