@@ -75,6 +75,7 @@ async function cleanup() {
     notes.push(`bug ${b.key} deleted (${r.status})`);
   }
   notes.unshift(`${files} file(s) removed`);
+  if (state.label) notes.push(`label removed (${(await api(`${O()}/labels/${state.label.id}`, { method: 'DELETE', token: state.leadToken })).status})`);
   if (state.project) {
     const r = await api(`${O()}/projects/${state.project.id}`, { method: 'PATCH', token: state.leadToken, body: { archived: true } });
     notes.push(`project archived (${r.status})`);
@@ -111,6 +112,9 @@ async function main() {
   const bugD = await make('D nobody has, the Developer takes it');
   log(`project ${PROJECT_KEY} with ${bugA.key}, ${bugB.key}, ${bugC.key} and ${bugD.key}`);
   const url = (b) => `${BASE}/o/lumen/bugs/${b.key}`;
+  state.label = (await api(`${O()}/labels`, { method: 'POST', token: state.leadToken, body: { name: `flow-i05-${RUN % 100000}` } })).json;
+  const flowLabel = state.label;
+  check(flowLabel?.id, 'could not create the label');
 
   const browser = await chromium.launch();
   try {
@@ -154,6 +158,37 @@ async function main() {
     check((await entry('assigned this bug to').innerText()).includes(dev.full_name), 'the assignment entry does not name the person');
     check((await fresh(bugA)).assignee_id === dev.id, 'the assignee was not saved');
     log('Details: severity and assignee saved on change, each in the timeline');
+
+    // 2b. Inline editing of the title, the description and the labels
+    await page.getByRole('button', { name: 'Edit title' }).click();
+    await page.fill('#e-title', 'abc');
+    await page.getByRole('button', { name: 'Save title' }).click();
+    await page.getByText('Title must be at least 5 characters.').waitFor();
+    await page.fill('#e-title', `${bugA.title} (edited)`);
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    check((await page.locator('.page-head h1').innerText()) === bugA.title, 'Cancel changed the title');
+    await page.getByRole('button', { name: 'Edit title' }).click();
+    await page.fill('#e-title', `${bugA.title} (edited)`);
+    await page.getByRole('button', { name: 'Save title' }).click();
+    await toast('Title updated').waitFor();
+    await page.locator('.page-head h1', { hasText: '(edited)' }).waitFor();
+    await entry('changed the title').waitFor();
+    check((await fresh(bugA)).title === `${bugA.title} (edited)`, 'the title was not saved');
+    await page.getByRole('button', { name: 'Edit description' }).click();
+    await page.fill('#e-desc', 'Edited description.\nWith a second line.');
+    await page.getByRole('button', { name: 'Save description' }).click();
+    await toast('Description updated').waitFor();
+    await page.getByText('With a second line.').first().waitFor();
+    await entry('edited the description').waitFor();
+    check((await fresh(bugA)).description === 'Edited description.\nWith a second line.', 'the description was not saved');
+    await page.getByRole('button', { name: 'Edit labels' }).click();
+    await page.getByRole('button', { name: flowLabel.name, exact: true }).click();
+    await page.getByRole('button', { name: 'Save labels' }).click();
+    await toast('Labels updated').waitFor();
+    await page.locator('.dl .label-chip', { hasText: flowLabel.name }).waitFor();
+    await entry('changed the labels').waitFor();
+    check((await fresh(bugA)).labels.some((l) => l.id === flowLabel.id), 'the label was not saved');
+    log('inline edit: title (a short title is refused, Cancel keeps it), description and labels saved, each in the timeline');
 
     // 3. Comments: post, tabs, edit, delete
     await fillStable(page, '#c-body', 'Newman style first comment\nwith a second line');
@@ -241,6 +276,7 @@ async function main() {
     await d.waitForSelector('.page-head h1');
     await d.getByText('Only the assignee can move this bug.').waitFor();
     check((await d.locator('.page-head .actions button').count()) === 0, 'a Developer has status buttons on a bug of someone else');
+    check((await d.getByRole('button', { name: /^Edit (title|description|labels)$/ }).count()) === 0, 'a Developer can edit the title, description or labels of a bug they did not report');
     check((await d.locator('.dl select:not(:disabled)').count()) === 0, 'a Developer can change fields of a bug of someone else');
     // a comment is allowed for everyone
     await fillStable(d, '#c-body', 'Developer asks: which build?');
@@ -281,6 +317,7 @@ async function main() {
     await v.waitForSelector('.page-head h1');
     await v.getByText('Viewers can comment but cannot change bugs.').waitFor();
     check((await v.locator('.page-head .actions button').count()) === 0, 'a Viewer has status or delete buttons');
+    check((await v.getByRole('button', { name: /^Edit (title|description|labels)$/ }).count()) === 0, 'a Viewer can edit the title, description or labels');
     check((await v.locator('.dl select:not(:disabled)').count()) === 0, 'a Viewer can change fields');
     check((await v.getByRole('button', { name: 'Attach file' }).count()) === 0 && (await v.locator('#bug-file-input').count()) === 0, 'a Viewer can attach files');
     check((await v.getByRole('button', { name: /^Remove / }).count()) === 0, 'a Viewer can remove files');
