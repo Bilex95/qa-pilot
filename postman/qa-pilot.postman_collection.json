@@ -4543,6 +4543,60 @@
           ]
         },
         {
+          "name": "A removal names the person it was about (API-150)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/audit-events?action=member.removed&page_size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "audit-events"
+              ],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "member.removed"
+                },
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"the removed person is named as the target\", () => pm.expect(pm.response.json().items.map(e => e.target_name)).to.include(\"Newman Reset\"));",
+                  "pm.test(\"the target is a name, never an id\", () => pm.response.json().items.forEach(e => pm.expect(e.target_name || \"\").to.not.match(/^[0-9a-f-]{36}$/)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Audit actors (API-154)",
           "request": {
             "method": "GET",

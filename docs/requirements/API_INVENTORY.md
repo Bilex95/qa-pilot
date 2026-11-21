@@ -181,7 +181,7 @@ All AI endpoints: check `ai_enabled` (403 `ai_disabled`), rate limits (429), wri
 
 | ID | Method | Path | Role | Request | Response | Errors |
 |---|---|---|---|---|---|---|
-| API-150 | GET | `{O}/audit-events` | `audit.read` | `?action&actor_id&entity_type&from&to&page` | page of audit events; each event carries `actor_name` (also for a person removed since) | none |
+| API-150 | GET | `{O}/audit-events` | `audit.read` | `?action&actor_id&entity_type&from&to&page` | page of audit events; each event carries `actor_name` and, for role changes, removals and reset links, `target_name` (the person it was about; both also for a person removed since) | none |
 | API-154 | GET | `{O}/audit-events/actors` | `audit.read` | none | `[{id, full_name}]`: only people with at least one event in this workspace, removed members included, by name (for the actor filter) | none |
 
 ## 3. Counts

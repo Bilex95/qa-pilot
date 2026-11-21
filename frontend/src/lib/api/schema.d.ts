@@ -729,6 +729,8 @@ export interface components {
             actor_id: string | null;
             /** Actor Name */
             actor_name?: string | null;
+            /** Target Name */
+            target_name?: string | null;
             /** Action */
             action: string;
             /** Entity Type */

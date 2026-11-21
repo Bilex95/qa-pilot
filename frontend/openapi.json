@@ -5682,6 +5682,17 @@
             ],
             "title": "Actor Name"
           },
+          "target_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Name"
+          },
           "action": {
             "type": "string",
             "title": "Action"

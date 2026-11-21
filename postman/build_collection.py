@@ -275,6 +275,9 @@ folders = [
             f"{O}/audit-events?action=auth.password_changed&page_size=100", token="adminToken",
             tests=[status(200), 'pm.test("the removed person is still named", () => { const names = pm.response.json().items.map(e => e.actor_name); pm.expect(names).to.include("Newman Reset"); });',
                    'pm.test("no password in the event", () => pm.expect(JSON.stringify(pm.response.json())).to.not.include("Newman-change-2028"));']),
+        req("A removal names the person it was about (API-150)", "GET", f"{O}/audit-events?action=member.removed&page_size=100", token="adminToken",
+            tests=[status(200), 'pm.test("the removed person is named as the target", () => pm.expect(pm.response.json().items.map(e => e.target_name)).to.include("Newman Reset"));',
+                   'pm.test("the target is a name, never an id", () => pm.response.json().items.forEach(e => pm.expect(e.target_name || "").to.not.match(/^[0-9a-f-]{36}$/)));']),
         req("Audit actors (API-154)", "GET", f"{O}/audit-events/actors", token="adminToken",
             tests=[status(200), 'const a = pm.response.json();', 'pm.test("people by name, removed members included", () => { pm.expect(a).to.be.an("array");'
                    ' pm.expect(a.map(x => x.full_name)).to.include("Newman Reset"); a.forEach(x => pm.expect(Object.keys(x).sort()).to.eql(["full_name", "id"])); });']),
