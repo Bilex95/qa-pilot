@@ -23,15 +23,30 @@ const LABELS = ['Regression', 'Payments', 'Intermittent freight reconciliation f
 const SUITES = ['Layout fixture suite', 'Layout empty suite'];
 const VIEWS = ['Layout view check', 'Critical checkout regressions across all supported releases'];
 
-const login = await fetch(`${API}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email: 'amara@lumenfreight.test', password: PW }) });
-if (!login.ok) { console.error(`could not sign in the Lumen admin: ${login.status}`); process.exit(1); }
+// The stack may have only just come back up after a memory kill: try the sign in a few times before giving up
+let login;
+for (let i = 0; i < 12; i++) {
+  try {
+    login = await fetch(`${API}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'amara@lumenfreight.test', password: PW }) });
+    if (login.ok) break;
+  } catch { /* the API is not answering yet */ }
+  await new Promise((r) => setTimeout(r, 5000));
+}
+if (!login?.ok) { console.error(`could not sign in the Lumen admin: ${login?.status ?? 'no answer'}`); process.exit(1); }
 const token = (await login.json()).access_token;
 const call = async (path, opts = {}) => {
-  const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } });
-  let json = null;
-  try { json = await res.json(); } catch { /* 204 */ }
-  return { status: res.status, json };
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } });
+      let json = null;
+      try { json = await res.json(); } catch { /* 204 */ }
+      return { status: res.status, json };
+    } catch (e) { // a reset connection while the stack settles: wait and try again, three times at most
+      if (attempt === 3) throw e;
+      await new Promise((r) => setTimeout(r, 4000));
+    }
+  }
 };
 const orgs = (await call('/orgs')).json;
 const O = `/orgs/${orgs.find((o) => o.org.slug === 'lumen').org.id}`;
