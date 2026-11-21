@@ -374,7 +374,7 @@ let browser = await chromium.launch();
   const warm = await browser.newPage();
   for (const path of ['/login', '/register', '/invite#not-a-real-token-000', '/forgot-password', '/reset-password', '/onboarding/org', '/o/lumen/dashboard',
     '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs', '/o/lumen/bugs/new', '/o/lumen/bugs/WEB-1',
-    '/o/lumen/tests', '/o/lumen/tests/cases/new', `/o/lumen/tests/cases/${TEST_FIX.caseKey}`,
+    '/o/lumen/tests', '/o/lumen/tests/cases/new', `/o/lumen/tests/cases/${TEST_FIX.caseKey}`, '/o/lumen/board',
     '/o/lumen/this-page-does-not-exist']) {
     await go(warm, path).catch(() => {});
   }
@@ -840,6 +840,44 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.waitForSelector('text=That is not your current password.');
   await check('settings: wrong current password', { shot: 'settings-profile-wrong' });
 
+  // Board (I-04): the nine columns with the long fixture titles, the Move to menu, empty, loading and error
+  step = 'open the board';
+  await go(page, '/o/lumen/board');
+  await page.waitForSelector('article.card');
+  await check('/o/lumen/board', { shot: 'board' });
+  step = 'open the Move to menu on a card';
+  await page.click('article.card button[aria-label^="Move"]');
+  await page.waitForSelector('.menu');
+  await check('board: Move to menu', { popup: '.menu', shot: 'board-move-menu' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.menu', { state: 'detached' });
+  step = 'show the board loading, empty and error states';
+  const boardUrl = /\/api\/v1\/orgs\/[^/]+\/bugs\/board/;
+  await page.route(boardUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/board`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Board")');
+  await page.waitForSelector('.sk');
+  await check('board: loading', { shot: 'board-loading' });
+  await page.waitForSelector('article.card');
+  await page.unroute(boardUrl);
+  await page.route(boardUrl, async (route) => {
+    const res = await route.fetch();
+    const body = await res.json();
+    await route.fulfill({ response: res, json: { columns: body.columns.map((c) => ({ ...c, total: 0, items: [] })) } });
+  });
+  await go(page, '/o/lumen/board');
+  await page.waitForSelector('text=The board is empty');
+  await check('board: empty', { shot: 'board-empty' });
+  await page.unroute(boardUrl);
+  await page.route(boardUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i04' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/board');
+  await page.waitForSelector('.state-box.error');
+  await check('board: error', { shot: 'board-error' });
+  await page.unroute(boardUrl);
+
   // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
   step = 'sign out to sign in as the QA Lead';
   await page.click('.user-btn');
@@ -912,6 +950,13 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   const viewerTabs = (await page.locator('[role=tab]').allInnerTexts()).map((t) => t.trim()).join('|');
   if (viewerTabs !== 'My profile') note(vp, 'settings (Viewer)', [`the Viewer sees the tabs "${viewerTabs}" instead of only My profile`]);
   await check('/o/lumen/settings (Viewer)', { shot: 'settings-viewer' });
+  step = 'open the board as the Viewer';
+  await go(page, '/o/lumen/board');
+  await page.waitForSelector('article.card');
+  if (await page.locator('article.card[draggable="true"], button[aria-label^="Move"]').count()) {
+    note(vp, 'board (Viewer)', ['the Viewer can drag a card or sees a Move to button']);
+  }
+  await check('/o/lumen/board (Viewer, read only)', { shot: 'board-viewer' });
 
   // Long names and emails (rule 4)
   step = 'back to the dashboard to sign out';
