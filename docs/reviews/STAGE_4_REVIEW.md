@@ -335,3 +335,35 @@ Screenshots at 1440 x 900 and 390 x 844 in `e2e/parity/stage4/i23/`, approved by
 | Login | The "Forgot password?" link sits on the password label |
 
 Backlog: none added. BL-014 is done (backend, frontend and headers); BL-018 stays closed; BL-019 (self service reset by email) is open.
+
+### I-11 Settings: organization, AI switch, audit log and profile (SCR-20; REQ-010, REQ-011, REQ-012, REQ-053; D-056, D-057)
+
+Backend gaps found and closed, the Organization, Audit log and My profile tabs next to the existing Labels tab, and BL-020 (removing a person ends their reset links), done first as an I-23 follow-up.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| BL-020 (D-056) | Removing a person revokes every live reset link of theirs and, with no workspace left, ends their sessions; a person still in another workspace keeps theirs. 3 pytest tests and 6 Postman requests |
+| Audit gaps closed | A password change and a name change were never visible to an admin (no `org_id`): now one event per workspace of the person. `actor_name` and `target_name` on events (removed people still named), `GET {O}/audit-events/actors` (API-154). Tests for each, a cross tenant test, the 403 for QA Lead, QA Engineer, Developer and Viewer, and a Postman check for each |
+| Backend suites | ruff and mypy clean, pytest 659 passed, Newman 305 requests and 505 assertions, 0 failed, OpenAPI regenerated, traceability PASS (101 endpoints) |
+| Lint, typecheck, `next build` | Run in one off containers in WSL through `scripts/frontend-gate.ps1`: clean; clean; builds, route list unchanged (`/o/[org]/settings`) and `/api/session/[action]` now also serves `password` |
+| `e2e/scripts/check-settings-flow.mjs` | PASS. Direct API calls as QA Lead, Developer and Viewer: audit log, audit actors and workspace PATCH answer 403 and change nothing; QA Lead may create and delete a label, Developer and Viewer get 403 on both. Tabs per role in the screen, with `?tab=audit` and `?tab=org` falling back to My profile for QA Lead and Viewer. Organization: name saved; AI off leaves the daily limit visible, disabled and at 500 (API, `/auth/me` and a reload agree); on again with 321; 0 is refused with a message. Profile: name saved; a wrong current password, a mismatch and a weak password are refused with messages; the password change keeps this device signed in (reload and dashboard still open), ends another session and refuses the old password. Audit log: the name change, the AI changes, the password change and "Removed <name> from the workspace" are listed by name and no password appears; the removed person is offered in the Who filter; at UTC+1 (Paris) a 23:30 local event is inside its own day and a 00:30 event in the next, and the requests carry the local day as UTC (`from=...T23:00:00.000Z`, `to=...T22:59:59.999Z`) |
+| Cleanup of test data | The throw away Developer is `flow-i11-<timestamp>@qapilot.test` (registered, invited, accepted through the API, removed at the end), plus one label, two audit events (`flowi11.test`) and a temporary change to the Lumen settings: all removed or restored in `finally`, no reset link left |
+| Design validation | `scripts/validate-design.ps1` PASS after the prototype change (1000 route, role and state combinations, no serious axe violation) |
+| Full layout check | **Not run for I-11.** It was killed for low memory three times (the machine had 3.5 GB free of 15.7 GB), twice before and once after it was made lighter (browser restarted every 3 widths). Each kill left fixtures, removed by `e2e/scripts/clean-layout-fixtures.mjs` (the reset link was revoked: 0 live). The Settings states are in `check-app-layout.mjs` (Organization, AI off, the name and limit errors, Audit log with its empty, bad range, loading and error states, My profile with its errors, QA Lead and Viewer) and will run in the next full run. Meanwhile the changed screens were captured at 1440 and 390 (below) |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side images: `e2e/parity/stage4/i11/compare/*.png` (locked on the left, app on the right); app captures in `e2e/parity/stage4/i11/app/`, which also holds the Audit log and the mobile tabs.
+
+| State | Result |
+|---|---|
+| Organization, default, desktop and mobile | Same two panels, field order, hints, switch and button. Differences: the banner does not name the provider (BL-021); no "View as" control in the top bar (prototype only) |
+| My profile, default | Same Profile panel and Change password panel. The locked screenshot was regenerated with the new "Confirm new password" field (prototype first, D-057), so the two match |
+| Loading and error | Same skeleton; the error box names "the workspace settings" and shows the request id |
+| Audit log | No locked screenshot. Filters Action, Who, From and To; the table keeps the prototype's four columns (When, Who, Action, Details) and the pager; Details are readable lines ("Daily limit 321 to 500", "Removed Flow I11 Renamed from the workspace") |
+| Differences by decision | Save buttons stay enabled and say "Nothing to change." when nothing changed; the account menu opens My profile through `?tab=profile`; tabs a role may not use are not shown; the avatar colour comes from the person's id |
+| No locked screenshot | Audit log (default, no events match, bad date range, loading, error), the Organization errors, My profile errors and the QA Lead and Viewer tab sets: captured by the layout check in its next full run |
+
+Backlog: BL-021 (show the AI provider), BL-022 (more audit details), BL-020 done.
