@@ -21,9 +21,12 @@ const MATRIX = {
   "label.manage": LEADS,
   "project.create": LEADS,
   "bug.create": NOT_VIEWER,
+  "bug.update_fields": NOT_VIEWER, // a Developer only on a bug they reported (record rule, checked by the screen and the API)
+  "bug.assign": NOT_VIEWER, // a Developer only takes an unassigned bug (D-006)
   "bug.set_severity_priority": QA,
   "bug.delete": LEADS,
   "comment.create": ALL,
+  "attachment.upload": NOT_VIEWER,
   "suite.manage": QA,
   "case.manage": QA,
   "run.create": QA,

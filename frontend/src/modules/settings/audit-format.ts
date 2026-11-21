@@ -9,6 +9,8 @@ export const ACTION_GROUPS: { value: string; label: string }[] = [
   { value: "org", label: "Workspace settings" },
   { value: "ai", label: "AI controls" },
   { value: "bug", label: "Bugs" },
+  { value: "comment", label: "Comments" },
+  { value: "attachment", label: "Files" },
   { value: "label", label: "Labels" },
   { value: "project", label: "Projects" },
   { value: "suite", label: "Test suites" },
@@ -89,6 +91,13 @@ export function describeEvent(action: string, data: Data, target?: string | null
     case "bug.deleted":
     case "bug.assigned":
       return text("key");
+    case "bug.status_changed":
+      return `${text("key")}: status ${show(data.from).replace(/_/g, " ")} to ${show(data.to).replace(/_/g, " ")}`;
+    case "attachment.uploaded":
+    case "attachment.deleted":
+      return [text("key"), text("filename")].filter(Boolean).join(" ");
+    case "comment.deleted":
+      return `A comment on ${text("key")}`;
     case "bug.updated":
     case "case.updated": {
       return [text("key"), changes((data.changes ?? {}) as Data)].filter(Boolean).join(": ");

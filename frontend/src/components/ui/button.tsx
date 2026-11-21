@@ -20,6 +20,9 @@ export function Button({ className, variant, size, asChild, type, ...props }: Bu
   return <Comp className={cn(buttonVariants({ variant, size }), className)} type={asChild ? undefined : (type ?? "button")} {...props} />;
 }
 
+/** The red fill of the confirm button in a delete dialog (the locked design has no filled danger button class). */
+export const DANGER_FILL = { background: "var(--danger)", borderColor: "var(--danger)" } as const;
+
 export function Spinner() {
   return <span className="spinner" aria-hidden="true" />;
 }

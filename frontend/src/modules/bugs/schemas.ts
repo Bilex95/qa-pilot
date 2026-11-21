@@ -31,6 +31,15 @@ export const STEP_MAX = 50;
 export const STEP_LENGTH = 1000;
 export const RESULT_MAX = 5000;
 export const LABEL_MAX = 20;
+export const COMMENT_MAX = 5000; // REQ-023: 1 to 5,000 characters
+
+/** The message to show when a comment cannot be sent, or null when it can (the API checks again). */
+export function checkComment(text: string): string | null {
+  const trimmed = text.trim();
+  if (!trimmed) return "Write something first.";
+  if (trimmed.length > COMMENT_MAX) return `Use ${COMMENT_MAX} characters or fewer.`;
+  return null;
+}
 
 export const titleSchema = z
   .string()
