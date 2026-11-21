@@ -122,13 +122,41 @@ async function must(res, what) {
   if (!res.ok) throw new Error(`${what}: ${res.status} ${(await res.text()).slice(0, 200)}`);
   return res.status === 204 ? null : res.json();
 }
+// Bug detail fixture (I-05): the long title bug gets a long description, 12 steps, long results, 32 comments (the first of 5,000
+// characters with an unbroken word, so "Show older" appears), 10 files (three with very long names), a status move and two field
+// changes. The files are deleted again with the bugs (clearBugFixture), so nothing is left on the upload volume.
+const BUG_FIX = { key: '' };
+const LONG_DESCRIPTION = `${'A long paragraph of text that keeps going and going and fills the line. '.repeat(30)}Unbroken${'y'.repeat(120)}`;
+const LONG_STEPS = Array.from({ length: 12 }, (_, i) => (i === 2 ? `Step ${'unbrokenstep'.repeat(12)}`
+  : `Open the shipment screen number ${i + 1} and wait for the manifest to finish loading`));
+const HUGE_COMMENT = `${'A very long comment that goes on and on. '.repeat(120)}Unbroken${'z'.repeat(200)}`.slice(0, 5000);
+async function enrichDetailFixture(h, org, bug) {
+  BUG_FIX.key = bug.key;
+  const json = (method, body) => ({ method, headers: h, body: JSON.stringify(body) });
+  await must(await fetch(`${org}/bugs/${bug.id}/comments`, json('POST', { body: HUGE_COMMENT })), 'comment');
+  for (let i = 1; i <= 31; i++) await must(await fetch(`${org}/bugs/${bug.id}/comments`, json('POST', { body: `Layout comment ${i}\nwith a second line` })), 'comment');
+  const authOnly = { Authorization: h.Authorization };
+  for (let i = 1; i <= 10; i++) {
+    const form = new FormData();
+    const name = i <= 3 ? `${'very long attachment name '.repeat(8)}${i}.log` : `shot-${i}.txt`;
+    form.append('file', new Blob([`file ${i}\n`], { type: 'text/plain' }), name);
+    await must(await fetch(`${org}/bugs/${bug.id}/attachments`, { method: 'POST', headers: authOnly, body: form }), `attach ${i}`);
+  }
+  await must(await fetch(`${org}/bugs/${bug.id}/transitions`, json('POST', { to_status: 'triaged' })), 'move');
+  await must(await fetch(`${org}/bugs/${bug.id}`, json('PATCH', { severity: 'high' })), 'change severity');
+  await must(await fetch(`${org}/bugs/${bug.id}`, json('PATCH', { priority: 'p2' })), 'change priority');
+}
 async function clearBugFixture() {
   const { h, org } = await bugApi();
   const projects = await must(await fetch(`${org}/projects?include_archived=true&page_size=100`, { headers: h }), 'list projects');
   const project = projects.items.find((p) => p.key === BUG_PROJECT.key);
   if (project) {
     const bugs = await must(await fetch(`${org}/bugs?project_id=${project.id}&page_size=100`, { headers: h }), 'list fixture bugs');
-    for (const b of bugs.items) await fetch(`${org}/bugs/${b.id}`, { method: 'DELETE', headers: h });
+    for (const b of bugs.items) {
+      const files = await fetch(`${org}/bugs/${b.id}/attachments`, { headers: h }).then((r) => (r.ok ? r.json() : []));
+      for (const f of files) await fetch(`${org}/attachments/${f.id}`, { method: 'DELETE', headers: h });
+      await fetch(`${org}/bugs/${b.id}`, { method: 'DELETE', headers: h });
+    }
   }
   if (project) { // test suites of the fixture project (their cases are soft deleted with them)
     const found = await must(await fetch(`${org}/test-suites?project_id=${project.id}&page_size=100`, { headers: h }), 'list fixture suites');
@@ -158,8 +186,11 @@ async function ensureBugFixture() {
   const bug = async (b) => must(await fetch(`${org}/bugs`, json({ project_id: project.id, ...b })), `create bug ${b.title.slice(0, 20)}`);
   await bug({ title: 'Checkout total ignores the discount code', severity: 'high', priority: 'p2', component_id: component.id,
     environment_id: prod.id, assignee_id: diego, label_ids: [idOf('Regression'), idOf('Payments')] });
-  await bug({ title: LONG_TITLE, severity: 'critical', priority: 'p1', component_id: component.id, environment_id: prod.id,
-    assignee_id: diego, label_ids: eight });
+  const detail = await bug({ title: LONG_TITLE, severity: 'critical', priority: 'p1', component_id: component.id, environment_id: prod.id,
+    assignee_id: diego, label_ids: eight, description: LONG_DESCRIPTION, steps_to_reproduce: LONG_STEPS,
+    expected_result: `Expected ${'unbrokenresult'.repeat(10)} and then a longer sentence of text`,
+    actual_result: `Actual ${'unbrokenoutcome'.repeat(10)} and then a longer sentence of text` });
+  await enrichDetailFixture(h, org, detail);
   await bug({ title: UNBROKEN_TITLE, severity: 'medium', priority: 'p3', environment_id: prod.id });
   await bug({ title: 'Tooltip is cut off on the shipment map', severity: 'low', priority: 'p4' });
   await bug({ title: 'Driver app crashes when the network drops during upload', severity: 'high', priority: 'p2', assignee_id: diego });
@@ -373,7 +404,7 @@ let browser = await chromium.launch();
 { // warm up every route once so first compiles do not disturb the checks
   const warm = await browser.newPage();
   for (const path of ['/login', '/register', '/invite#not-a-real-token-000', '/forgot-password', '/reset-password', '/onboarding/org', '/o/lumen/dashboard',
-    '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs', '/o/lumen/bugs/new', '/o/lumen/bugs/WEB-1',
+    '/o/lumen/projects', '/o/lumen/members', '/o/lumen/settings', '/o/lumen/bugs', '/o/lumen/bugs/new', `/o/lumen/bugs/${BUG_FIX.key}`,
     '/o/lumen/tests', '/o/lumen/tests/cases/new', `/o/lumen/tests/cases/${TEST_FIX.caseKey}`, '/o/lumen/board',
     '/o/lumen/this-page-does-not-exist']) {
     await go(warm, path).catch(() => {});
@@ -467,7 +498,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     await page.waitForTimeout(300);
   }
 
-  for (const path of ['/o/lumen/projects', '/o/lumen/members', '/o/lumen/bugs/WEB-1', '/o/lumen/this-page-does-not-exist', '/onboarding/org']) {
+  for (const path of ['/o/lumen/projects', '/o/lumen/members', '/o/lumen/this-page-does-not-exist', '/onboarding/org']) {
     step = `open ${path}`;
     await go(page, path);
     await page.waitForSelector('h1, h2');
@@ -878,6 +909,68 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await check('board: error', { shot: 'board-error' });
   await page.unroute(boardUrl);
 
+  // Bug detail (I-05): the long fixture bug with its long text, 32 comments, 10 files with long names; every dialog and state
+  const detailPath = `/o/lumen/bugs/${BUG_FIX.key}`;
+  step = 'open the bug detail';
+  await go(page, detailPath);
+  await page.waitForSelector('.timeline li[data-comment-id]');
+  await page.getByRole('button', { name: /^Download / }).first().waitFor();
+  await check('bug detail', { shot: 'bug-detail' });
+  step = 'open the delete bug dialog';
+  await page.click('button[aria-label="Delete bug"]');
+  await page.waitForSelector('.modal');
+  await check('bug detail: delete bug dialog', { popup: '.modal', shot: 'bug-detail-delete' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'open the remove file dialog';
+  await page.locator('button[aria-label^="Remove "]').first().click();
+  await page.waitForSelector('.modal');
+  await check('bug detail: remove file dialog', { popup: '.modal', shot: 'bug-detail-remove-file' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'open the delete comment dialog';
+  await page.locator('.timeline li[data-comment-id]').first().getByRole('button', { name: 'Delete' }).click();
+  await page.waitForSelector('.modal');
+  await check('bug detail: delete comment dialog', { popup: '.modal', shot: 'bug-detail-delete-comment' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'edit a comment';
+  await page.locator('.timeline li[data-comment-id]').first().getByRole('button', { name: 'Edit' }).click();
+  await page.waitForSelector('textarea[id^="c-edit-"]');
+  await check('bug detail: editing a comment', { shot: 'bug-detail-edit-comment' });
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  step = 'show older entries and the comments only tab';
+  await page.getByRole('button', { name: 'Show older' }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.timeline li[data-comment-id]').length > 25);
+  await check('bug detail: older entries loaded', { shot: 'bug-detail-older' });
+  await page.getByRole('tab', { name: /Comments only/ }).click();
+  await check('bug detail: comments only', { shot: 'bug-detail-comments-only' });
+  step = 'post an empty comment for its error';
+  await page.getByRole('tab', { name: 'Comments and activity' }).click();
+  await page.getByRole('button', { name: 'Post comment' }).click();
+  await page.waitForSelector('text=Write something first.');
+  await check('bug detail: comment error', { shot: 'bug-detail-comment-error' });
+  step = 'show the bug detail loading, error and not found states';
+  const bugUrl = /\/api\/v1\/orgs\/[^/]+\/bugs\/[A-Za-z]+-\d+$/;
+  await page.route(bugUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}${detailPath}`, { waitUntil: 'commit' });
+  await page.waitForSelector('.crumbs');
+  await page.waitForSelector('.sk');
+  await check('bug detail: loading', { shot: 'bug-detail-loading' });
+  await page.waitForSelector('.timeline li[data-comment-id]');
+  await page.unroute(bugUrl);
+  await page.route(bugUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i05' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, detailPath);
+  await page.waitForSelector('.state-box.error');
+  await check('bug detail: error', { shot: 'bug-detail-error' });
+  await page.unroute(bugUrl);
+  await go(page, '/o/lumen/bugs/ZZZZ-999999');
+  await page.waitForSelector('text=was not found');
+  await check('bug detail: not found', { shot: 'bug-detail-not-found' });
+
   // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
   step = 'sign out to sign in as the QA Lead';
   await page.click('.user-btn');
@@ -934,6 +1027,14 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   }
   await page.waitForSelector('text=Only QA roles can edit test cases.');
   await check('case editor (Developer, read only)', { shot: 'case-editor-developer' });
+  step = 'open the bug detail as the Developer';
+  await go(page, detailPath);
+  await page.waitForSelector('.timeline li[data-comment-id]');
+  await page.getByRole('button', { name: /^Download / }).first().waitFor();
+  if (await page.locator('button[aria-label="Delete bug"], button[aria-label^="Remove "]').count()) {
+    note(vp, 'bug detail (Developer)', ['the Developer sees a delete bug or remove file control that is not theirs']);
+  }
+  await check('bug detail (Developer)', { shot: 'bug-detail-developer' });
   await signInAs(page, 'hana@lumenfreight.test');
   step = 'open the bug list as the Viewer';
   await go(page, '/o/lumen/bugs');
@@ -957,6 +1058,15 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     note(vp, 'board (Viewer)', ['the Viewer can drag a card or sees a Move to button']);
   }
   await check('/o/lumen/board (Viewer, read only)', { shot: 'board-viewer' });
+  step = 'open the bug detail as the Viewer';
+  await go(page, detailPath);
+  await page.waitForSelector('.timeline li[data-comment-id]');
+  await page.getByRole('button', { name: /^Download / }).first().waitFor();
+  await page.waitForSelector('text=Viewers can comment but cannot change bugs.');
+  if (await page.locator('.page-head .actions button, #bug-file-input, button[aria-label^="Remove "], .dl select:not(:disabled)').count()) {
+    note(vp, 'bug detail (Viewer)', ['the Viewer sees a status, delete, attach or remove control, or an editable field']);
+  }
+  await check('bug detail (Viewer, read only)', { shot: 'bug-detail-viewer' });
 
   // Long names and emails (rule 4)
   step = 'back to the dashboard to sign out';
@@ -982,7 +1092,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.keyboard.press('Escape');
   // A workspace with no labels shows the empty state (the long names fixture org has none)
   step = 'open settings in the long names workspace';
-  await go(page, `/o/${LONG.slug}/settings`);
+  await go(page, `/o/${LONG.slug}/settings?tab=labels`); // Organization is the first tab since I-11; the empty state is on Labels
   await page.waitForSelector('.state-box');
   await check('long names: settings (labels empty state)', { shot: 'settings-labels-empty' });
   step = 'open members in the long names workspace';

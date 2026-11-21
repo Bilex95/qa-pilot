@@ -65,6 +65,7 @@ for (const i of (await call(`${O}/invitations?status=pending`)).json.filter((x) 
 const project = (await call(`${O}/projects?include_archived=true&page_size=100`)).json.items.find((p) => p.key === 'LAYT');
 if (project) {
   for (const b of (await call(`${O}/bugs?project_id=${project.id}&page_size=100`)).json.items) {
+    for (const f of (await call(`${O}/bugs/${b.id}/attachments`)).json ?? []) await call(`${O}/attachments/${f.id}`, { method: 'DELETE' }); // files first
     if ((await call(`${O}/bugs/${b.id}`, { method: 'DELETE' })).status === 204) removed.bugs++;
   }
   for (const s of (await call(`${O}/test-suites?project_id=${project.id}&page_size=100`)).json.items.filter((x) => SUITES.includes(x.name) || x.name.startsWith('Intermittent carrier reconciliation and settlement ledger'))) {
