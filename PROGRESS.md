@@ -45,4 +45,4 @@
 * I-11 of batch 4B (plan first, then wait for the go ahead). The profile screen must replace its stored tokens with the pair that the change password call returns (D-055).
 
 ## Blockers
-* None.
+* 2026-11-21, I-11: the full layout check was killed for low memory twice (once on its own after `wsl --shutdown`; 3.5 GB free of 15.7 GB). Both kills left fixtures behind; `e2e/scripts/clean-layout-fixtures.mjs` removed them and revoked the reset link (0 live). The I-11 frontend (Organization, Audit log, My profile tabs, session password route, flow script `check-settings-flow.mjs` PASS, layout states, parity capture script) is written and passes lint, typecheck and build, but is NOT committed: the layout run and the parity capture still have to pass. Waiting for the product owner: free memory (close other programs, or raise the WSL memory limit), then run `& scripts\layout-check.ps1 -Name i11 > .gate\layout-i11.txt 2>&1`.
