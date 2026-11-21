@@ -196,16 +196,18 @@ def test_an_unknown_assignee_and_an_archived_project_are_422(client, world) -> N
 
 def test_release_and_run_result_checks_come_from_the_modules_that_own_them(client, world) -> None:
     project = make_project(client, world.a)
-    release, result = uuid.uuid4(), uuid.uuid4()
-    before = (list(hooks.release_exists), list(hooks.run_result_exists))  # the testing module registers its own check at import
-    hooks.release_exists.append(lambda db, org_id, project_id, rid: rid == release)
+    # A real release (the releases module owns the check and the table the id points at); the run result check is replaced by a fake
+    # because a result needs a whole run (the real one is covered in the testing and release tests)
+    release = client.post(f"{O}/{world.a.org.id}/releases", json={"project_id": project["id"], "name": "WEB 2.4.0"},
+                          headers=world.a.h("qa_lead")).json()["id"]
+    result = uuid.uuid4()
+    before = list(hooks.run_result_exists)  # the testing module registers its own check at import
     hooks.run_result_exists.append(lambda db, org_id, project_id, rid: rid == result)
     try:
-        bug = make_bug(client, world.a, project, release_id=str(release), source_run_result_id=str(result))
+        bug = make_bug(client, world.a, project, release_id=release, source_run_result_id=str(result))
     finally:
-        hooks.release_exists[:] = before[0]
-        hooks.run_result_exists[:] = before[1]
-    assert bug["release_id"] == str(release)
+        hooks.run_result_exists[:] = before
+    assert bug["release_id"] == release and bug["release_name"] == "WEB 2.4.0"
 
 
 # Numbering (D-008, D-016) ---------------------------------------------------------------

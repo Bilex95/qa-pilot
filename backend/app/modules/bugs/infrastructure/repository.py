@@ -128,6 +128,36 @@ def replace_labels(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID, label_ids:
         db.add(BugLabel(bug_id=bug_id, label_id=label_id, org_id=org_id))
 
 
+def release_bug_counts(db: Session, org_id: uuid.UUID, release_ids: list[uuid.UUID]) -> tuple[
+        dict[uuid.UUID, dict[str, int]], dict[uuid.UUID, int]]:
+    """(open bugs per release per severity, linked bugs per release whatever their status). Soft deleted bugs are not counted.
+    Open follows `open_clause`, the one definition of an open bug."""
+    open_by: dict[uuid.UUID, dict[str, int]] = {rid: {} for rid in release_ids}
+    linked: dict[uuid.UUID, int] = dict.fromkeys(release_ids, 0)
+    if not release_ids:
+        return open_by, linked
+    for rid, severity, n in db.execute(select(Bug.release_id, Bug.severity, func.count()).where(
+            Bug.org_id == org_id, Bug.release_id.in_(release_ids), open_clause()).group_by(Bug.release_id, Bug.severity)):
+        if rid is not None:
+            open_by[rid][severity] = int(n)
+    for rid, n in db.execute(select(Bug.release_id, func.count()).where(
+            Bug.org_id == org_id, Bug.release_id.in_(release_ids), Bug.deleted_at.is_(None)).group_by(Bug.release_id)):
+        if rid is not None:
+            linked[rid] = int(n)
+    return open_by, linked
+
+
+def bugs_of_release(db: Session, org_id: uuid.UUID, release_id: uuid.UUID) -> list[Bug]:
+    """The bugs linked to a release: open ones first, then by severity and key."""
+    severity_rank = case({"critical": 1, "high": 2, "medium": 3, "low": 4}, value=Bug.severity, else_=5)
+    return list(db.scalars(select(Bug).where(Bug.org_id == org_id, Bug.release_id == release_id, Bug.deleted_at.is_(None))
+                           .order_by(Bug.status.in_(FINISHED_STATUSES), severity_rank, Bug.number)))
+
+
+def get_bugs(db: Session, org_id: uuid.UUID, bug_ids: list[uuid.UUID]) -> list[Bug]:
+    return list(db.scalars(select(Bug).where(Bug.org_id == org_id, Bug.id.in_(bug_ids), Bug.deleted_at.is_(None)).with_for_update()))
+
+
 def bugs_from_run_results(db: Session, org_id: uuid.UUID, result_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[tuple[uuid.UUID, str]]]:
     """{run result id: [(bug id, bug key)]} for the bugs filed from those results (I-07), oldest bug first."""
     out: dict[uuid.UUID, list[tuple[uuid.UUID, str]]] = {rid: [] for rid in result_ids}

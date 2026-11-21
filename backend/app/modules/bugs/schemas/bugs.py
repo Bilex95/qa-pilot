@@ -59,6 +59,7 @@ class BugOut(BugSummaryOut):
     actual_result: str
     source_run_result_id: uuid.UUID | None
     source_run: SourceRunOut | None
+    release_name: str | None  # the name of `release_id` (I-08)
     ai_assisted: bool
     status_changed_at: datetime
     resolved_at: datetime | None

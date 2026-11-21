@@ -100,6 +100,67 @@ def context_for(db: Session, org_id: uuid.UUID, bugs: list[Bug]) -> BugContext:
     return BugContext(labels=labels, names=names, now=utcnow())
 
 
+@dataclass(frozen=True)
+class ReleaseBugStats:
+    """What readiness needs from the bugs of one release (I-08, D-014): open bugs by severity and how many are linked at all."""
+
+    open_by_severity: dict[str, int]
+    linked: int
+
+    @property
+    def open_total(self) -> int:
+        return sum(self.open_by_severity.values())
+
+
+def release_bug_stats(db: Session, org_id: uuid.UUID, release_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReleaseBugStats]:
+    open_by, linked = repo.release_bug_counts(db, org_id, release_ids)
+    return {rid: ReleaseBugStats(open_by_severity=open_by.get(rid, {}), linked=linked.get(rid, 0)) for rid in release_ids}
+
+
+def bugs_of_release(db: Session, org_id: uuid.UUID, release_id: uuid.UUID) -> list[Bug]:
+    return repo.bugs_of_release(db, org_id, release_id)
+
+
+def link_bugs_to_release(db: Session, org_id: uuid.UUID, actor_id: uuid.UUID, *, release_id: uuid.UUID, release_name: str,
+                         project_id: uuid.UUID, bug_ids: list[uuid.UUID]) -> int:
+    """All or nothing: every bug must exist in the workspace and belong to the release's project (422). A bug that is already in
+    another release moves to this one. Returns how many bugs changed. The caller commits."""
+    wanted = list(dict.fromkeys(bug_ids))
+    found = {b.id: b for b in repo.get_bugs(db, org_id, wanted)}
+    if set(wanted) - found.keys():
+        raise Unprocessable("Some fields are not valid.", details=[{"loc": ["body", "bug_ids"], "msg": "One or more bugs do not exist."}])
+    if any(b.project_id != project_id for b in found.values()):
+        raise Unprocessable("Some fields are not valid.", details=[{
+            "loc": ["body", "bug_ids"], "msg": "A bug can only be linked to a release of its own project."}])
+    now = utcnow()
+    changed = 0
+    for bug in (found[i] for i in wanted):
+        if bug.release_id == release_id:
+            continue
+        old = _name_of(db, org_id, "release_id", bug.release_id)
+        audit.record(db, "bug.updated", actor_id=actor_id, org_id=org_id, entity_type="bug", entity_id=bug.id, data={
+            "key": bug.key, "changes": {"release_id": {"from": _jsonable(bug.release_id), "to": str(release_id)}}})
+        repo.add_activity(db, org_id, bug.id, actor_id, "linked_release", field="release", old=old, new=release_name, at=now)
+        bug.release_id = release_id
+        bug.updated_at = now
+        changed += 1
+    return changed
+
+
+def unlink_bug_from_release(db: Session, org_id: uuid.UUID, actor_id: uuid.UUID, *, release_id: uuid.UUID, release_name: str,
+                            bug_id: uuid.UUID) -> None:
+    """A bug that is not in this release (or does not exist) is left alone: removing is safe to repeat. The caller commits."""
+    bug = repo.get_bug(db, org_id, bug_id, lock=True)
+    if bug is None or bug.release_id != release_id:
+        return
+    now = utcnow()
+    audit.record(db, "bug.updated", actor_id=actor_id, org_id=org_id, entity_type="bug", entity_id=bug.id, data={
+        "key": bug.key, "changes": {"release_id": {"from": str(release_id), "to": None}}})
+    repo.add_activity(db, org_id, bug.id, actor_id, "linked_release", field="release", old=release_name, new=None, at=now)
+    bug.release_id = None
+    bug.updated_at = now
+
+
 def bugs_from_run_results(db: Session, org_id: uuid.UUID, result_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[tuple[uuid.UUID, str]]]:
     """Public contract for the testing module: the bugs filed from each run result (I-07)."""
     return repo.bugs_from_run_results(db, org_id, result_ids)
@@ -218,8 +279,8 @@ def _jsonable(value: Any) -> Any:
 
 
 def _name_of(db: Session, org_id: uuid.UUID, field: str, value: Any) -> str | None:
-    """How a changed value reads in the timeline: people, components and environments by the name they have now (the entry
-    keeps it even after a rename or a delete), everything else as it is. A release is kept as its id until I-08 can name it."""
+    """How a changed value reads in the timeline: people, components, environments and releases by the name they have now (the entry
+    keeps it even after a rename or a delete), everything else as it is."""
     if value is None:
         return None
     try:
@@ -232,6 +293,8 @@ def _name_of(db: Session, org_id: uuid.UUID, field: str, value: Any) -> str | No
     if field == "assignee_id":
         user = auth.get_users_by_ids(db, [value]).get(value)
         return user.full_name if user else None
+    if field == "release_id":
+        return hooks.names_of_releases(db, org_id, [value]).get(value)
     return str(value)
 
 

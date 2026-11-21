@@ -26,9 +26,20 @@ class SourceRun:
 # (db, org_id, run_result_id) -> the run the result belongs to, or None
 RunResultInfo = Callable[[Session, uuid.UUID, uuid.UUID], SourceRun | None]
 
+# (db, org_id, release_ids) -> {release id: name} for the releases that exist (registered by the releases module, I-08)
+ReleaseNames = Callable[[Session, uuid.UUID, list[uuid.UUID]], dict[uuid.UUID, str]]
+
 release_exists: list[ReleaseExists] = []
 run_result_exists: list[RunResultExists] = []
 run_result_info: list[RunResultInfo] = []
+release_names: list[ReleaseNames] = []
+
+
+def names_of_releases(db: Session, org_id: uuid.UUID, ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:
+    found: dict[uuid.UUID, str] = {}
+    for lookup in release_names:
+        found.update(lookup(db, org_id, ids))
+    return found
 
 
 def any_accepts(checks: list[ReleaseExists] | list[RunResultExists], db: Session, org_id: uuid.UUID, project_id: uuid.UUID,

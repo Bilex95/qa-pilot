@@ -58,8 +58,9 @@ def _detail(db: DB, ctx: OrgContext, bug: Bug) -> BugOut:
     found = hooks.source_run(db, ctx.org_id, bug.source_run_result_id) if bug.source_run_result_id else None
     source = SourceRunOut(run_id=found.run_id, run_key=found.run_key, run_name=found.run_name,
                           case_key=found.case_key) if found else None
+    release_name = hooks.names_of_releases(db, ctx.org_id, [bug.release_id]).get(bug.release_id) if bug.release_id else None
     return BugOut(**_summary_fields(bug, bc), description=bug.description, steps_to_reproduce=bug.steps_to_reproduce,
-                  source_run=source, expected_result=bug.expected_result, actual_result=bug.actual_result,
+                  source_run=source, release_name=release_name, expected_result=bug.expected_result, actual_result=bug.actual_result,
                   source_run_result_id=bug.source_run_result_id, ai_assisted=bug.ai_assisted,
                   status_changed_at=bug.status_changed_at, resolved_at=bug.resolved_at, closed_at=bug.closed_at,
                   comment_count=comments, attachment_count=files)

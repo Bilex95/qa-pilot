@@ -11,13 +11,12 @@ from app.core.errors import Unprocessable
 from app.core.pagination import Page, PageParams, page_params
 from app.core.schemas import errors
 from app.modules.testing.application import integration, runs
-from app.modules.testing.domain.rules import RunStatus, run_key
+from app.modules.testing.domain.rules import RunStatus
 from app.modules.testing.infrastructure.models import TestRun, TestRunResult
 from app.modules.testing.schemas.runs import (
     BugDraftOut,
     BugRefOut,
     ResultUpdateIn,
-    RunCountsOut,
     RunCreateIn,
     RunOut,
     RunResultOut,
@@ -34,17 +33,7 @@ Read = Annotated[OrgContext, Depends(require("test.read"))]
 
 
 def _summaries(db: Session, ctx: OrgContext, rows: list[TestRun]) -> list[RunSummaryOut]:
-    rc = runs.context_for(db, ctx.org_id, rows)
-    out = []
-    for r in rows:
-        counts = runs.counts_of(rc, r)
-        out.append(RunSummaryOut(
-            id=r.id, key=run_key(r.number), number=r.number, name=r.name, project_id=r.project_id, status=r.status,  # type: ignore[arg-type]
-            environment_id=r.environment_id, environment=rc.environments.get(r.environment_id) if r.environment_id else None,
-            release_id=r.release_id, counts=RunCountsOut(**{"pass": counts["pass"], **{k: v for k, v in counts.items() if k != "pass"}}),
-            total=sum(counts.values()), pass_rate=runs.rate_of(counts), created_by_id=r.created_by_id,
-            created_by_name=rc.names.get(r.created_by_id, ""), started_at=r.started_at, completed_at=r.completed_at))
-    return out
+    return runs.summaries(db, ctx.org_id, rows)
 
 
 def _result_out(res: TestRunResult, names: dict[uuid.UUID, str], bug_refs: dict[uuid.UUID, list[tuple[uuid.UUID, str]]]) -> RunResultOut:

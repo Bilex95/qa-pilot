@@ -37,6 +37,7 @@ class RunSummaryOut(ApiModel):
     environment_id: uuid.UUID | None
     environment: str | None
     release_id: uuid.UUID | None
+    release_name: str | None
     counts: RunCountsOut
     total: int
     pass_rate: int | None

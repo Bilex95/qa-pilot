@@ -14,9 +14,20 @@ AiUsageExists = Callable[[Session, uuid.UUID, uuid.UUID], bool]
 # (db, org_id, project_id, release_id) -> True when the release exists in the org and belongs to the project (I-08)
 ReleaseExists = Callable[[Session, uuid.UUID, uuid.UUID, uuid.UUID], bool]
 
+# (db, org_id, release_ids) -> {release id: name} for the releases that exist (registered by the releases module, I-08)
+ReleaseNames = Callable[[Session, uuid.UUID, list[uuid.UUID]], dict[uuid.UUID, str]]
+
 last_run_pass_rates: list[PassRates] = []
 ai_usage_exists: list[AiUsageExists] = []
 release_exists: list[ReleaseExists] = []
+release_names: list[ReleaseNames] = []
+
+
+def names_of_releases(db: Session, org_id: uuid.UUID, ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:
+    found: dict[uuid.UUID, str] = {}
+    for lookup in release_names:
+        found.update(lookup(db, org_id, ids))
+    return found
 
 
 def release_accepted(db: Session, org_id: uuid.UUID, project_id: uuid.UUID, release_id: uuid.UUID) -> bool:

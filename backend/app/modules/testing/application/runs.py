@@ -23,7 +23,7 @@ from app.modules.testing.domain.rules import MAX_CASES_PER_RUN, draft_title, pas
 from app.modules.testing.infrastructure import repository as case_repo
 from app.modules.testing.infrastructure import run_repository as repo
 from app.modules.testing.infrastructure.models import TestRun, TestRunResult
-from app.modules.testing.schemas.runs import ResultUpdateIn, RunCreateIn, RunUpdateIn
+from app.modules.testing.schemas.runs import ResultUpdateIn, RunCountsOut, RunCreateIn, RunSummaryOut, RunUpdateIn
 
 RUN_KEY_RE = re.compile(r"^R-(\d{1,9})$", re.IGNORECASE)
 RESULT_ORDER = ("pass", "fail", "blocked", "skipped", "untested")
@@ -101,6 +101,84 @@ def results_with_people(db: Session, org_id: uuid.UUID, run: TestRun) -> tuple[l
     people = {r.executed_by_id for r in results if r.executed_by_id}
     names = {uid: user.full_name for uid, user in auth.get_users_by_ids(db, list(people)).items()}
     return results, names, bugs.bugs_from_run_results(db, org_id, [r.id for r in results])
+
+
+def summaries(db: Session, org_id: uuid.UUID, rows: list[TestRun]) -> list[RunSummaryOut]:
+    """The list form of runs (also used by the release page): counts, pass rate, environment and release names, who started it."""
+    rc = context_for(db, org_id, rows)
+    release_names = hooks.names_of_releases(db, org_id, [r.release_id for r in rows if r.release_id])
+    out = []
+    for r in rows:
+        counts = counts_of(rc, r)
+        out.append(RunSummaryOut(
+            id=r.id, key=run_key(r.number), number=r.number, name=r.name, project_id=r.project_id, status=r.status,  # type: ignore[arg-type]
+            environment_id=r.environment_id, environment=rc.environments.get(r.environment_id) if r.environment_id else None,
+            release_id=r.release_id, release_name=release_names.get(r.release_id) if r.release_id else None,
+            counts=RunCountsOut(**{"pass": counts["pass"], **{k: v for k, v in counts.items() if k != "pass"}}),
+            total=sum(counts.values()), pass_rate=rate_of(counts), created_by_id=r.created_by_id,
+            created_by_name=rc.names.get(r.created_by_id, ""), started_at=r.started_at, completed_at=r.completed_at))
+    return out
+
+
+# Releases (I-08) ------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ReleaseRunStats:
+    """What readiness needs from the runs of one release: how many are linked, how many are still running or completed, and the
+    results of all of them together."""
+
+    linked: int
+    in_progress: int
+    completed: int
+    counts: dict[str, int]
+
+    @property
+    def pass_rate(self) -> int | None:
+        return pass_rate(self.counts)
+
+
+def release_run_stats(db: Session, org_id: uuid.UUID, release_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReleaseRunStats]:
+    runs, results = repo.release_run_counts(db, org_id, release_ids)
+    return {rid: ReleaseRunStats(linked=sum(runs[rid].values()), in_progress=runs[rid].get("in_progress", 0),
+                                 completed=runs[rid].get("completed", 0), counts=results[rid]) for rid in release_ids}
+
+
+def runs_of_release(db: Session, org_id: uuid.UUID, release_id: uuid.UUID) -> list[TestRun]:
+    return repo.runs_of_release(db, org_id, release_id)
+
+
+def link_runs_to_release(db: Session, org_id: uuid.UUID, actor_id: uuid.UUID, *, release_id: uuid.UUID, project_id: uuid.UUID,
+                         run_ids: list[uuid.UUID]) -> int:
+    """All or nothing: every run must exist in the workspace and belong to the release's project (422). Linking is allowed for a
+    completed run too: it changes no result. A run in another release moves to this one. The caller commits."""
+    wanted = list(dict.fromkeys(run_ids))
+    found = {r.id: r for r in repo.get_runs(db, org_id, wanted)}
+    if set(wanted) - found.keys():
+        raise _invalid("run_ids", "One or more runs do not exist.")
+    if any(r.project_id != project_id for r in found.values()):
+        raise _invalid("run_ids", "A run can only be linked to a release of its own project.")
+    changed = 0
+    for run in (found[i] for i in wanted):
+        if run.release_id == release_id:
+            continue
+        audit.record(db, "run.updated", actor_id=actor_id, org_id=org_id, entity_type="test_run", entity_id=run.id,
+                     data={"key": run_key(run.number), "changes": {"release_id": {"from": str(run.release_id) if run.release_id else None,
+                                                                                  "to": str(release_id)}}})
+        run.release_id = release_id
+        run.updated_at = utcnow()
+        changed += 1
+    return changed
+
+
+def unlink_run_from_release(db: Session, org_id: uuid.UUID, actor_id: uuid.UUID, *, release_id: uuid.UUID, run_id: uuid.UUID) -> None:
+    """A run that is not in this release (or does not exist) is left alone. The caller commits."""
+    run = repo.get_run(db, org_id, run_id, lock=True)
+    if run is None or run.release_id != release_id:
+        return
+    audit.record(db, "run.updated", actor_id=actor_id, org_id=org_id, entity_type="test_run", entity_id=run.id,
+                 data={"key": run_key(run.number), "changes": {"release_id": {"from": str(release_id), "to": None}}})
+    run.release_id = None
+    run.updated_at = utcnow()
 
 
 # Create ---------------------------------------------------------------------

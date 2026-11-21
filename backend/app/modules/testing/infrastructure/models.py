@@ -80,8 +80,8 @@ class TestCase(IdMixin, TimestampMixin, Base):
 
 
 class TestRun(IdMixin, TimestampMixin, Base):
-    """DOMAIN_MODEL 1.4 and section 5. `number` comes from the per org run counter (the displayed id is `R-<number>`). The release
-    has no foreign key until the releases table arrives with I-08. A completed run is read only."""
+    """DOMAIN_MODEL 1.4 and section 5. `number` comes from the per org run counter (the displayed id is `R-<number>`). Deleting a
+    release leaves the run with none (D-015). A completed run is read only."""
 
     __test__ = False  # not a pytest class
     __tablename__ = "test_runs"
@@ -96,7 +96,7 @@ class TestRun(IdMixin, TimestampMixin, Base):
     number: Mapped[int] = mapped_column(Integer)
     name: Mapped[str] = mapped_column(String(120))
     environment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("environments.id", ondelete="SET NULL"))
-    release_id: Mapped[uuid.UUID | None] = mapped_column()
+    release_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("releases.id", ondelete="SET NULL"))
     status: Mapped[str] = mapped_column(String(12), default="in_progress")
     created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

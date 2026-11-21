@@ -67,8 +67,8 @@ class Bug(IdMixin, TimestampMixin, Base):
     environment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("environments.id", ondelete="SET NULL"))
     reporter_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     assignee_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
-    # No foreign keys yet: the releases table arrives with I-08 and test run results with I-07, which add them
-    release_id: Mapped[uuid.UUID | None] = mapped_column()
+    # A release that is deleted leaves the bug with none (D-015, I-08). The source result has no foreign key: it is only a link back
+    release_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("releases.id", ondelete="SET NULL"))
     source_run_result_id: Mapped[uuid.UUID | None] = mapped_column()
     ai_assisted: Mapped[bool] = mapped_column(Boolean, default=False)
     status_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -92,6 +92,35 @@ def existing_suite_ids(db: Session, org_id: uuid.UUID, project_id: uuid.UUID, su
                                                       TestSuite.deleted_at.is_(None), TestSuite.id.in_(suite_ids))))
 
 
+def release_run_counts(db: Session, org_id: uuid.UUID, release_ids: list[uuid.UUID]) -> tuple[
+        dict[uuid.UUID, dict[str, int]], dict[uuid.UUID, dict[str, int]]]:
+    """(runs per release per status, results per release per result) over the runs linked to each release."""
+    runs: dict[uuid.UUID, dict[str, int]] = {rid: {} for rid in release_ids}
+    results: dict[uuid.UUID, dict[str, int]] = {rid: {} for rid in release_ids}
+    if not release_ids:
+        return runs, results
+    for rid, status, n in db.execute(select(TestRun.release_id, TestRun.status, func.count()).where(
+            TestRun.org_id == org_id, TestRun.release_id.in_(release_ids)).group_by(TestRun.release_id, TestRun.status)):
+        if rid is not None:
+            runs[rid][status] = int(n)
+    for rid, result, n in db.execute(select(TestRun.release_id, TestRunResult.result, func.count())
+                                     .join(TestRun, TestRun.id == TestRunResult.run_id)
+                                     .where(TestRun.org_id == org_id, TestRun.release_id.in_(release_ids))
+                                     .group_by(TestRun.release_id, TestRunResult.result)):
+        if rid is not None:
+            results[rid][result] = int(n)
+    return runs, results
+
+
+def runs_of_release(db: Session, org_id: uuid.UUID, release_id: uuid.UUID) -> list[TestRun]:
+    return list(db.scalars(select(TestRun).where(TestRun.org_id == org_id, TestRun.release_id == release_id)
+                           .order_by(TestRun.started_at.desc(), TestRun.id)))
+
+
+def get_runs(db: Session, org_id: uuid.UUID, run_ids: list[uuid.UUID]) -> list[TestRun]:
+    return list(db.scalars(select(TestRun).where(TestRun.org_id == org_id, TestRun.id.in_(run_ids)).with_for_update()))
+
+
 def last_run_pass_rates(db: Session, org_id: uuid.UUID, suite_ids: list[uuid.UUID]) -> dict[uuid.UUID, float]:
     """Pass rate (0 to 100) of each suite in the last completed run that had cases of it (`suite_id` is the snapshot)."""
     if not suite_ids:
