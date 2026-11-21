@@ -1,0 +1,1 @@
+Notes from the Newman run: plain text, allowed by extension and by its first bytes.

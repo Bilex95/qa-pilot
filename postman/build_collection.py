@@ -25,9 +25,16 @@ def err(code: str) -> str:
             f'pm.expect(e.code).to.eql("{code}"); pm.expect(e).to.have.keys("code","message","details"); }});')
 
 
+def upload_file(name: str) -> list[dict]:
+    """A multipart form with one file from postman/fixtures (Newman runs with --working-dir postman)."""
+    return [{"key": "file", "type": "file", "src": f"fixtures/{name}"}]
+
+
 def req(name: str, method: str, path: str, *, token: str | None = None, body: dict | None = None,
-        tests: list[str] | None = None, pre: list[str] | None = None, desc: str = "", raw: str | None = None) -> dict:
-    """`raw` is a JSON text sent as is (for bodies that contain a variable holding JSON, such as a list of steps)."""
+        tests: list[str] | None = None, pre: list[str] | None = None, desc: str = "", raw: str | None = None,
+        formdata: list[dict] | None = None) -> dict:
+    """`raw` is a JSON text sent as is (for bodies that contain a variable holding JSON, such as a list of steps).
+    `formdata` sends a multipart form instead (file uploads); the content type is then set by the runner."""
     headers = [{"key": "Content-Type", "value": "application/json"}] if body is not None or raw is not None else []
     item: dict = {
         "name": name,
@@ -49,6 +56,8 @@ def req(name: str, method: str, path: str, *, token: str | None = None, body: di
         item["request"]["body"] = {"mode": "raw", "raw": json.dumps(body, indent=2), "options": {"raw": {"language": "json"}}}
     elif raw is not None:
         item["request"]["body"] = {"mode": "raw", "raw": raw, "options": {"raw": {"language": "json"}}}
+    elif formdata is not None:
+        item["request"]["body"] = {"mode": "formdata", "formdata": formdata}
     if pre:
         item["event"].append({"listen": "prerequest", "script": {"type": "text/javascript", "exec": pre}})
     return item
@@ -609,6 +618,139 @@ folders = [
             tests=[status(422), err("validation_error")]),
         req("Board through other org path (API-068 cross tenant)", "GET", f"{F}/bugs/board", token="adminToken", tests=[status(404), err("org_not_found")]),
         req("Board without token (API-068 unauthorized)", "GET", f"{O}/bugs/board", tests=[status(401)]),
+        # Comments, attachments and activity (I-05, API-069 to API-077) -------------------------------------------------
+        req("Viewer adds a comment (API-070)", "POST", O + "/bugs/{{bugId}}/comments", token="viewerToken",
+            body={"body": "Newman: seen by a stakeholder\nSecond line"},
+            tests=[status(201), 'pm.environment.set("commentId", pm.response.json().id);',
+                   'pm.test("the comment is the viewer\'s, line break kept", () => { const c = pm.response.json(); '
+                   'pm.expect(c.body).to.eql("Newman: seen by a stakeholder\\nSecond line"); pm.expect(c.edited_at).to.eql(null); '
+                   'pm.expect(c.author_name).to.be.a("string"); pm.expect(c.bug_id).to.eql(pm.environment.get("bugId")); });']),
+        req("QA Engineer adds a comment (API-070)", "POST", O + "/bugs/{{bugId}}/comments", token="qaToken",
+            body={"body": "Newman: reproduced on staging"},
+            tests=[status(201), 'pm.environment.set("commentTwoId", pm.response.json().id);']),
+        req("Add an empty comment (API-070 invalid)", "POST", O + "/bugs/{{bugId}}/comments", token="qaToken",
+            body={"body": "   "}, tests=[status(422), err("validation_error")]),
+        req("Add a comment over 5000 characters (API-070 invalid)", "POST", O + "/bugs/{{bugId}}/comments", token="qaToken",
+            body={"body": "x" * 5001}, tests=[status(422), err("validation_error")]),
+        req("Add a comment without token (API-070 unauthorized)", "POST", O + "/bugs/{{bugId}}/comments", body={"body": "hi"},
+            tests=[status(401)]),
+        req("Add a comment through other org path (API-070 cross tenant)", "POST", F + "/bugs/{{bugId}}/comments", token="foreignToken",
+            body={"body": "hi"}, tests=[status(404), err("not_found")]),
+        req("Add a comment as a member of another workspace (API-070 cross tenant)", "POST", O + "/bugs/{{bugId}}/comments",
+            token="foreignToken", body={"body": "hi"}, tests=[status(404), err("org_not_found")]),
+        req("List comments (API-069)", "GET", O + "/bugs/{{bugId}}/comments", token="viewerToken",
+            tests=[status(200), 'const page = pm.response.json();',
+                   'pm.test("newest first, with both comments", () => { const ids = page.items.map(c => c.id); '
+                   'pm.expect(ids).to.include(pm.environment.get("commentId")); pm.expect(ids).to.include(pm.environment.get("commentTwoId")); '
+                   'pm.expect(ids.indexOf(pm.environment.get("commentTwoId"))).to.be.below(ids.indexOf(pm.environment.get("commentId"))); });',
+                   'pm.test("page fields", () => { pm.expect(page).to.include.keys("items", "page", "page_size", "total"); pm.expect(page.total).to.be.at.least(3); });']),
+        req("List comments with a bad page size (API-069 invalid)", "GET", O + "/bugs/{{bugId}}/comments?page_size=0", token="viewerToken",
+            tests=[status(422), err("validation_error")]),
+        req("List comments without token (API-069 unauthorized)", "GET", O + "/bugs/{{bugId}}/comments", tests=[status(401)]),
+        req("List comments through other org path (API-069 cross tenant)", "GET", F + "/bugs/{{bugId}}/comments", token="foreignToken",
+            tests=[status(404), err("not_found")]),
+        req("List comments as a member of another workspace (API-069 cross tenant)", "GET", O + "/bugs/{{bugId}}/comments",
+            token="foreignToken", tests=[status(404), err("org_not_found")]),
+        req("Org Admin edits the viewer's comment (API-071 forbidden)", "PATCH", O + "/comments/{{commentId}}", token="adminToken",
+            body={"body": "hijacked"}, tests=[status(403), err("forbidden")]),
+        req("Viewer edits their own comment (API-071)", "PATCH", O + "/comments/{{commentId}}", token="viewerToken",
+            body={"body": "Newman: edited by its author"},
+            tests=[status(200), 'pm.test("edited", () => { const c = pm.response.json(); pm.expect(c.body).to.eql("Newman: edited by its author"); '
+                   'pm.expect(c.edited_at).to.be.a("string"); });']),
+        req("Edit a comment to nothing (API-071 invalid)", "PATCH", O + "/comments/{{commentId}}", token="viewerToken",
+            body={"body": ""}, tests=[status(422), err("validation_error")]),
+        req("Edit a comment without token (API-071 unauthorized)", "PATCH", O + "/comments/{{commentId}}", body={"body": "x"},
+            tests=[status(401)]),
+        req("Edit a comment through other org path (API-071 cross tenant)", "PATCH", F + "/comments/{{commentId}}", token="foreignToken",
+            body={"body": "x"}, tests=[status(404), err("not_found")]),
+        req("Edit a comment that does not exist (API-071 not found)", "PATCH", O + "/comments/00000000-0000-4000-8000-000000000000",
+            token="viewerToken", body={"body": "x"}, tests=[status(404), err("not_found")]),
+        req("QA Lead deletes the viewer's comment (API-072 forbidden)", "DELETE", O + "/comments/{{commentId}}", token="leadToken",
+            tests=[status(403), err("forbidden")]),
+        req("Delete a comment without token (API-072 unauthorized)", "DELETE", O + "/comments/{{commentId}}", tests=[status(401)]),
+        req("Delete a comment through other org path (API-072 cross tenant)", "DELETE", F + "/comments/{{commentId}}", token="foreignToken",
+            tests=[status(404), err("not_found")]),
+        req("Viewer deletes their own comment (API-072)", "DELETE", O + "/comments/{{commentId}}", token="viewerToken", tests=[status(204)]),
+        req("Delete the same comment again (API-072 not found)", "DELETE", O + "/comments/{{commentId}}", token="viewerToken",
+            tests=[status(404), err("not_found")]),
+        req("Org Admin deletes the QA Engineer's comment (API-072)", "DELETE", O + "/comments/{{commentTwoId}}", token="adminToken",
+            tests=[status(204)]),
+        req("Viewer uploads a file (API-074 forbidden)", "POST", O + "/bugs/{{bugId}}/attachments", token="viewerToken",
+            formdata=upload_file("console.log"), tests=[status(403), err("forbidden")]),
+        req("QA Engineer attaches a log (API-074)", "POST", O + "/bugs/{{bugId}}/attachments", token="qaToken",
+            formdata=upload_file("console.log"),
+            tests=[status(201), 'pm.environment.set("attachmentId", pm.response.json().id);',
+                   'pm.test("named, typed from the extension, sized", () => { const a = pm.response.json(); pm.expect(a.filename).to.eql("console.log"); '
+                   'pm.expect(a.content_type).to.eql("text/plain"); pm.expect(a.size_bytes).to.be.above(0); pm.expect(a.uploaded_by_name).to.be.a("string"); '
+                   'pm.expect(a).to.not.have.property("storage_key"); });']),
+        req("Developer attaches a note (API-074)", "POST", O + "/bugs/{{bugId}}/attachments", token="devToken",
+            formdata=upload_file("notes.txt"), tests=[status(201), 'pm.environment.set("attachmentTwoId", pm.response.json().id);']),
+        req("Attach a file that is not what its name says (API-074 unsupported type)", "POST", O + "/bugs/{{bugId}}/attachments",
+            token="qaToken", formdata=upload_file("not-an-image.png"), tests=[status(415), err("unsupported_type")]),
+        req("Attach a file type that is not allowed (API-074 unsupported type)", "POST", O + "/bugs/{{bugId}}/attachments",
+            token="qaToken", formdata=upload_file("page.html"), tests=[status(415), err("unsupported_type")]),
+        req("Upload with no file (API-074 invalid)", "POST", O + "/bugs/{{bugId}}/attachments", token="qaToken",
+            formdata=[{"key": "note", "type": "text", "value": "no file in this form"}], tests=[status(422), err("validation_error")]),
+        req("Upload without token (API-074 unauthorized)", "POST", O + "/bugs/{{bugId}}/attachments", formdata=upload_file("notes.txt"),
+            tests=[status(401)]),
+        req("Upload through other org path (API-074 cross tenant)", "POST", F + "/bugs/{{bugId}}/attachments", token="foreignToken",
+            formdata=upload_file("notes.txt"), tests=[status(404), err("not_found")]),
+        req("Upload as a member of another workspace (API-074 cross tenant)", "POST", O + "/bugs/{{bugId}}/attachments",
+            token="foreignToken", formdata=upload_file("notes.txt"), tests=[status(404), err("org_not_found")]),
+        req("List attachments (API-073)", "GET", O + "/bugs/{{bugId}}/attachments", token="viewerToken",
+            tests=[status(200), 'pm.test("both files, oldest first", () => { const ids = pm.response.json().map(a => a.id); '
+                   'pm.expect(ids).to.eql([pm.environment.get("attachmentId"), pm.environment.get("attachmentTwoId")]); });']),
+        req("List attachments without token (API-073 unauthorized)", "GET", O + "/bugs/{{bugId}}/attachments", tests=[status(401)]),
+        req("List attachments through other org path (API-073 cross tenant)", "GET", F + "/bugs/{{bugId}}/attachments", token="foreignToken",
+            tests=[status(404), err("not_found")]),
+        req("List attachments as a member of another workspace (API-073 cross tenant)", "GET", O + "/bugs/{{bugId}}/attachments",
+            token="foreignToken", tests=[status(404), err("org_not_found")]),
+        req("Viewer downloads a file (API-075)", "GET", O + "/attachments/{{attachmentId}}/download", token="viewerToken",
+            tests=[status(200), 'pm.test("saved as a file, never opened in the page", () => { '
+                   'pm.expect(pm.response.headers.get("Content-Disposition")).to.match(/^attachment;/); '
+                   'pm.expect(pm.response.headers.get("X-Content-Type-Options")).to.eql("nosniff"); '
+                   'pm.expect(pm.response.headers.get("Content-Type")).to.match(/^text\\/plain/); });',
+                   'pm.test("the file as uploaded", () => pm.expect(pm.response.text()).to.include("discount code SAVE10"));']),
+        req("Download without token (API-075 unauthorized)", "GET", O + "/attachments/{{attachmentId}}/download", tests=[status(401)]),
+        req("Download through other org path (API-075 cross tenant)", "GET", F + "/attachments/{{attachmentId}}/download", token="foreignToken",
+            tests=[status(404), err("not_found")]),
+        req("Download as a member of another workspace (API-075 cross tenant)", "GET", O + "/attachments/{{attachmentId}}/download",
+            token="foreignToken", tests=[status(404), err("org_not_found")]),
+        req("Download a file that does not exist (API-075 not found)", "GET", O + "/attachments/00000000-0000-4000-8000-000000000000/download",
+            token="viewerToken", tests=[status(404), err("not_found")]),
+        req("QA Engineer deletes the Developer's file (API-076 forbidden)", "DELETE", O + "/attachments/{{attachmentTwoId}}", token="qaToken",
+            tests=[status(403), err("forbidden")]),
+        req("Viewer deletes a file (API-076 forbidden)", "DELETE", O + "/attachments/{{attachmentTwoId}}", token="viewerToken",
+            tests=[status(403), err("forbidden")]),
+        req("Delete a file without token (API-076 unauthorized)", "DELETE", O + "/attachments/{{attachmentTwoId}}", tests=[status(401)]),
+        req("Delete a file through other org path (API-076 cross tenant)", "DELETE", F + "/attachments/{{attachmentTwoId}}", token="foreignToken",
+            tests=[status(404), err("not_found")]),
+        req("Developer deletes their own file (API-076)", "DELETE", O + "/attachments/{{attachmentTwoId}}", token="devToken", tests=[status(204)]),
+        req("QA Lead deletes the QA Engineer's file (API-076)", "DELETE", O + "/attachments/{{attachmentId}}", token="leadToken",
+            tests=[status(204)]),
+        req("A deleted file cannot be downloaded (API-076)", "GET", O + "/attachments/{{attachmentId}}/download", token="viewerToken",
+            tests=[status(404), err("not_found")]),
+        req("Delete the same file again (API-076 not found)", "DELETE", O + "/attachments/{{attachmentId}}", token="leadToken",
+            tests=[status(404), err("not_found")]),
+        req("Timeline of the bug (API-077)", "GET", O + "/bugs/{{bugId}}/activity?page_size=100", token="viewerToken",
+            tests=[status(200), 'const page = pm.response.json();',
+                   'pm.test("every kind this bug went through", () => { const kinds = page.items.map(e => e.kind); '
+                   '["created", "status_changed", "commented", "attachment_added", "attachment_removed"].forEach(k => pm.expect(kinds).to.include(k)); });',
+                   'pm.test("newest first, with the actor and the old and new status", () => { const t = page.items.map(e => e.created_at); '
+                   'pm.expect(t).to.eql([...t].sort().reverse()); const s = page.items.find(e => e.kind === "status_changed"); '
+                   'pm.expect(s.field).to.eql("status"); pm.expect(s.old_value).to.be.a("string"); pm.expect(s.new_value).to.be.a("string"); '
+                   'pm.expect(s.actor_name).to.be.a("string"); });',
+                   'pm.test("the first entry of all is the creation", () => pm.expect(page.items[page.items.length - 1].kind).to.eql("created"));']),
+        req("Timeline with a bad page (API-077 invalid)", "GET", O + "/bugs/{{bugId}}/activity?page=0", token="viewerToken",
+            tests=[status(422), err("validation_error")]),
+        req("Timeline without token (API-077 unauthorized)", "GET", O + "/bugs/{{bugId}}/activity", tests=[status(401)]),
+        req("Timeline through other org path (API-077 cross tenant)", "GET", F + "/bugs/{{bugId}}/activity", token="foreignToken",
+            tests=[status(404), err("not_found")]),
+        req("Timeline as a member of another workspace (API-077 cross tenant)", "GET", O + "/bugs/{{bugId}}/activity",
+            token="foreignToken", tests=[status(404), err("org_not_found")]),
+        req("Bug detail counts comments and files (REQ-018)", "GET", O + "/bugs/{{bugId}}", token="viewerToken",
+            tests=[status(200), 'pm.test("counts", () => { const b = pm.response.json(); pm.expect(b.comment_count).to.be.a("number"); '
+                   'pm.expect(b.attachment_count).to.eql(0); });']),
         req("Delete bug as QA Engineer (API-064 forbidden)", "DELETE", O + "/bugs/{{bugId}}", token="qaToken",
             tests=[status(403), err("forbidden")]),
         req("Delete bug without token (API-064 unauthorized)", "DELETE", O + "/bugs/{{bugId}}", tests=[status(401)]),

@@ -63,7 +63,7 @@ AI: provider interface in `backend/app/modules/ai`; `AI_PROVIDER=mock|anthropic`
 * Backend ruff, mypy and pytest in one go from Windows: `powershell -File scripts/with-wsl.ps1 -Up powershell -File scripts/py-checks.ps1`; contract regeneration the same way with `scripts/api-types.ps1`
 * Frontend: `cd frontend && npm run lint && npm run typecheck && npm run build`
 * Seed: `docker compose exec backend python -m app.seed --scenario baseline`
-* Newman (needs the baseline seed; runs inside Docker as one WSL session): `powershell -File scripts/newman.ps1` (or `sh scripts/newman.sh` in WSL). Plain equivalent where Node is on the PATH: `npx newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --env-var password=<SEED_USER_PASSWORD>`
+* Newman (needs the baseline seed; runs inside Docker as one WSL session): `powershell -File scripts/newman.ps1` (or `sh scripts/newman.sh` in WSL). Plain equivalent where Node is on the PATH: `npx newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --working-dir postman --env-var password=<SEED_USER_PASSWORD>` (`--working-dir postman` lets the upload requests find `postman/fixtures/`)
 * Postman collection is generated: edit `postman/build_collection.py`, then `python postman/build_collection.py`
 * API contract after backend schema changes: `sh scripts/api-types.sh` (inside WSL on the build machine)
 * Browser login smoke (stack up, baseline seeded): `cd e2e && node scripts/smoke-login.mjs`

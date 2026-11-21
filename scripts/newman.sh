@@ -18,4 +18,4 @@ if [ -z "$PW" ]; then
 fi
 export PW
 exec docker compose run --rm --no-deps --no-TTY -e PW -v "$PWD/postman:/postman:ro" --entrypoint sh frontend -c \
-  'npx --yes newman@6.2.3 run /postman/qa-pilot.postman_collection.json -e /postman/local.postman_environment.json --env-var "baseUrl=http://backend:8000" --env-var "password=$PW" --reporters cli --color off'
+  'npx --yes newman@6.2.3 run /postman/qa-pilot.postman_collection.json -e /postman/local.postman_environment.json --working-dir /postman --env-var "baseUrl=http://backend:8000" --env-var "password=$PW" --reporters cli --color off'
