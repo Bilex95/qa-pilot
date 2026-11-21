@@ -37,8 +37,12 @@ def list_audit_events(
 ) -> Page[AuditEventOut]:
     rows, total = service.list_events(db, ctx.org_id, params, action=action, actor_id=actor_id,
                                       entity_type=entity_type, date_from=date_from, date_to=date_to)
-    names = {uid: u.full_name for uid, u in auth.get_users_by_ids(db, [r.actor_id for r in rows if r.actor_id]).items()}
-    items = [AuditEventOut.model_validate(r).model_copy(update={"actor_name": names.get(r.actor_id) if r.actor_id else None})
-             for r in rows]
+    targets = {r.id: service.target_user_id(r) for r in rows}
+    wanted = {r.actor_id for r in rows if r.actor_id} | {t for t in targets.values() if t}
+    names = {uid: u.full_name for uid, u in auth.get_users_by_ids(db, list(wanted)).items()}  # users stay after removal
+    items = [AuditEventOut.model_validate(r).model_copy(update={
+        "actor_name": names.get(r.actor_id) if r.actor_id else None,
+        "target_name": names.get(t) if (t := targets[r.id]) and t != r.actor_id else None,  # an event about oneself names no target
+    }) for r in rows]
     return Page(items=items, page=params.page,
                 page_size=params.page_size, total=total)

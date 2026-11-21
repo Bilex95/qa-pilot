@@ -106,6 +106,44 @@ def test_events_of_another_workspace_never_carry_over(client, world) -> None:
     assert events(client, world.a.org.id, world.a.h("org_admin"), "?action=auth.profile_updated") == []
 
 
+# The person an event is about, named like the actor (role changes, removals, reset links) ----------------------------
+
+def test_role_change_removal_and_reset_link_name_the_person_they_are_about(client, db, world) -> None:
+    admin = world.a.h("org_admin")
+    world.a.users["developer"].full_name = "Dana Developer"
+    world.a.users["viewer"].full_name = "Victor Viewer"
+    db.flush()
+    dev, viewer = world.a.memberships["developer"], world.a.memberships["viewer"]
+    assert client.patch(f"{O}/{world.a.org.id}/members/{dev.id}", json={"role": "qa_engineer"}, headers=admin).status_code == 200
+    assert client.post(f"{O}/{world.a.org.id}/members/{viewer.id}/password-reset", headers=admin).status_code == 201
+    assert client.delete(f"{O}/{world.a.org.id}/members/{dev.id}", headers=admin).status_code == 204
+    changed = events(client, world.a.org.id, admin, "?action=member.role_changed")[0]
+    removed = events(client, world.a.org.id, admin, "?action=member.removed")[0]
+    reset = events(client, world.a.org.id, admin, "?action=auth.reset_link_created")[0]
+    assert changed["target_name"] == "Dana Developer" and changed["actor_name"] != "Dana Developer"
+    assert removed["target_name"] == "Dana Developer"  # still named after the removal: the user record stays
+    assert reset["target_name"] == "Victor Viewer"
+    assert all(set(e) >= {"actor_name", "target_name"} for e in (changed, removed, reset))
+
+
+def test_an_event_about_oneself_or_not_about_a_person_has_no_target(client, world) -> None:
+    admin = world.a.h("org_admin")
+    client.patch(f"{A}/me", json={"full_name": "Renamed Person"}, headers=world.a.h("developer"))
+    client.post(f"{A}/me/password", json={"current_password": "wrong-pass-123", "new_password": "Brand-new-pass-77"},
+                headers=world.a.h("developer"))
+    client.patch(f"{O}/{world.a.org.id}", json={"name": "Renamed"}, headers=admin)
+    for e in events(client, world.a.org.id, admin):
+        assert e["target_name"] is None, e["action"]
+
+
+def test_a_target_in_another_workspace_is_never_named(client, db, world) -> None:
+    """The name comes from the event's own workspace: an admin of B sees nothing about people removed in A."""
+    world.a.users["developer"].full_name = "Dana Developer"
+    db.flush()
+    client.delete(f"{O}/{world.a.org.id}/members/{world.a.memberships['developer'].id}", headers=world.a.h("org_admin"))
+    assert "Dana Developer" not in str(events(client, world.b.org.id, world.b.h("org_admin")))
+
+
 # API-154 people with events, for the actor filter ------------------------------------------------------
 
 def actors(client, org_id, headers):  # type: ignore[no-untyped-def]
