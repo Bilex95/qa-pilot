@@ -1,6 +1,6 @@
 # I-07 Test runs, results and bug from a failed step
 
-**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

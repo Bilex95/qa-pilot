@@ -423,3 +423,29 @@ Side by side: `e2e/parity/stage4/i05/compare/*.png`; app captures in `e2e/parity
 | Loading, error | Same skeleton; the error state is the "was not found" panel with a way back |
 
 Backlog: BL-023 to BL-026.
+
+### I-07 Test runs, results and bug from a failed step (SCR-14, SCR-15, SCR-11; REQ-032, REQ-033, REQ-034; D-062)
+
+Migration `0012_runs`, API-101 to API-106, the Test runs list, the Test run screen, and the New bug form drafted from a failed step.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Migration `0012_runs` | down to 0011, up to head, `alembic check`: no new operations |
+| Backend suites | ruff and mypy clean, pytest 1318 passed (49 new run tests: every role on every endpoint, snapshots, read only completed runs, pass rate, draft, link back, cross tenant), Newman 447 requests and 770 assertions, 0 failed, OpenAPI regenerated |
+| Lint, typecheck, `next build` | Clean; `/o/[org]/runs` and `/o/[org]/runs/[key]` in the route list |
+| `e2e/scripts/check-runs-flow.mjs` | PASS. QA Engineer: New test run (both validation messages, a suite chosen, started with two cases, pass rate n/a); a pass and a fail at step 3 with an actual result saved on the server, pass rate 50%; Create bug from failed step: title "... fails at step 3", three steps, expected of step 3, actual result, environment and component prefilled, nothing saved before Save; the saved bug shows "Found in R-n" and the run's environment; the run lists the bug; Cancel keeps the run open, Complete run makes it read only (the API answers 409 `run_completed`); the list shows Completed, 50% and 2 of 2 executed; Developer and Viewer read the list and the run with no controls; an unknown run shows the not found state |
+| Layout (local, 390 and 1440 px only) | PASS at both for the runs list, its dialog and errors, loading, empty and error states, a run in progress (a 50 step failed case open), the Complete run dialog, a completed run with a 120 character name, loading, error, not found, the Developer view and the New bug form from a failed step. The first run found 12 px step numbers and 13 px checkboxes; both fixed. The full layout run is the CI job (D-060) |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side: `e2e/parity/stage4/i07/compare/*.png` (locked on the left, app on the right); app captures in `e2e/parity/stage4/i07/app/`, which also holds the New test run dialog.
+
+| State | Result |
+|---|---|
+| Test runs, default, desktop and mobile | Same legend, table columns, status badges, progress bars, pass rate and "x by name". Release reads "None" until I-08. The fixture list also shows runs left by the test scripts (BL-027) |
+| Test run, default and failed | Same readout, bar, rows with the result buttons, steps table with the failed row, the failbox and the Create bug button. Differences: the run opens on its first failed case, Complete run confirms first |
+| Loading, error | Same skeletons and error box (request id shown); a run that does not exist shows a "was not found" panel |
+
+Backlog: BL-027 (delete a run).

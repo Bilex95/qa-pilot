@@ -34,10 +34,12 @@
 
 * I-05 Bug detail (D-059): migration 0011 (comments, attachments, bug_activity), API-069 to API-077, local volume storage with extension and magic byte checks, authenticated download, timeline entries from every bug change, a move comment becomes a real comment; Bug detail screen (status buttons, Details selects, files, thread, delete). Verified: ruff, mypy, pytest 1249+ passed, migration up/down/up with no drift, Newman 394 requests and 669 assertions, lint, typecheck and `next build` clean, bug detail flow PASS (QA Lead, Developer, Viewer, Org Admin, QA Engineer), parity captured. Layout: **390 px run PASS (105 states, including the I-04 and I-11 states)**; the full run was killed for low memory (see Blockers). Backlog BL-023 to BL-026.
 
+* I-05 follow ups and I-07 (D-060 to D-062): CI runs the full layout check, every screen flow and every parity capture on each stage push and uploads the results; inline editing of the title, description and labels on the bug detail (prototype first, D-061); `python -m app.maintenance orphan-uploads`. I-07 test runs: migration 0012, API-101 to API-106, case snapshots, results, completion, the bug draft of a failed step with the link back, Test runs list and Test run screen. Verified: ruff, mypy, pytest 1318 passed, migration up/down/up with no drift, Newman 447 requests and 770 assertions, lint, typecheck and `next build` clean, runs flow PASS, layout at 390 and 1440 PASS for the changed screens, parity captured. Backlog BL-027.
+
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs (done, see Done); I-06 suites and cases (done, see Done); I-11 settings (done, see Done); I-23 password reset (done, see Done)
-- [ ] 4C: I-04 workflow and board (done, see Done); I-05 bug detail (done, see Done); I-07 runs
+- [ ] 4C: I-04 workflow and board (done, see Done); I-05 bug detail (done, see Done); I-07 runs (done, see Done)
 - [ ] 4D: I-08 releases
 - [ ] 4E: I-09 dashboard and reports; I-12 seed data
 - [ ] 4F: I-13 parity and states pass
