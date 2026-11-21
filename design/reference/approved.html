@@ -1502,6 +1502,7 @@ function scrSettings() {
     <section class="panel"><div class="panel-head"><h2>Change password</h2></div><div class="panel-body stack">
       <div class="field"><label for="p-cur">Current password</label><input class="input" id="p-cur" type="password"></div>
       <div class="field"><label for="p-new">New password</label><input class="input" id="p-new" type="password" aria-describedby="p-new-h"><div class="hint" id="p-new-h">At least 10 characters with a letter and a number. Other sessions are signed out.</div></div>
+      <div class="field"><label for="p-confirm">Confirm new password</label><input class="input" id="p-confirm" type="password"></div>
       <div><button class="btn" data-action="toast" data-msg="Password changed">Change password</button></div></div></section></div>`;
   return head + tabBar + body;
 }
