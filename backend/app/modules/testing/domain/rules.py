@@ -22,6 +22,32 @@ CASE_KEY_PREFIX = "TC"
 CASE_KEY_RE = re.compile(rf"^{CASE_KEY_PREFIX}-(\d{{1,9}})$", re.IGNORECASE)
 
 
+# Test runs (I-07, DOMAIN_MODEL section 5)
+RunStatus = Literal["in_progress", "completed"]
+RunResult = Literal["untested", "pass", "fail", "blocked", "skipped"]
+RUN_STATUSES: tuple[str, ...] = ("in_progress", "completed")
+RUN_RESULTS: tuple[str, ...] = ("untested", "pass", "fail", "blocked", "skipped")
+RUN_KEY_PREFIX = "R"
+MAX_CASES_PER_RUN = 500
+
+
+def run_key(number: int) -> str:
+    return f"{RUN_KEY_PREFIX}-{number}"
+
+
+def pass_rate(counts: dict[str, int]) -> int | None:
+    """Pass rate as the prototype defines it: passes over everything that was decided (pass, fail, blocked). Skipped and not run
+    cases are left out. None when nothing was decided yet."""
+    decided = counts.get("pass", 0) + counts.get("fail", 0) + counts.get("blocked", 0)
+    return (200 * counts.get("pass", 0) + decided) // (2 * decided) if decided else None  # rounds halves up, like the prototype
+
+
+def draft_title(case_title: str, failed_step_index: int | None) -> str:
+    """Title of a bug drafted from a failed step, at most 200 characters."""
+    suffix = f" fails at step {failed_step_index + 1}" if failed_step_index is not None else " fails"
+    return case_title[: 200 - len(suffix)].rstrip() + suffix
+
+
 def case_key(number: int) -> str:
     return f"{CASE_KEY_PREFIX}-{number}"
 

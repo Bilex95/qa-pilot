@@ -11,8 +11,17 @@ PassRates = Callable[[Session, uuid.UUID, list[uuid.UUID]], dict[uuid.UUID, floa
 # (db, org_id, ai_usage_id) -> True when the AI usage row exists in the org
 AiUsageExists = Callable[[Session, uuid.UUID, uuid.UUID], bool]
 
+# (db, org_id, project_id, release_id) -> True when the release exists in the org and belongs to the project (I-08)
+ReleaseExists = Callable[[Session, uuid.UUID, uuid.UUID, uuid.UUID], bool]
+
 last_run_pass_rates: list[PassRates] = []
 ai_usage_exists: list[AiUsageExists] = []
+release_exists: list[ReleaseExists] = []
+
+
+def release_accepted(db: Session, org_id: uuid.UUID, project_id: uuid.UUID, release_id: uuid.UUID) -> bool:
+    """Until the releases module (I-08) registers its check, no release id is valid."""
+    return any(check(db, org_id, project_id, release_id) for check in release_exists)
 
 
 def pass_rates(db: Session, org_id: uuid.UUID, suite_ids: list[uuid.UUID]) -> dict[uuid.UUID, float]:

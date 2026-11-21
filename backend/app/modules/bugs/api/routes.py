@@ -12,12 +12,12 @@ from app.core.errors import AppError, Unprocessable
 from app.core.pagination import Page, PageParams, page_params
 from app.core.permissions import Role
 from app.core.schemas import errors
-from app.modules.bugs.application import detail, integration, service
+from app.modules.bugs.application import detail, hooks, integration, service
 from app.modules.bugs.domain import workflow
 from app.modules.bugs.domain.filters import BugFilters
 from app.modules.bugs.domain.rules import SORT_FIELDS, STATUSES, Priority, Severity, Status
 from app.modules.bugs.infrastructure.models import Attachment, Bug, Comment
-from app.modules.bugs.schemas.bugs import BugCreateIn, BugOut, BugSummaryOut, BugUpdateIn, LabelRef
+from app.modules.bugs.schemas.bugs import BugCreateIn, BugOut, BugSummaryOut, BugUpdateIn, LabelRef, SourceRunOut
 from app.modules.bugs.schemas.detail import ActivityOut, AttachmentOut, CommentIn, CommentOut
 from app.modules.bugs.schemas.views import SavedViewIn, SavedViewOut
 from app.modules.bugs.schemas.workflow import (
@@ -55,8 +55,11 @@ def _summary_fields(bug: Bug, bc: service.BugContext) -> dict[str, object]:
 def _detail(db: DB, ctx: OrgContext, bug: Bug) -> BugOut:
     bc = service.context_for(db, ctx.org_id, [bug])
     comments, files = service.detail_counts(db, bug.id)
+    found = hooks.source_run(db, ctx.org_id, bug.source_run_result_id) if bug.source_run_result_id else None
+    source = SourceRunOut(run_id=found.run_id, run_key=found.run_key, run_name=found.run_name,
+                          case_key=found.case_key) if found else None
     return BugOut(**_summary_fields(bug, bc), description=bug.description, steps_to_reproduce=bug.steps_to_reproduce,
-                  expected_result=bug.expected_result, actual_result=bug.actual_result,
+                  source_run=source, expected_result=bug.expected_result, actual_result=bug.actual_result,
                   source_run_result_id=bug.source_run_result_id, ai_assisted=bug.ai_assisted,
                   status_changed_at=bug.status_changed_at, resolved_at=bug.resolved_at, closed_at=bug.closed_at,
                   comment_count=comments, attachment_count=files)

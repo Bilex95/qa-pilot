@@ -128,6 +128,18 @@ def replace_labels(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID, label_ids:
         db.add(BugLabel(bug_id=bug_id, label_id=label_id, org_id=org_id))
 
 
+def bugs_from_run_results(db: Session, org_id: uuid.UUID, result_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[tuple[uuid.UUID, str]]]:
+    """{run result id: [(bug id, bug key)]} for the bugs filed from those results (I-07), oldest bug first."""
+    out: dict[uuid.UUID, list[tuple[uuid.UUID, str]]] = {rid: [] for rid in result_ids}
+    if result_ids:
+        rows = db.execute(select(Bug.source_run_result_id, Bug.id, Bug.key).where(
+            Bug.org_id == org_id, Bug.deleted_at.is_(None), Bug.source_run_result_id.in_(result_ids)).order_by(Bug.created_at, Bug.id))
+        for rid, bug_id, key in rows:
+            if rid is not None:
+                out[rid].append((bug_id, key))
+    return out
+
+
 # Comments, attachments, activity (I-05) -------------------------------------
 
 def add_activity(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID, actor_id: uuid.UUID, kind: str, *,

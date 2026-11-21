@@ -197,13 +197,14 @@ def test_an_unknown_assignee_and_an_archived_project_are_422(client, world) -> N
 def test_release_and_run_result_checks_come_from_the_modules_that_own_them(client, world) -> None:
     project = make_project(client, world.a)
     release, result = uuid.uuid4(), uuid.uuid4()
+    before = (list(hooks.release_exists), list(hooks.run_result_exists))  # the testing module registers its own check at import
     hooks.release_exists.append(lambda db, org_id, project_id, rid: rid == release)
     hooks.run_result_exists.append(lambda db, org_id, project_id, rid: rid == result)
     try:
         bug = make_bug(client, world.a, project, release_id=str(release), source_run_result_id=str(result))
     finally:
-        hooks.release_exists.clear()
-        hooks.run_result_exists.clear()
+        hooks.release_exists[:] = before[0]
+        hooks.run_result_exists[:] = before[1]
     assert bug["release_id"] == str(release)
 
 

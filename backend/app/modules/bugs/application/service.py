@@ -100,6 +100,11 @@ def context_for(db: Session, org_id: uuid.UUID, bugs: list[Bug]) -> BugContext:
     return BugContext(labels=labels, names=names, now=utcnow())
 
 
+def bugs_from_run_results(db: Session, org_id: uuid.UUID, result_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[tuple[uuid.UUID, str]]]:
+    """Public contract for the testing module: the bugs filed from each run result (I-07)."""
+    return repo.bugs_from_run_results(db, org_id, result_ids)
+
+
 def detail_counts(db: Session, bug_id: uuid.UUID) -> tuple[int, int]:
     """(comments, attachments) of a bug, for the detail output."""
     return repo.detail_counts(db, bug_id)

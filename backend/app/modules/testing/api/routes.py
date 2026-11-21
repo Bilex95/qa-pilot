@@ -10,6 +10,7 @@ from app.core.deps import DB, OrgContext, require
 from app.core.errors import Unprocessable
 from app.core.pagination import Page, PageParams, page_params
 from app.core.schemas import errors
+from app.modules.testing.api.run_routes import router as run_router
 from app.modules.testing.application import service
 from app.modules.testing.domain.rules import CaseType, case_key
 from app.modules.testing.infrastructure.models import TestCase, TestSuite
@@ -27,6 +28,7 @@ from app.modules.testing.schemas.testing import (
 )
 
 router = APIRouter(tags=["testing"])
+router.include_router(run_router)  # test runs, API-101 to API-106 (I-07)
 ERR = errors(401, 403, 404, 422)
 Read = Annotated[OrgContext, Depends(require("test.read"))]
 ManageSuites = Annotated[OrgContext, Depends(require("suite.manage"))]

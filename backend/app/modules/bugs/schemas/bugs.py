@@ -43,12 +43,22 @@ class BugSummaryOut(ApiModel):
     updated_at: datetime
 
 
+class SourceRunOut(ApiModel):
+    """The test run a bug was filed from (I-07): shown as a link to the run."""
+
+    run_id: uuid.UUID
+    run_key: str
+    run_name: str
+    case_key: str
+
+
 class BugOut(BugSummaryOut):
     description: str
     steps_to_reproduce: list[str]
     expected_result: str
     actual_result: str
     source_run_result_id: uuid.UUID | None
+    source_run: SourceRunOut | None
     ai_assisted: bool
     status_changed_at: datetime
     resolved_at: datetime | None
