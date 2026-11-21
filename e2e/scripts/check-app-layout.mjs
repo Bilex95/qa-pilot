@@ -341,12 +341,35 @@ async function go(page, path) {
   }
 }
 
-await ensureLongFixture();
-await ensureLabelFixture();
-await ensureBugFixture();
-await ensureTestFixture();
-await ensureResetFixture();
-const browser = await chromium.launch();
+try {
+  await ensureLongFixture();
+  await ensureLabelFixture();
+  await ensureBugFixture();
+  await ensureTestFixture();
+  await ensureResetFixture();
+} catch (e) { // a fixture that was half created is removed before the run stops
+  console.log(`FAIL: could not create the fixtures: ${String(e.message || e).split(/\r?\n/)[0]}`);
+  await removeResetFixture().catch(() => {});
+  await removeBugFixture().catch(() => {});
+  await removeLabelFixture().catch(() => {});
+  await removeInviteFixture().catch(() => {});
+  process.exit(1);
+}
+// Light on memory (CLAUDE.md, Part 3): one page at a time (never more than 2), and the browser is closed and started again
+// after every batch of widths (default 3, change with --batch), so a long run never holds one big browser process.
+const BATCH = Math.max(1, Number(arg('--batch', '3')));
+let cleaned = false;
+async function cleanupAll() { // runs once, at the end and also when the run stops on an error or Ctrl+C
+  if (cleaned) return;
+  cleaned = true;
+  await removeResetFixture().catch((e) => console.log(`note: could not remove the reset fixture member: ${e.message}`));
+  await removeBugFixture().catch((e) => console.log(`note: could not remove the bug fixture: ${e.message}`));
+  await removeLabelFixture().catch((e) => console.log(`note: could not remove the label fixture: ${e.message}`));
+  await removeInviteFixture().catch((e) => console.log(`note: could not revoke the invitation fixture: ${e.message}`));
+}
+process.on('uncaughtException', async (e) => { console.log(`FAIL: ${String(e.message || e).split(/\r?\n/)[0]}`); await cleanupAll(); process.exit(1); });
+process.on('SIGINT', async () => { await cleanupAll(); process.exit(130); });
+let browser = await chromium.launch();
 { // warm up every route once so first compiles do not disturb the checks
   const warm = await browser.newPage();
   for (const path of ['/login', '/register', '/invite#not-a-real-token-000', '/forgot-password', '/reset-password', '/onboarding/org', '/o/lumen/dashboard',
@@ -357,8 +380,13 @@ const browser = await chromium.launch();
   }
   await warm.close();
 }
+await browser.close();
+browser = undefined;
 let screens = 0;
+let started = 0;
 for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
+  if (started % BATCH === 0) { if (browser) await browser.close(); browser = await chromium.launch(); }
+  started++;
   const touch = vp.width <= TOUCH_MAX;
   const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.scale, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
@@ -448,7 +476,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
 
   // Settings, Labels tab (I-02): default table with a 40 character name, the New label dialog and its error state
   step = 'open settings';
-  await go(page, '/o/lumen/settings');
+  await go(page, '/o/lumen/settings?tab=labels');
   await page.waitForSelector('table.t .label-chip');
   await check('/o/lumen/settings (labels)', { shot: 'settings-labels' });
   step = 'open the New label dialog';
@@ -743,6 +771,75 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.waitForSelector('.banner.error');
   await check('new case: error banner', { shot: 'case-new-error' });
 
+  // Settings (I-11): Organization, Audit log and My profile as the Org Admin, with their error, loading and empty states
+  step = 'open the Organization tab';
+  await go(page, '/o/lumen/settings');
+  await page.waitForSelector('#s-name');
+  await page.waitForSelector('#s-lim');
+  await check('/o/lumen/settings (Organization)', { shot: 'settings-org' });
+  step = 'turn AI off in the form (not saved)';
+  await page.click('label.switch');
+  if (!(await page.isDisabled('#s-lim')) || !(await page.isVisible('#s-lim'))) note(vp, 'settings (AI off)', ['the daily limit must be disabled and still visible while AI is off']);
+  await check('settings: AI off, daily limit disabled', { shot: 'settings-org-ai-off' });
+  step = 'submit a name that is too short';
+  await page.fill('#s-name', 'x');
+  await page.click('button:has-text("Save changes")');
+  await page.waitForSelector('#s-name-e');
+  await check('settings: workspace name error', { shot: 'settings-org-error' });
+  step = 'enter a daily limit that is not allowed';
+  await page.click('label.switch');
+  await page.fill('#s-lim', '0');
+  await page.click('button:has-text("Save AI settings")');
+  await page.waitForSelector('#s-lim-e');
+  await check('settings: daily limit error', { shot: 'settings-org-limit-error' });
+
+  step = 'open the Audit log tab';
+  const auditUrl = /\/api\/v1\/orgs\/[^/]+\/audit-events\?/;
+  await go(page, '/o/lumen/settings?tab=audit');
+  await page.waitForSelector('table.t tbody tr');
+  await check('settings: audit log', { shot: 'settings-audit' });
+  step = 'filter the audit log to a range with no events';
+  await page.fill('input[aria-label="From date"]', '2020-01-01');
+  await page.fill('input[aria-label="To date"]', '2020-01-02');
+  await page.waitForSelector('text=No events match these filters');
+  await check('settings: audit log, no events match', { shot: 'settings-audit-empty' });
+  step = 'enter an end date before the start date';
+  await page.fill('input[aria-label="From date"]', '2020-02-01');
+  await page.waitForSelector('text=The end date is before the start date');
+  await check('settings: audit log, bad date range', { shot: 'settings-audit-range' });
+  step = 'show the audit log loading and error states';
+  await page.route(auditUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/settings?tab=audit`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Settings")');
+  await page.waitForSelector('.sk');
+  await check('settings: audit log loading', { shot: 'settings-audit-loading' });
+  await page.waitForSelector('table.t tbody tr');
+  await page.unroute(auditUrl);
+  await page.route(auditUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i11' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/settings?tab=audit');
+  await page.waitForSelector('.state-box.error');
+  await check('settings: audit log error', { shot: 'settings-audit-error' });
+  await page.unroute(auditUrl);
+
+  step = 'open My profile';
+  await go(page, '/o/lumen/settings?tab=profile');
+  await page.waitForSelector('#p-name');
+  await check('settings: my profile', { shot: 'settings-profile' });
+  step = 'submit the empty password form';
+  await page.click('button:has-text("Change password")');
+  await page.waitForSelector('#p-cur-e');
+  await check('settings: change password errors', { shot: 'settings-profile-errors' });
+  step = 'submit a wrong current password';
+  await page.fill('#p-cur', 'Not-my-password-1');
+  await page.fill('#p-new', 'Another-pass-2027');
+  await page.fill('#p-confirm', 'Another-pass-2027');
+  await page.click('button:has-text("Change password")');
+  await page.waitForSelector('text=That is not your current password.');
+  await check('settings: wrong current password', { shot: 'settings-profile-wrong' });
+
   // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
   step = 'sign out to sign in as the QA Lead';
   await page.click('.user-btn');
@@ -761,6 +858,13 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
     note(vp, 'members (QA Lead)', ['the QA Lead sees a control that only an Org Admin may use']);
   }
   await check('/o/lumen/members (QA Lead, read only)', { shot: 'members-lead' });
+  step = 'open settings as the QA Lead';
+  await go(page, '/o/lumen/settings');
+  await page.waitForSelector('[role=tab]');
+  const leadTabs = (await page.locator('[role=tab]').allInnerTexts()).map((t) => t.trim()).join('|');
+  if (leadTabs !== 'Labels|My profile') note(vp, 'settings (QA Lead)', [`the QA Lead sees the tabs "${leadTabs}" instead of Labels and My profile`]);
+  await page.waitForSelector('table.t .label-chip');
+  await check('/o/lumen/settings (QA Lead)', { shot: 'settings-lead' });
 
   // The Developer: severity and priority are disabled on the New bug form (D-032); the Viewer cannot report bugs
   await signInAs(page, 'diego@lumenfreight.test');
@@ -802,6 +906,12 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await go(page, '/o/lumen/bugs/new');
   await page.waitForSelector('text=Viewers cannot report bugs');
   await check('/o/lumen/bugs/new (Viewer, no access)', { shot: 'bug-new-viewer' });
+  step = 'open settings as the Viewer';
+  await go(page, '/o/lumen/settings');
+  await page.waitForSelector('#p-name');
+  const viewerTabs = (await page.locator('[role=tab]').allInnerTexts()).map((t) => t.trim()).join('|');
+  if (viewerTabs !== 'My profile') note(vp, 'settings (Viewer)', [`the Viewer sees the tabs "${viewerTabs}" instead of only My profile`]);
+  await check('/o/lumen/settings (Viewer)', { shot: 'settings-viewer' });
 
   // Long names and emails (rule 4)
   step = 'back to the dashboard to sign out';
@@ -853,11 +963,8 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   if (errors.length) note(vp, 'page errors', errors);
   await ctx.close();
 }
-await browser.close();
-await removeResetFixture().catch((e) => console.log(`note: could not remove the reset fixture member: ${e.message}`));
-await removeBugFixture().catch((e) => console.log(`note: could not remove the bug fixture: ${e.message}`));
-await removeLabelFixture().catch((e) => console.log(`note: could not remove the label fixture: ${e.message}`));
-await removeInviteFixture().catch((e) => console.log(`note: could not revoke the invitation fixture: ${e.message}`));
+if (browser) await browser.close();
+await cleanupAll();
 
 console.log(`Checked ${screens} screen and popup states at ${VIEWPORTS.filter((v) => !ONLY || v.label === ONLY).map((v) => v.label).join(', ')}`);
 if (problems.size) {
