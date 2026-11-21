@@ -369,3 +369,15 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 * **Save buttons stay enabled:** as in the prototype. Saving with nothing changed shows "Nothing to change." and sends no request.
 * **Provider banner:** the prototype names the AI provider; no API exposes it before I-14, so the banner says the model is chosen in the server environment. BL-021 puts the provider name back when an endpoint offers it.
 * **Layout check lighter (product owner):** the browser is closed and started again after every batch of 3 widths (`--batch`), one page at a time, and half created fixtures are removed when the run stops on an error. The full layout run for I-11 was killed for low memory three times (the machine had 3.5 GB free of 15.7 GB), so I-11 has no full layout run; the changed screens were checked by the parity capture at 1440 and 390 and by the design validation.
+
+## D-058 Bug workflow, transitions and Board (I-04)
+* **Fixed table, no configuration (D-005):** 9 statuses and 16 moves live in `bugs/domain/workflow.py`; `GET /bug-workflow` (API-067) publishes the table so the screen never keeps its own copy. The screen adds only the role and assignee rule (`allowedTargets`), and the server remains the judge.
+* **Two refusals:** a move not in the table is 409 `invalid_transition` with `details.allowed`; a move in the table that the role or the bug does not permit is 403. A stale board therefore shows the real reason.
+* **Developer rule:** a Developer may move a bug only when it is assigned to them or unassigned; moving an unassigned bug to In progress assigns it to them (D-006). QA Engineer: triage, verify, reopen, close. Viewer: none. Org Admin and QA Lead: every move.
+* **Comment on a move:** up to 2,000 characters, kept in the `bug.status_changed` audit event. There is no comments table until I-05, so the move comment does not appear on the bug yet; I-05 will show it as an activity line. `BugActivity` is left to I-05.
+* **Board window:** each column returns its first 50 cards and a `total`; a column over 50 says "Showing N of M" and links to the filtered list. The status filter is ignored on the board because the columns are the statuses.
+* **Optimistic moves (D-025):** the card moves at once, a server refusal rolls it back with a toast, and the board and bug list queries are refreshed after every move.
+* **Keyboard path:** each card has a "Move KEY to" menu listing the 8 other statuses, with not allowed ones disabled and labelled, so drag is never the only way.
+* **Transition buttons on the bug detail page** arrive with I-05 using API-065 and API-066 and the same `allowedTargets`.
+* **No new CSS:** the board reuses rules already generated from the prototype.
+* **Layout check:** the I-04 full run did not pass (killed for memory, then the stack stopped answering on the lighter retry); logged in PROGRESS and the stage review, per Part 3.

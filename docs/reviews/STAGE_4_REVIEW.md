@@ -367,3 +367,32 @@ Side by side images: `e2e/parity/stage4/i11/compare/*.png` (locked on the left, 
 | No locked screenshot | Audit log (default, no events match, bad date range, loading, error), the Organization errors, My profile errors and the QA Lead and Viewer tab sets: captured by the layout check in its next full run |
 
 Backlog: BL-021 (show the AI provider), BL-022 (more audit details), BL-020 done.
+
+### I-04 Bug workflow, transitions and Kanban board (SCR-09; REQ-019, REQ-028; D-058)
+
+The nine status state machine on the server, the transitions and board endpoints (API-065 to API-068), and the Board screen with drag, a keyboard Move to menu, optimistic moves and rollback.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Workflow rules | 16 moves between 9 statuses in `bugs/domain/workflow.py`. `test_workflow_rules.py` checks every status pair for every role against an independent copy of the specification. Org Admin and QA Lead make every move; QA Engineer triages, verifies, reopens and closes; Developer starts, fixes, hands back and marks ready for retest, only on a bug assigned to them or unassigned (starting an unassigned bug assigns it to them); Viewer makes none |
+| Transitions API | A pair outside the table answers 409 `invalid_transition` with `details.allowed`; a pair in the table that the role may not make answers 403. `resolved_at` is set on fixed and won't fix, `closed_at` on closed, both cleared on reopened; `status_changed_at` and `updated_at` change on every move. The comment (up to 2,000 characters) is kept in the `bug.status_changed` audit event |
+| Board API | `GET bugs/board` returns the nine columns with a `total` and the first 50 cards each (one `row_number` window query), project and other filters honoured, the status filter ignored. Cross tenant, unauthorized and forbidden tests for every endpoint |
+| Backend suites | ruff and mypy clean, pytest 1119 passed, Newman 338 requests and 568 assertions, 0 failed (about 40 new requests: workflow, transitions, board, per role refusals, side effects), OpenAPI regenerated |
+| Lint, typecheck, `next build` | Clean in one off containers in WSL; `/o/[org]/board` is in the route list |
+| `e2e/scripts/check-board-flow.mjs` | PASS. Nine columns in order; drag New to Triaged; a refused drag to Fixed shows the reason; the Move to menu by keyboard with 6 of 8 targets "not allowed" from New; a stale board (someone else moved the bug) is refused with a rollback and a refresh; a 500 rolls the card back; Developer takes an unassigned bug and is refused another person's; Viewer cannot move. Test project `Z`+4 letters is cleaned in `finally` (bugs deleted, project archived) |
+| Design | No new CSS: the board reuses the prototype's `.board`, `.col` and `.card` rules already in `globals.css` |
+| Full layout check | **Not passed for I-04.** The first run was killed for low memory. The retry with one width per browser ran 654 states but the stack stopped answering midway ("fetch failed"), leaving 3 flow timeouts (settings in the long names workspace, the Past SLA badge), not layout findings. Fixtures were removed by `clean-layout-fixtures.mjs` (one live reset link revoked, 0 left). Logged in PROGRESS per Part 3. The board states (default, Move menu, loading, empty, error, Viewer) are in `check-app-layout.mjs` and run in the next full run |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side images: `e2e/parity/stage4/i04/compare/*.png` (locked on the left, app on the right); app captures in `e2e/parity/stage4/i04/app/`, which also holds the Move to menu.
+
+| State | Result |
+|---|---|
+| Board, default, desktop and mobile | Same nine columns, header counts, card layout and severity and priority chips. Differences: cards show no SLA badge (the test bugs are new); no "View as" control in the top bar (prototype only) |
+| Board, empty, loading, error | Same empty message, skeleton columns and error box (request id shown) |
+| Move to menu | No locked screenshot: a menu "Move KEY to" lists the 8 other statuses, with "(not allowed)" and disabled for moves the role or the bug does not permit |
+
+Backlog: none added. The bug detail transition buttons come with I-05 (D-058).

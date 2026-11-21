@@ -30,10 +30,12 @@
 
 * I-11 Settings (D-056, D-057): BL-020 first (removing a person ends their reset links and, with no workspace left, their sessions); backend gaps closed (password and name changes audited per workspace, `actor_name` and `target_name` on audit events, `GET {O}/audit-events/actors` API-154); Organization (name, AI switch, daily limit disabled but kept while AI is off), Audit log (filters, local day range sent as UTC, pager) and My profile (name, password change through the session route that replaces the refresh cookie) tabs; `useAiEnabled()`; Confirm new password added to the prototype and the locked Settings screenshots. Verified: ruff, mypy, pytest 659 passed, Newman 305 requests and 505 assertions, lint, typecheck and `next build` clean, settings flow PASS (direct API refusals as QA Lead, Developer and Viewer, UTC+1 range), design validation PASS, parity compared at 1440 and 390 in `docs/reviews/STAGE_4_REVIEW.md`. **The full layout check was not run for I-11** (killed for low memory three times); its Settings states are in `check-app-layout.mjs` for the next full run.
 
+* I-04 Bug workflow and Board (D-058): backend state machine (9 statuses, 16 moves, role and assignee rules, 409 `invalid_transition` with the allowed list, 403 for a role refusal, `resolved_at` and `closed_at` effects, Developer self assign), API-065 to API-068 (workflow, transitions list and post, board), Kanban Board screen (nine columns, drag, keyboard Move to menu, optimistic move with rollback, project select, loading, empty and error states). Verified: ruff, mypy, pytest 1119 passed, Newman 338 requests and 568 assertions, OpenAPI regenerated, lint, typecheck and `next build` clean, board flow PASS (drag, refused drag, keyboard, stale board rollback, 500 rollback, Developer and Viewer rules), parity compared at 1440 and 390 in `docs/reviews/STAGE_4_REVIEW.md`. **The full layout check did not pass for I-04** (see Blockers).
+
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs (done, see Done); I-06 suites and cases (done, see Done); I-11 settings (done, see Done); I-23 password reset (done, see Done)
-- [ ] 4C: I-04 workflow and board; I-05 bug detail; I-07 runs
+- [ ] 4C: I-04 workflow and board (done, see Done); I-05 bug detail; I-07 runs
 - [ ] 4D: I-08 releases
 - [ ] 4E: I-09 dashboard and reports; I-12 seed data
 - [ ] 4F: I-13 parity and states pass
@@ -48,3 +50,4 @@
 
 ## Blockers
 * Open item, 2026-11-21, I-11: the full layout check was killed for low memory three times (3.5 GB free of 15.7 GB), the last time after it was made lighter. Each kill left fixtures; `e2e/scripts/clean-layout-fixtures.mjs` removed them (0 live reset links). The product owner chose to skip the layout step for I-11 and go on. Its Settings states are in `check-app-layout.mjs` and run in the next full run; the next full run is also the first one with the browser restarted every 3 widths. Include this in the final review.
+* Open item, 2026-11-21, I-04: the full layout check was killed for low memory once, then retried once with one width per browser (`-Batch 1`). The retry ran 654 states but the stack stopped answering midway ("fetch failed"), leaving 3 flow problems (settings in the long names workspace, the Past SLA badge) that are timeouts, not layout findings. Fixtures were cleaned again (one live reset link revoked, 0 left). Per Part 3 the layout step is skipped for I-04 and logged here. The board states are in `check-app-layout.mjs`; the I-11 and I-04 states run in the next full run. Include this in the final review.
