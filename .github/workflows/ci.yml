@@ -143,7 +143,7 @@ jobs:
         with:
           node-version: "22"
       - name: Newman
-        run: npx --yes newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --env-var "password=${SEED_PW}"
+        run: npx --yes newman@6.2.3 run postman/qa-pilot.postman_collection.json -e postman/local.postman_environment.json --working-dir postman --env-var "password=${SEED_PW}"
       - name: Backend logs on failure
         if: failure()
         run: docker compose logs backend --tail 200
@@ -184,18 +184,43 @@ jobs:
       - name: Sign out from every signed in page
         working-directory: e2e
         run: node scripts/check-signout.mjs
-      - name: Responsive and popup checks
+      - name: Responsive and popup checks (full layout check)
         working-directory: e2e
-        run: node scripts/check-app-layout.mjs --shots ci-layout-shots
-      - name: Screenshots
+        run: node scripts/check-app-layout.mjs --shots ci-layout-shots --batch 3 2>&1 | tee layout-result.txt; exit "${PIPESTATUS[0]}"
+        shell: bash
+      - name: Screen flows
+        working-directory: e2e
+        run: |
+          for f in check-bugs-flow check-tests-flow check-board-flow check-bug-detail-flow check-settings-flow check-members-flow check-reset-flow; do
+            echo "== $f"; node "scripts/$f.mjs" || exit 1
+          done
+        shell: bash
+      - name: Parity capture (real screens next to the locked screenshots)
+        if: always()
+        working-directory: e2e
+        run: |
+          for f in capture-bugs-parity capture-tests-parity capture-members-parity capture-settings-parity capture-board-parity capture-bug-detail-parity; do
+            echo "== $f"; node "scripts/$f.mjs" || true
+          done
+        shell: bash
+      - name: Layout screenshots and result
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: layout-screenshots
           path: |
             e2e/ci-layout-shots
-            e2e/parity/stage3-*.png
+            e2e/layout-result.txt
           if-no-files-found: ignore
+          retention-days: 30
+      - name: Parity screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-screenshots
+          path: e2e/parity
+          if-no-files-found: ignore
+          retention-days: 30
       - name: Logs on failure
         if: failure()
         run: docker compose logs --tail 200 backend frontend
