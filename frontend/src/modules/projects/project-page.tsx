@@ -16,7 +16,7 @@ import { ProgressBar } from "@/modules/testing/components/progress-bar";
 import { ComponentsDialog, EnvironmentsDialog } from "./components/manage-dialogs";
 import { ProjectDialog } from "./components/project-dialog";
 import { useProjectBugs, useProjectByKey, useProjectRuns } from "./hooks";
-import { rateText, type ProjectDetail } from "./projects";
+import { rateText, type Project, type ProjectDetail } from "./projects";
 
 /**
  * SCR-07 Project overview (API-042, API-044, API-048; REQ-013 to REQ-016): the project's figures, its newest bugs and runs, and its
@@ -35,14 +35,17 @@ export function ProjectPage({ projectKey }: { projectKey: string }) {
     return (
       <>
         {crumbs(projectKey.toUpperCase())}
+        {project.listed ? <ProjectHead project={project.listed} onEdit={() => undefined} /> : null}
         <div role="status" aria-live="polite">
           <span className="sr-only">Loading</span>
           <div aria-hidden="true">
-            <div className="sk sk-line" style={{ width: "40%", height: 28 }} />
-            <div className="sk" style={{ height: 96, margin: "16px 0" }} />
+            {project.listed ? null : <div className="sk sk-line" style={{ width: "40%", height: 28 }} />}
             <div className="split">
-              <div className="panel panel-body">{[90, 70, 100, 60, 85].map((w, i) => <div key={i} className="sk sk-line" style={{ width: `${w}%` }} />)}</div>
-              <div className="panel panel-body">{[1, 2, 3, 4].map((i) => <div key={i} className="sk sk-line" />)}</div>
+              <div className="panel panel-body">
+                {[90, 70, 100, 60, 85, 40].map((w, i) => <div key={i} className="sk sk-line" style={{ width: `${w}%` }} />)}
+                <div className="sk" style={{ height: 140, marginTop: 20 }} />
+              </div>
+              <div className="panel panel-body">{[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="sk sk-line" />)}</div>
             </div>
           </div>
         </div>
@@ -66,13 +69,44 @@ export function ProjectPage({ projectKey }: { projectKey: string }) {
   }
   if (project.isError || !project.data) {
     return (
-      <>
-        {crumbs(projectKey.toUpperCase())}
-        <ErrorState what="this project" onRetry={project.refetch} requestId={isApiError(project.error) ? project.error.requestId : undefined} />
-      </>
+      <FailedDetail crumbs={crumbs(projectKey.toUpperCase())} listed={project.listed}
+        error={<ErrorState what="this project" onRetry={project.refetch} requestId={isApiError(project.error) ? project.error.requestId : undefined} />} />
     );
   }
   return <Loaded project={project.data} crumbs={crumbs(project.data.key)} />;
+}
+
+/** The title, the description and the Edit project button of the overview (the locked error state keeps them above the error box). */
+function ProjectHead({ project, onEdit }: { project: Pick<Project, "name" | "key" | "description" | "archived_at">; onEdit: () => void }) {
+  const org = useOrg();
+  const archived = project.archived_at !== null;
+  return (
+    <div className="page-head">
+      <div className="grow">
+        <h1 style={{ overflowWrap: "anywhere" }}>{project.name} <span className="mono muted" style={{ fontSize: 16 }}>{project.key}</span></h1>
+        {project.description ? <p style={{ overflowWrap: "anywhere" }}>{project.description}</p> : null}
+        {archived ? <p className="small muted">This project is archived. Its bugs and tests stay readable; it takes nothing new.</p> : null}
+      </div>
+      {can(org.role, "project.manage") && !archived ? <div className="actions"><Button onClick={onEdit}>Edit project</Button></div> : null}
+    </div>
+  );
+}
+
+/** The detail could not be read: the head from the list stays, with the error box under it, as in the locked screenshot. */
+function FailedDetail({ crumbs, listed, error }: { crumbs: React.ReactNode; listed: Project | undefined; error: React.ReactNode }) {
+  const org = useOrg();
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  return (
+    <>
+      {crumbs}
+      {listed ? <ProjectHead project={listed} onEdit={() => setEditing(true)} /> : null}
+      {error}
+      {editing && listed ? (
+        <ProjectDialog project={listed} onClose={() => setEditing(false)} onSaved={() => setEditing(false)} onArchived={() => router.push(`/o/${org.slug}/projects`)} />
+      ) : null}
+    </>
+  );
 }
 
 function Loaded({ project, crumbs }: { project: ProjectDetail; crumbs: React.ReactNode }) {
@@ -88,14 +122,7 @@ function Loaded({ project, crumbs }: { project: ProjectDetail; crumbs: React.Rea
   return (
     <>
       {crumbs}
-      <div className="page-head">
-        <div className="grow">
-          <h1 style={{ overflowWrap: "anywhere" }}>{project.name} <span className="mono muted" style={{ fontSize: 16 }}>{project.key}</span></h1>
-          {project.description ? <p style={{ overflowWrap: "anywhere" }}>{project.description}</p> : null}
-          {archived ? <p className="small muted">This project is archived. Its bugs and tests stay readable; it takes nothing new.</p> : null}
-        </div>
-        {canManage && !archived ? <div className="actions"><Button onClick={() => setDialog("edit")}>Edit project</Button></div> : null}
-      </div>
+      <ProjectHead project={project} onEdit={() => setDialog("edit")} />
       <section className="readout" aria-label="Project numbers">
         <div><div className="num">{project.open_bug_count}</div><div className="cap">Open bugs</div></div>
         <div className={critical ? "alert" : ""}><div className="num">{critical}</div><div className="cap">Open Critical</div></div>

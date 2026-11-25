@@ -40,6 +40,7 @@ export function useProjectByKey(key: string) {
   });
   return {
     data: one.data,
+    listed: all.data?.items.find((p) => p.key === wanted), // what the list already knows: the page head can stay when the detail fails
     isPending: all.isPending || (!!id && one.isPending),
     isError: all.isError || one.isError,
     error: all.error ?? one.error,

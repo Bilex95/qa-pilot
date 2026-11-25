@@ -540,6 +540,7 @@ The pass found one real gap: **Projects (SCR-06) and Project overview (SCR-07) h
 | Lint, typecheck, `next build` | Clean; `/o/[org]/projects` and `/o/[org]/projects/[key]` in the route list |
 | `e2e/scripts/check-projects-flow.mjs` | **PASS** (list figures; New project validation, taken key WEB, key in capitals; overview of a new project; components added, refused, renamed, kept on Cancel, deleted; environments added and deleted; the data project's figures, bugs and run; Edit project; Archive; Developer and Viewer read only; not found and 404) |
 | `e2e/scripts/check-app-axe.mjs` (new) | **PASS**: axe, WCAG 2.0 and 2.1 A and AA, 16 screens at 1440 and 390 px, no violations (run before the project overview was added to the list; it is in the next run) |
+| CI (2026-11-25) | The run for 710a3d9 failed only in the layout step, after 50 minutes: on a fresh database the layout fixture started the failed run twice and used the untouched one (fixed, D-068). Backend, frontend, contract and Newman jobs were green on I-12. The browser checks are now parallel jobs (layout in five shards, flows in three groups, parity) |
 | Flows on the seeded data | All twelve other scripts passed on the seeded baseline earlier today (I-12). **Not rerun after the I-13 changes:** the run of all scripts was stopped for low memory (see below). The I-13 changes that could affect them are the project figures on API-040 and API-042 and the rename of the layout check's labels |
 | Layout (local) | **Not run for the projects states** (added to `check-app-layout.mjs`): no local layout run was started after the earlier low memory stop. CI runs it |
 | **Memory** | **The machine ran out of memory twice today** (the 390 px layout run for I-09, and the run of all flow scripts for I-13), so under the autonomy rules the work stops here for a decision: see Open decisions in PROGRESS |
@@ -552,6 +553,13 @@ Side by side: `e2e/parity/stage4/i13/compare/*.png`; app captures in `e2e/parity
 |---|---|
 | Projects, default | Same columns, key in mono, figures, the next release with its badge. Numbers differ with the data (the dev database had many leftover test projects, now archived by the cleanup script) |
 | Project overview, default | Same title with the key, description, Edit project, four figures (Critical in red), recently updated bugs table, latest runs with the progress bar, components and environments panels. The Add buttons open management dialogs (not in the prototype, which showed a toast) |
-| Loading, empty, error, mobile | Captured (eight more pairs in the compare folder); **not yet looked at one by one**, so no verdict is claimed for them |
+| Projects, empty | Matches: same icon, title, text and New project button |
+| Projects, error | Matches: same box, text, Try again and request id |
+| Projects, loading | Matches after a fix to the capture (the first screenshot caught the sign in skeleton before the page): same title and table skeleton |
+| Overview, empty | Matches. Differences by decision: the figures and components are the project's real ones (the prototype kept the sample suites and components), an "All runs" link beside Latest test runs |
+| Overview, error | **Fixed:** the page showed only the breadcrumb and the error box; the locked screenshot keeps the project title, description and Edit project above the error box. The head now comes from the list the page already loaded |
+| Overview, loading | **Fixed:** same head above the skeleton, and the skeleton no longer has the extra block of figures (two panels, as locked) |
+| Projects, mobile | Matches: stacked cards with the same labels and the next release badge |
+| Overview, mobile | Matches: the figures in two columns, the stacked bug cards. Edit project sits under the title as locked |
 
 Backlog: BL-028 (archived projects list and restore, lookup by key beyond 100 projects, environment order).

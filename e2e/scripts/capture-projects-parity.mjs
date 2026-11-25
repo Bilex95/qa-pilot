@@ -129,6 +129,7 @@ try {
   step = 'loading';
   await l.page.route(listUrl, () => { /* never answered */ });
   await l.page.goto(`${BASE}/o/lumen/projects`);
+  await l.page.waitForSelector('h1:has-text("Projects")'); // the page, not the sign in bootstrap skeleton that shows first on a cold route
   await l.page.waitForSelector('.sk');
   await shot(l.page, 'projects-loading-desktop'); pairs.push(['projects-loading-desktop', 'projects-loading-desktop.png']);
   await l.page.unroute(listUrl);
@@ -136,7 +137,8 @@ try {
   await l.page.waitForSelector('.readout');
   await l.page.route(oneUrl, () => { /* never answered */ });
   await l.page.goto(`${BASE}/o/lumen/projects/${DATA_KEY}`);
-  await l.page.waitForSelector('.sk');
+  await l.page.waitForSelector('h1:has-text("parity-i13 data")');
+  await l.page.waitForSelector('[role=status] .sk');
   await shot(l.page, 'project-overview-loading-desktop'); pairs.push(['project-overview-loading-desktop', 'project-overview-loading-desktop.png']);
   await l.ctx.close();
 
@@ -160,6 +162,7 @@ try {
   await e.page.route(oneUrl, fail500);
   await e.page.goto(`${BASE}/o/lumen/projects/${DATA_KEY}`);
   await e.page.waitForSelector('.state-box.error');
+  await e.page.waitForSelector('h1:has-text("parity-i13 data")');
   await shot(e.page, 'project-overview-error-desktop'); pairs.push(['project-overview-error-desktop', 'project-overview-error-desktop.png']);
   await e.ctx.close();
 
