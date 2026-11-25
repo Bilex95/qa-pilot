@@ -66,7 +66,11 @@ echo "ok   origin $REPO is PRIVATE"
 LOCAL_EMAIL="$(git config user.email | tr '[:upper:]' '[:lower:]')"
 [ -n "$LOCAL_EMAIL" ] || fail "git config user.email is empty"
 PUBLIC_EMAIL="$(gh api user --jq '.email // ""' | tr '[:upper:]' '[:lower:]')" || fail "gh api user failed"
-if [ -n "$PUBLIC_EMAIL" ]; then
+# the account's own GitHub noreply address (id+login@users.noreply.github.com) is always allowed (D-073)
+NOREPLY_EMAIL="$(gh api user --jq '"\(.id)+\(.login)@users.noreply.github.com"' | tr '[:upper:]' '[:lower:]')" || fail "gh api user failed"
+if [ "$LOCAL_EMAIL" = "$NOREPLY_EMAIL" ]; then
+  echo "ok   git email is the account's GitHub noreply address"
+elif [ -n "$PUBLIC_EMAIL" ]; then
   # GitHub only allows a verified address as the public profile email
   [ "$LOCAL_EMAIL" = "$PUBLIC_EMAIL" ] || fail "git email does not match the account's verified profile email; tell the owner before pushing"
   echo "ok   git email matches the verified public profile email"
