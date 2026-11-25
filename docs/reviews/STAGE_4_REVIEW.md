@@ -527,3 +527,31 @@ Projects, components, labels, bugs, suites, cases, runs, results and releases fo
 The dashboard on the seeded baseline (`e2e/parity/stage4/i09/compare/dashboard-default-desktop.png`) shows the same four figures, severity bars, trend, components and the three readiness badges as the locked screenshot (Blocked, At risk, Ready, with the prototype's reasons). Numbers differ because the dev database also holds leftover fixtures (runs cannot be deleted in v1, BL-027) and a fixture project made by the capture itself. A duplicate React key on the components list (two projects with a "Checkout" component) was found through the dev overlay and fixed.
 
 Known gaps: audit events of the seeded rows carry the time of seeding, not the backdated time (only the timeline, bug, run and result dates are moved); the full layout run with the seeded data is the CI job.
+
+### I-13 Stage 4 design parity and states pass (REQ-055 to REQ-058; D-067)
+
+The pass found one real gap: **Projects (SCR-06) and Project overview (SCR-07) had never been built** (only their API in I-01); `/projects` was the placeholder. They are built now (D-067), with the API figures they need.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Backend suites | ruff and mypy clean (143 source files), **pytest 1476 passed** (1471 before, 5 new for the project figures), **Newman 549 requests and 945 assertions, 0 failed** on the reseeded database, OpenAPI and TypeScript types regenerated |
+| Lint, typecheck, `next build` | Clean; `/o/[org]/projects` and `/o/[org]/projects/[key]` in the route list |
+| `e2e/scripts/check-projects-flow.mjs` | **PASS** (list figures; New project validation, taken key WEB, key in capitals; overview of a new project; components added, refused, renamed, kept on Cancel, deleted; environments added and deleted; the data project's figures, bugs and run; Edit project; Archive; Developer and Viewer read only; not found and 404) |
+| `e2e/scripts/check-app-axe.mjs` (new) | **PASS**: axe, WCAG 2.0 and 2.1 A and AA, 16 screens at 1440 and 390 px, no violations (run before the project overview was added to the list; it is in the next run) |
+| Flows on the seeded data | All twelve other scripts passed on the seeded baseline earlier today (I-12). **Not rerun after the I-13 changes:** the run of all scripts was stopped for low memory (see below). The I-13 changes that could affect them are the project figures on API-040 and API-042 and the rename of the layout check's labels |
+| Layout (local) | **Not run for the projects states** (added to `check-app-layout.mjs`): no local layout run was started after the earlier low memory stop. CI runs it |
+| **Memory** | **The machine ran out of memory twice today** (the 390 px layout run for I-09, and the run of all flow scripts for I-13), so under the autonomy rules the work stops here for a decision: see Open decisions in PROGRESS |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side: `e2e/parity/stage4/i13/compare/*.png`; app captures in `e2e/parity/stage4/i13/app/` (also the Edit project, Components and New project dialogs).
+
+| State | Result |
+|---|---|
+| Projects, default | Same columns, key in mono, figures, the next release with its badge. Numbers differ with the data (the dev database had many leftover test projects, now archived by the cleanup script) |
+| Project overview, default | Same title with the key, description, Edit project, four figures (Critical in red), recently updated bugs table, latest runs with the progress bar, components and environments panels. The Add buttons open management dialogs (not in the prototype, which showed a toast) |
+| Loading, empty, error, mobile | Captured (eight more pairs in the compare folder); **not yet looked at one by one**, so no verdict is claimed for them |
+
+Backlog: BL-028 (archived projects list and restore, lookup by key beyond 100 projects, environment order).

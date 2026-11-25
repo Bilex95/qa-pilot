@@ -26,6 +26,7 @@ Ideas outside v1 scope. Each item notes where it came from.
 | BL-023 | Done: inline edit of the title, description and labels (D-061) and of the steps to reproduce and the expected and actual result (D-065) | I-05 |
 | BL-024 | Attachments: image thumbnails, a virus scan hook, and a size limit at the edge (a reverse proxy refuses a body over 11 MB before the API reads it; today the API streams the form to a temporary file first, then answers 413) | I-05 |
 | BL-025 | Files of a soft deleted bug stay on the upload volume with their rows (the bug can be restored by an admin in the database). A purge job after a retention period would free the space | I-05 |
+| BL-028 | Projects screen (D-067): show archived projects and restore one (the API supports it), a lookup of a project by key for workspaces with more than 100 projects, and reordering environments | I-13 |
 | BL-027 | Delete (or archive) a test run. v1 has no way to remove a run, so test scripts leave their runs behind until a reseed. An Org Admin delete with a confirm, audited as `run.deleted`, would also let the scripts clean up | I-07 |
 | BL-026 | Done in I-08 (D-063): the release is named in the timeline, the Details panel and the run screens | I-05 |
 | BL-015 | Create a label on the spot from the New bug form. The form only offers the labels that exist (I-03, product owner). Allow QA Lead and Org Admin (the roles with `label.manage`) to type a new name in the picker and create it without leaving the form; other roles keep the pick list only | I-03 |

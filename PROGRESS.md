@@ -4,6 +4,10 @@
 **Branch:** stage/4-core-features
 **Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
+## Open decision (2026-11-25): stopped after the second low memory stop
+
+The machine ran out of memory twice today (the 390 px layout run, then the run of all browser scripts), which the autonomy rules treat as truly blocked. Everything is committed and pushed; nothing is running. **I-13 is partly done:** the missing Projects and Project overview screens are built (D-067) and verified by backend suites, Newman, lint, typecheck, build, the projects flow and the axe scan. Not verified locally: the other flows after the I-13 changes, the layout states of the new screens, and a look at eight of the ten parity pairs. CI runs all of it (`gh run list --branch stage/4-core-features`). Options for the next step: close other programs and run `scripts/run-flows.ps1` and `scripts/layout-check.ps1 -Name i13 -Only 390 -Batch 1` by hand, or let CI be the judge and continue with Stage 5 (I-14). Not started: I-14 to I-22 and the final review.
+
 ## Resume here (resumed 2026-11-25)
 
 **Current issue: I-09 Dashboard and reports is finished except its CI proof.** Done on 2026-11-25: the dashboard flow passes, the dashboard and reports layout states are in `check-app-layout.mjs` (1440 px PASS, 145 states), the parity capture is done (`e2e/parity/stage4/i09/`), D-064 and D-065 are written, the review section is in `docs/reviews/STAGE_4_REVIEW.md`. Also done: inline editing of the steps to reproduce and of expected and actual result (D-065, BL-023 closed).
