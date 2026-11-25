@@ -1,6 +1,6 @@
 # I-17 AI Test Case Generator
 
-**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

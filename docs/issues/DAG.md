@@ -103,25 +103,25 @@ flowchart LR
 
 | Issue | Status | Commit |
 |---|---|---|
-| I-01 | Done | 719da8c, 3beb83b |
-| I-02 | Done | 66a17e7, 4028e9f, 49c33da, bc3ff4c, a5fd174 |
-| I-03 | Done | 3c5ea53, 465d530, cd0913b, fac02d5 |
-| I-04 | Done | 5060459, e8755c4, 3ea31e9, 63a3647 |
-| I-05 | Done | 57012a7, fe88b6c |
-| I-06 | Done | b5ecdf7, f65e099, 79e60c5, 95f9cf3 |
-| I-07 | Done | 8f99304, 330b653 |
-| I-08 | Done | df95a52, a63c0d1 |
-| I-09 | Done | 827da5f, 5e80e12, bfbc786, 292caaa, a541e3e |
-| I-10 | Done | cd30248, 494316e, db0b6d0, 9fa3205 |
-| I-11 | Done | ec8cd4b, ec5de5f, 70f54c6, f3ab16a, 72fc7a2, b0daad1 |
-| I-12 | Done | 5c9a8e0, d43e492 |
-| I-13 | Done | f7cbd9e, e85f799, 7f349f0, 5106b80, f400efc |
-| I-23 | Done | bb4c3cf, 9dd2621, bb98f7f, 5f67fb5, 5c85168, 44f1d2e, a96be44, fc3bc9c |
-| I-24 | Done | fec123a, 57b65b7, a2517fa, f0d1fa4 |
-| I-14 | Done | 47d8623 |
-| I-15 | Done | e698639, 67d93bc, 1b41ebb |
-| I-16 | Done | 640988e, 34684b0 |
-| I-17 | Planned |  |
+| I-01 | Done | 53bbea8, 82dd4f7 |
+| I-02 | Done | 8199178, 4ef3d92, 9749945, 30a3319, ce8a9d2 |
+| I-03 | Done | 6b29711, 9668292, 1a9d8c2, d2fee0b |
+| I-04 | Done | 540f6f3, 145a648, 8cc30f2, 232333d |
+| I-05 | Done | e3cb3fd, 3cfb1a9 |
+| I-06 | Done | 20bfae6, c23000f, 0c960f3, c19719f |
+| I-07 | Done | 98428b5, 6c272ce |
+| I-08 | Done | 6e17626, cf32393 |
+| I-09 | Done | da1af30, a263b32, db24cde, a6f7d31, 710a3d9 |
+| I-10 | Done | 870e66a, 1e226d1, d4d776d, 111036e |
+| I-11 | Done | e1de501, 2e5b26c, 816a2a2, 305989c, 8002211, 5aab6b0 |
+| I-12 | Done | d78eac7, b26f723 |
+| I-13 | Done | c9b2db2, 49569c4, e3b3bd0, 1739e8e, d155cf4 |
+| I-23 | Done | cfb9ba1, 1af7cee, adc120f, b236d13, 3552994, 2555f2c, 190ba90, 7438afd |
+| I-24 | Done | 562a4be, c1d81e2, b7db68a, af5eaec |
+| I-14 | Done | 0103b8a |
+| I-15 | Done | 34ece25, 08ec901, 96e6ffb |
+| I-16 | Done | 18f10f2, f782b7e |
+| I-17 | Done | 6cd798d |
 | I-18 | Planned |  |
 | I-19 | Planned |  |
 | I-20 | Planned |  |

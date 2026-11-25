@@ -627,3 +627,26 @@ API-142 (`POST {O}/ai/triage`) and the AI triage panel on the bug page.
 `e2e/parity/stage5/i16/compare/` (bug detail default desktop, with the AI suggestion desktop, default mobile). The panel sits above Details with the dashed suggestion box, tag, severity badge, priority tag, component, confidence, reason and Accept, Edit, Discard like the prototype. Differences: the prototype's note says "Mock provider." (the app does not name the provider), the sample data differs, and Edit keeps the suggestion and focuses Severity because the bug page has no form to copy into (D-072).
 
 Backlog: none.
+
+### I-17 AI Test Case Generator (SCR-13; REQ-047; D-074)
+
+API-144 (`POST {O}/ai/test-cases`) and the Test Case Generator panel on the test case editor (picked cases are created through API-100).
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Backend | ruff and mypy clean, **pytest 1707 passed**, **Newman 607 requests and 1049 assertions, 0 failed** (after `seed --reset --yes --scenario baseline`, BL-029); OpenAPI and `schema.d.ts` regenerated |
+| Frontend (local) | lint, typecheck, build clean |
+| CI of the wip push (run 45652162933) | two failures, both fixed here: the OpenAPI contract (API-144 was not regenerated) and `test_an_archived_project_is_refused` (404 instead of 200 at the archive call) |
+| New layout states | generator panel, story too short, thinking, pick list, one case unticked, failed answer (in `check-app-layout.mjs`). The local run at 390 did not finish twice (once with 3 widths per browser, once with 1: no output and no screenshot after 40 and 25 minutes, so it was stopped; fixtures cleaned, 0 live reset links). The states run in the CI shards; **a local full run is still owed** |
+
+#### The archived project test (which side was wrong)
+
+Rule in this codebase: a write on an archived project is a **422 `validation_error` naming `project_id`** (bugs, suites, runs, releases), and a project of another workspace or an unknown one gets the same 422, so ids of other workspaces are never confirmed. API-144 follows it. The **test was wrong**: it archived the project with `POST /projects/{id}/archive`, which does not exist (archiving is `PATCH` with `{"archived": true}`), so the 404 came from the archive call, not from the generator. The test now archives with the PATCH and asserts 422, `validation_error` and `details[0].loc = ["body","project_id"]`. The foreign project and unknown project case is its own test (422, no model call, no usage row).
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+`e2e/parity/stage5/i17/compare/` (test case editor default desktop, with the AI pick list desktop, default mobile). The panel sits beside the form with the story field, the count, the dashed suggestion box, type tags, step counts and Add N to the suite, Edit first and Discard. Differences: the form is empty in the app (the prototype shows a filled sample), Generate again stays visible above the pick list, the mock model's titles and step counts differ from the sample, and the subtitle reads "Write the case with its steps and expected results." (kept from I-06). The panel also states that the story is sent as data only.
+
+Backlog: BL-030.
