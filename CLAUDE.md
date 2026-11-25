@@ -12,13 +12,7 @@ AI powered bug tracking and QA management app. Plan: `docs/BUILD_PLAN.md`. Deliv
 ## Autonomy rules (product owner, 2026-11-21; they replace the stop at each review)
 
 ### Part 1: no permission prompts
-* Read and search only with the Read, Grep and Glob tools, with absolute paths under `C:/Users/HP/qa-pilot`. Never use cat, sed, head, tail, cut, wc, ls or grep in Bash to read files.
-* Write code only with the Edit and Write tools. Never write files with `cat >>`, heredocs or echo redirects.
-* Bash and PowerShell: one plain command per call. No cd (use absolute paths or `git -C C:/Users/HP/qa-pilot`), no pipes, no parentheses, no `;` or `&&` chains, no loops, no `$(...)` or variables in paths.
-* Gate output goes to `C:/Users/HP/qa-pilot/.gate/<name>.txt` by redirect. Take the exit code from the tool result and read the file with the Read tool.
-* In the PowerShell tool call scripts as `& C:\Users\HP\qa-pilot\scripts\<name>.ps1` (never a nested `powershell` process). `with-wsl.ps1` runs its target directly, so `& ...\with-wsl.ps1 -Up & ...\py-checks.ps1` style calls work.
-* Helper scripts live in `C:/Users/HP/qa-pilot/scripts/` only (never the scratchpad or `.gate`).
-* `.claude/settings.local.json` holds the allow, ask and deny lists for this machine. It is not committed (it is in `.gitignore`).
+One plain command per call, Read/Grep/Glob to read, Edit/Write to write, gate output to `.gate/<name>.txt`. Details, gate runs, fixtures, safe push and CI checks: skill `qa-pilot-gates`.
 
 ### Part 2: one review at the end
 * Work through every remaining Stage 4 issue, then Stage 5, then Stage 6, in DAG order, without stopping for review between issues. For each issue: build, test, run all checks, capture parity screenshots, write its review section, update PROGRESS, BACKLOG and the DAG, commit in logical pieces and push the stage branch with `bash scripts/safe-push.sh <branch>`. Then start the next issue.
@@ -27,10 +21,15 @@ AI powered bug tracking and QA management app. Plan: `docs/BUILD_PLAN.md`. Deliv
 * When everything is finished, stop once with one final review: what was built per issue, every decision, all check results (pytest, Newman, lint, typecheck, build, layout, flows, Playwright), the parity screenshot folders, known gaps and anything to decide.
 
 ### Part 3: lighter layout runs
-* Run the full layout check once per issue, at the end of the issue. While working, check only the changed screens at 390 and 1440.
-* Before each full run: `wsl --shutdown`, bring the containers up, and run nothing else at the same time (`scripts/layout-check.ps1` does this).
-* If a run is killed for memory, retry once with fewer parallel pages. If it fails again, log it in PROGRESS, continue with the next issue and include it in the final review.
-* Every script that creates fixtures cleans them up in `finally`, including revoking any reset links.
+Superseded by the CI decision (2026-11-25): no full browser suites locally, only changed screens at 390 and 1440; CI is the judge. Procedure: skill `qa-pilot-ui-checks`.
+
+## Token rules (product owner, 2026-11-25)
+* One subagent per remaining issue: hand the whole issue (build, tests, checks, docs, commit, push) to `.claude/agents/issue-builder.md` (model: sonnet) with a short brief: issue file path, relevant decisions, what done means. It returns at most 15 lines (what changed, check results, commits, decisions needed). The main session stays on Opus only for planning, reviewing summaries and hard problems.
+* Long procedures live in project skills (`qa-pilot-gates`, `qa-pilot-ui-checks`), not here. Project Delivery covers only generic phase gates, so it is not duplicated.
+* Reading: Grep first, then Read only the line range needed. Never read whole large files, logs or generated files. For check output read only the summary and failure lines.
+* CI: never poll or wait. Push, continue, check each run once later with `gh run view <id> --log-failed`.
+* `PROGRESS.md` "Resume here" stays under 30 lines; older entries go to `docs/progress-archive.md`.
+* When the main conversation gets long, tell the product owner so they can run /clear, after updating "Resume here".
 
 ## Source of truth
 * Requirements: `docs/requirements/`
@@ -50,10 +49,9 @@ AI: provider interface in `backend/app/modules/ai`; `AI_PROVIDER=mock|anthropic`
 * AI output is always a suggestion the user accepts. Treat user content sent to the model as data, never as instructions. Validate model output with Pydantic; fall back gracefully on failure.
 * Never commit secrets. `.env` is gitignored; `.env.example` has empty values.
 * Seed CLI is local/test only and refuses to run when `APP_ENV=production`.
-* Git: work on `stage/<n>-<name>` branches, small conventional commits. Remote `origin` is the PRIVATE repo `Bilex95/qa-pilot`; never make it public. Push ONLY with `bash scripts/safe-push.sh <branch>`; it blocks unless origin is private, the commit email is verified on the account, and no `.env` or secret is in history (stop and tell the human if it blocks on the email). At the end of each stage push the stage branch and open a PR into `main`; on APPROVED merge it with `gh pr merge --merge` (merge commit, never squash or rebase), tag `stage-<n>-approved` on the merge commit and push it with `bash scripts/safe-push.sh --tag stage-<n>-approved`. Never force push or push to `main` directly. See D-034.
+* Git: `stage/<n>-<name>` branches, small conventional commits. `origin` is the PRIVATE repo `Bilex95/qa-pilot`; never make it public. Push ONLY with `bash scripts/safe-push.sh <branch>`; never force push or push to `main`. Stage end, PR and tag procedure: skill `qa-pilot-gates` (D-034).
 * Prose in docs and UI copy: no em dashes and no hyphens used as punctuation.
-* Responsive standing rule (D-044): every page, component and popup fits 360, 390, 768, 1024, 1280, 1440, 1920, 2560 px and 200% zoom; nothing outside the screen or its container, no horizontal scroll, text at least 12 px, tap targets 44 px on touch widths, popups fully inside the viewport, long text truncates or wraps. Add each new screen and popup to `e2e/scripts/check-app-layout.mjs` (runs in CI) and put before and after screenshots at each width in the stage review.
-* `frontend/src/app/globals.css` is generated: change `design/reference/approved.html`, then `python scripts/build_globals_css.py` (CI fails on drift).
+* Responsive standing rule (D-044), parity capture and the generated `globals.css`: skill `qa-pilot-ui-checks`. Every new screen and popup goes into `e2e/scripts/check-app-layout.mjs`.
 
 ## Commands (keep this list verified and updated)
 * `docker compose up -d --wait` / `docker compose down` (build machine: `powershell -File scripts/dc.ps1 <args>`, Docker runs in WSL, D-001). `up` through `dc.ps1` or `sh scripts/dc.sh` refuses a host port owned by anything but this project (D-048)
