@@ -16,13 +16,14 @@ import { isApiError } from "@/lib/api/errors";
 import { can } from "@/lib/permissions";
 import { PriorityTag, SeverityBadge, SlaBadge, StatusBadge } from "@/modules/bugs/components/bug-badges";
 import { timeAgo } from "@/modules/bugs/schemas";
-import { useOrg } from "@/modules/shell/org-context";
+import { useAiEnabled, useOrg } from "@/modules/shell/org-context";
 import { ProgressBar } from "@/modules/testing/components/progress-bar";
 import { rateText, runStatusName } from "@/modules/testing/runs";
 
 import { LinkBugsDialog, LinkRunsDialog } from "./components/link-dialogs";
 import { ReadinessBadge } from "./components/readiness-badge";
 import { ReleaseDialog } from "./components/release-dialog";
+import { ReleaseSummaryPanel } from "./components/release-summary-panel";
 import { useRefreshReleases, useRelease } from "./hooks";
 import { READINESS_NAME, STATUS_NAME, formatDate, type Release } from "./releases";
 
@@ -30,7 +31,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * SCR-17 Release detail (API-112 to API-119; REQ-035 to REQ-037): the readiness with its reasons, the linked bugs and runs, and the
- * release actions. The AI summary panel arrives with I-18. `releaseId` is the id from the address.
+ * release actions, and the AI release summary (I-18). `releaseId` is the id from the address.
  */
 export function ReleasePage({ releaseId }: { releaseId: string }) {
   const org = useOrg();
@@ -130,6 +131,8 @@ function Loaded({ release, crumbs }: { release: Release; crumbs: React.ReactNode
   });
 
   const summary = release.ai_summary;
+  const aiOn = useAiEnabled();
+  const canSummarise = can(org.role, "ai.release_summary") && aiOn;
 
   return (
     <>
@@ -233,6 +236,8 @@ function Loaded({ release, crumbs }: { release: Release; crumbs: React.ReactNode
           </section>
         </div>
         <aside className="stack">
+          {canSummarise ? <ReleaseSummaryPanel releaseId={release.id} hasSummary={!!summary} /> : null}
+          {summary || !canSummarise ? (
           <section className="panel">
             <div className="panel-head"><h3>Release summary</h3></div>
             <div className="panel-body">
@@ -246,6 +251,7 @@ function Loaded({ release, crumbs }: { release: Release; crumbs: React.ReactNode
               ) : <p className="small muted">No summary yet. A QA lead publishes one before the release.</p>}
             </div>
           </section>
+          ) : null}
         </aside>
       </div>
       {dialog === "bugs" ? <LinkBugsDialog release={release} onClose={() => setDialog(null)} /> : null}

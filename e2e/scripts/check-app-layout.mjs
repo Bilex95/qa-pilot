@@ -1285,6 +1285,36 @@ for (const vp of VIEWPORTS.filter(wanted)) {
     await page.keyboard.press('Escape');
     await page.waitForSelector('.modal', { state: 'detached' });
   }
+  // Release Readiness Summary (I-18): the panel, thinking, the suggestion, the edit field and a failed answer (nothing is published)
+  step = 'use the release summary panel';
+  await page.waitForSelector('.ai-panel button:has-text("Draft summary")');
+  await check('release: summary panel', { shot: 'release-summary' });
+  const sumUrl = /\/api\/v1\/orgs\/[^/]+\/ai\/release-summary$/;
+  await page.route(sumUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.getByRole('button', { name: 'Draft summary' }).click();
+  await page.waitForSelector('.ai-panel .thinking');
+  await check('release: summary thinking', { shot: 'release-summary-thinking' });
+  await page.waitForSelector('.ai-panel .suggest');
+  await page.unroute(sumUrl);
+  await check('release: summary suggestion', { shot: 'release-summary-suggestion' });
+  await page.getByRole('button', { name: 'Edit', exact: true }).last().click();
+  await page.waitForSelector('#rs-text');
+  await check('release: summary edit', { shot: 'release-summary-edit' });
+  await page.getByRole('button', { name: 'Discard' }).click();
+  await page.waitForSelector('.ai-panel button:has-text("Draft again")');
+  await check('release: summary discarded', { shot: 'release-summary-discarded' });
+  step = 'show a release summary that fell back to the template';
+  const sumCors = { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'POST,OPTIONS' };
+  await page.route(sumUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: sumCors })
+    : route.fulfill({ status: 200, contentType: 'application/json', headers: sumCors, body: JSON.stringify({
+      headline: `Do not ship yet: 1 open Critical bug ${'Averyveryverylongunbrokenword'.repeat(6)}`, summary: 'A long template summary. '.repeat(20),
+      top_risks: ['WEB-1: A risk with a long title that has to wrap inside the panel on a narrow screen', 'No test runs linked'],
+      recommendation: 'do_not_ship', readiness: 'blocked', fallback: true, usage_id: '00000000-0000-4000-8000-000000000000' }) }));
+  await page.getByRole('button', { name: 'Draft again' }).click();
+  await page.waitForSelector('.ai-panel .suggest p[role="status"]');
+  await check('release: summary fallback', { shot: 'release-summary-fallback' });
+  await page.unroute(sumUrl);
   step = 'open a released release';
   await go(page, `/o/lumen/releases/${REL_FIX.doneId}`);
   await page.waitForSelector('.page-head h1 .badge');

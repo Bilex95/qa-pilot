@@ -64,12 +64,13 @@ async function signIn(page, email) {
   await page.waitForURL('**/o/*/dashboard');
 }
 
-const state = { orgId: '', project: null, adminToken: '', leadToken: '' };
+const state = { orgId: '', project: null, release: null, adminToken: '', leadToken: '' };
 const O = () => `/orgs/${state.orgId}`;
 
 async function cleanup() {
   const notes = [];
   if (state.adminToken) notes.push(`AI switch on (${(await api(`/orgs/${state.orgId}`, { method: 'PATCH', token: state.adminToken, body: { ai_enabled: true } })).status})`);
+  if (state.release) notes.push(`release deleted (${(await api(`${O()}/releases/${state.release.id}`, { method: 'DELETE', token: state.leadToken })).status})`);
   if (state.project) {
     const bugs = (await api(`${O()}/bugs?project_id=${state.project.id}&page_size=100`, { token: state.leadToken })).json?.items ?? [];
     for (const b of bugs) await api(`${O()}/bugs/${b.id}`, { method: 'DELETE', token: state.leadToken });
@@ -220,6 +221,47 @@ async function main() {
     await page.locator('.ai-panel').getByRole('button', { name: 'Discard' }).click();
     await eventually(async () => (await usage('triage'))[0]?.outcome === 'discarded', 'the discarded triage is not in the log');
     log('triage: nothing changes on ask, Accept sets Critical, P1 and Checkout with activity entries, outcomes are in the log');
+
+    // 7b. The release summary (I-18): a lead drafts, edits and publishes; a Viewer reads it; a Developer has no panel
+    const release = (await api(`${O()}/releases`, { method: 'POST', token: T, body: { project_id: state.project.id, name: `flow-i18-${RUN}` } })).json;
+    check(release?.id, 'could not create the release');
+    state.release = release;
+    await api(`${O()}/releases/${release.id}/bugs`, { method: 'POST', token: T, body: { bug_ids: [triaged.id] } });
+    const lctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const l = await lctx.newPage();
+    l.setDefaultTimeout(30_000);
+    await signIn(l, lead.email);
+    await l.goto(`${BASE}/o/lumen/releases/${release.id}`);
+    await l.getByRole('heading', { name: 'Release Readiness Summary' }).waitFor();
+    await l.getByRole('button', { name: 'Draft summary' }).click();
+    await l.locator('.suggest', { hasText: 'AI suggestion, not saved' }).waitFor();
+    check((await l.locator('.suggest').innerText()).includes('Recommendation: Do not ship'), 'a blocked release is not "Do not ship"');
+    check((await api(`${O()}/releases/${release.id}`, { token: T })).json.ai_summary === null, 'drafting saved the summary');
+    await l.getByRole('button', { name: 'Edit', exact: true }).last().click();
+    await fillStable(l, '#rs-text', 'Do not ship: one Critical bug is open.\n\nRecommendation: Do not ship');
+    await l.getByRole('button', { name: 'Accept and publish' }).click();
+    await l.locator('#toasts').getByText('Summary published', { exact: false }).first().waitFor();
+    await eventually(async () => (await api(`${O()}/releases/${release.id}`, { token: T })).json.ai_summary?.startsWith('Do not ship: one Critical'), 'the summary was not saved');
+    await eventually(async () => (await usage('release_summary'))[0]?.outcome === 'edited', 'the edited outcome is not in the log');
+    await l.getByText('Drafted with AI.', { exact: false }).waitFor();
+    const vctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const v2 = await vctx2.newPage();
+    v2.setDefaultTimeout(30_000);
+    await signIn(v2, viewer.email);
+    await v2.goto(`${BASE}/o/lumen/releases/${release.id}`);
+    await v2.getByText('Do not ship: one Critical bug is open.', { exact: false }).waitFor();
+    check((await v2.locator('.ai-panel').count()) === 0, 'a Viewer sees the AI summary panel');
+    await vctx2.close();
+    const dctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const d2 = await dctx2.newPage();
+    d2.setDefaultTimeout(30_000);
+    await signIn(d2, dev.email);
+    await d2.goto(`${BASE}/o/lumen/releases/${release.id}`);
+    await d2.getByRole('heading', { name: 'Release summary' }).waitFor();
+    check((await d2.locator('.ai-panel').count()) === 0, 'a Developer sees the AI summary panel');
+    await dctx2.close();
+    await lctx.close();
+    log('release summary: drafted without saving, edited and published, outcome "edited" in the log, a Viewer reads it, no panel for a Developer');
 
     // 8. A Developer: severity stays Medium, the draft still fills the rest
     const dctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
