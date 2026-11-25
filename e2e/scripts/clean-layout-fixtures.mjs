@@ -20,7 +20,7 @@ if (!PW) { console.error('SEED_USER_PASSWORD missing'); process.exit(2); }
 const API = 'http://localhost:8000/api/v1';
 const RESET_EMAIL = 'layout-i23@qapilot.test';
 const INVITE_EMAIL = 'layout-i10@qapilot.test';
-const LABELS = ['Regression', 'Payments', 'Intermittent freight reconciliation fail', 'Flow I11 label'];
+const LABELS = ['Layout regression', 'Layout payments', 'Intermittent freight reconciliation fail', 'Flow I11 label'];  // never a seeded label name
 const SUITES = ['Layout fixture suite', 'Layout empty suite'];
 const VIEWS = ['Layout view check', 'Critical checkout regressions across all supported releases'];
 
@@ -85,6 +85,17 @@ if (project && !project.archived_at) {
 // The planned release of the layout check (a released one cannot be deleted and stays; the layout check finds it again by name)
 for (const r of (await call(`${O}/releases?page_size=100`)).json.items.filter((x) => x.name.startsWith('Layout planned release'))) {
   if ((await call(`${O}/releases/${r.id}`, { method: 'DELETE' })).status === 204) removed.releases = (removed.releases ?? 0) + 1;
+}
+// Projects that the test scripts leave active (a project cannot be deleted): archived, so the Projects list shows the seeded ones. Only
+// names the scripts use are touched: the Newman project, the flow and parity fixtures.
+const FIXTURE_PROJECT = /^(Newman project|flow-i\d+|parity-i\d+)/;
+removed.fixtureProjects = 0;
+for (let pass = 0; pass < 10; pass++) { // an archived project leaves the list, so the next pass sees the next hundred
+  const found = (await call(`${O}/projects?page_size=100`)).json.items.filter((x) => FIXTURE_PROJECT.test(x.name));
+  if (!found.length) break;
+  for (const p of found) {
+    if ((await call(`${O}/projects/${p.id}`, { method: 'PATCH', body: JSON.stringify({ archived: true }) })).status === 200) removed.fixtureProjects++;
+  }
 }
 console.log('removed:', JSON.stringify(removed));
 // Files on the upload volume that no attachment row points to (a killed run, or bugs deleted with files in place): removed by the

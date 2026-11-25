@@ -69,7 +69,8 @@ async function ensureLongFixture() {
 
 // Label fixture for the Settings, Labels tab (I-02): created through the public API as the Lumen Org Admin and removed
 // again at the end, so the baseline seed is left as it was. 40 characters is the longest allowed name (rule 4).
-const LABEL_NAMES = ['Regression', 'Payments', 'Intermittent freight reconciliation fail'];
+// Named so they never match a seeded label (the seed has Regression and Payments, I-12): the check deletes and recreates these
+const LABEL_NAMES = ['Layout regression', 'Layout payments', 'Intermittent freight reconciliation fail'];
 async function labelAdmin() {
   const login = await fetch(`${API}/api/v1/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: 'amara@lumenfreight.test', password: PW }) });
@@ -185,7 +186,7 @@ async function ensureBugFixture() {
   const diego = members.items.find((m) => m.user.email === 'diego@lumenfreight.test').user.id;
   const bug = async (b) => must(await fetch(`${org}/bugs`, json({ project_id: project.id, ...b })), `create bug ${b.title.slice(0, 20)}`);
   await bug({ title: 'Checkout total ignores the discount code', severity: 'high', priority: 'p2', component_id: component.id,
-    environment_id: prod.id, assignee_id: diego, label_ids: [idOf('Regression'), idOf('Payments')] });
+    environment_id: prod.id, assignee_id: diego, label_ids: [idOf('Layout regression'), idOf('Layout payments')] });
   const detail = await bug({ title: LONG_TITLE, severity: 'critical', priority: 'p1', component_id: component.id, environment_id: prod.id,
     assignee_id: diego, label_ids: eight, description: LONG_DESCRIPTION, steps_to_reproduce: LONG_STEPS,
     expected_result: `Expected ${'unbrokenresult'.repeat(10)} and then a longer sentence of text`,
@@ -585,7 +586,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.waitForSelector('.modal');
   await check('new label dialog', { popup: '.modal', shot: 'label-dialog' });
   step = 'submit a name that already exists';
-  await page.fill('#label-name', ' regression ');
+  await page.fill('#label-name', ' layout regression ');
   await page.click('.modal button:has-text("Add label")');
   await page.waitForSelector('.modal .err');
   await check('new label dialog with a duplicate name error', { popup: '.modal', shot: 'label-dialog-error' });
@@ -593,7 +594,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.waitForSelector('.modal', { state: 'detached' });
   // The delete confirmation names how many bugs lose the label (the count is real since I-03): Regression is on one fixture bug
   step = 'open the delete label confirmation';
-  await page.click('button[aria-label="Delete label Regression"]');
+  await page.click('button[aria-label="Delete label Layout regression"]');
   await page.waitForSelector('.modal');
   await page.waitForSelector('#delete-label-count');
   await check('delete label confirmation', { popup: '.modal', shot: 'label-delete-confirm' });
@@ -1214,6 +1215,89 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await go(page, '/o/lumen/releases/00000000-0000-4000-8000-000000000000');
   await page.waitForSelector('text=This release was not found');
   await check('release: not found', { shot: 'release-not-found' });
+
+  // Projects and Project overview (I-13): the list, New project errors, loading, empty, error; the overview with its dialogs, loading,
+  // error and not found
+  step = 'open the projects list';
+  await go(page, '/o/lumen/projects');
+  await page.waitForSelector('table.t tbody tr');
+  await check('/o/lumen/projects', { shot: 'projects' });
+  step = 'open the New project dialog';
+  await page.getByRole('button', { name: 'New project' }).first().click();
+  await page.waitForSelector('.modal');
+  await page.getByRole('button', { name: 'Create project' }).click();
+  await page.waitForSelector('.modal .err');
+  await check('projects: New project dialog errors', { popup: '.modal', shot: 'project-dialog-error' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'show the projects loading, empty and error states';
+  const projUrl = /\/api\/v1\/orgs\/[^/]+\/projects(\?|$)/;
+  await page.route(projUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/projects`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Projects")');
+  await page.waitForSelector('.sk');
+  await check('projects: loading', { shot: 'projects-loading' });
+  await page.waitForSelector('table.t tbody tr');
+  await page.unroute(projUrl);
+  await page.route(projUrl, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { items: [], page: 1, page_size: 25, total: 0 } });
+  });
+  await go(page, '/o/lumen/projects');
+  await page.waitForSelector('text=No projects yet');
+  await check('projects: empty', { shot: 'projects-empty' });
+  await page.unroute(projUrl);
+  await page.route(projUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i13' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/projects');
+  await page.waitForSelector('.state-box.error');
+  await check('projects: error', { shot: 'projects-error' });
+  await page.unroute(projUrl);
+  step = 'open a project overview';
+  const projPath = `/o/lumen/projects/${BUG_PROJECT.key}`;
+  await go(page, projPath);
+  await page.waitForSelector('.readout');
+  await page.waitForSelector('text=Environments');
+  await check('project overview', { shot: 'project' });
+  for (const [name, button, selector, shot] of [['Edit project', 'Edit project', '.modal', 'project-edit'],
+    ['Components', 'Add', '.modal', 'project-components'], ['Environments', 'Add', '.modal', 'project-environments']]) {
+    step = `open the ${name} dialog`;
+    const scope = name === 'Edit project' ? page : page.locator('.panel', { hasText: name }).last();
+    await scope.getByRole('button', { name: button }).first().click();
+    await page.waitForSelector(selector);
+    await check(`project: ${name} dialog`, { popup: selector, shot });
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.modal', { state: 'detached' });
+  }
+  step = 'open the archive confirmation';
+  await page.getByRole('button', { name: 'Edit project' }).click();
+  await page.getByRole('button', { name: 'Archive project' }).click();
+  await page.waitForSelector('.modal .modal-body p');
+  await check('project: archive confirmation', { popup: '.modal', shot: 'project-archive' });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  step = 'show the project loading, error and not found states';
+  const projOne = /\/api\/v1\/orgs\/[^/]+\/projects\/[0-9a-f-]{36}$/;
+  await page.route(projOne, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}${projPath}`, { waitUntil: 'commit' });
+  await page.waitForSelector('.crumbs');
+  await page.waitForSelector('.sk');
+  await check('project: loading', { shot: 'project-loading' });
+  await page.waitForSelector('.readout');
+  await page.unroute(projOne);
+  await page.route(projOne, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i13' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, projPath);
+  await page.waitForSelector('.state-box.error');
+  await check('project: error', { shot: 'project-error' });
+  await page.unroute(projOne);
+  await go(page, '/o/lumen/projects/ZZZZZ');
+  await page.waitForSelector('text=This project was not found');
+  await check('project: not found', { shot: 'project-not-found' });
 
   // Dashboard and Reports (I-09): filled, one project, loading, empty, error, then the Reports custom range and its range error
   step = 'open the dashboard for the fixture project';
