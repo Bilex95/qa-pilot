@@ -10,19 +10,22 @@ docker compose exec backend python -m app.seed --scenario baseline
 docker compose exec backend python -m app.seed --scenario multi-tenant --reset --yes
 ```
 
-`--reset --yes` removes only records whose ids belong to the seed; data you created yourself is kept.
-Stage 3 seeds people and workspaces. Stage 4 extends each scenario with projects, bugs, tests and releases,
-and this manifest grows with it.
+`--reset --yes` removes the seeded organizations and people, and with them everything inside those organizations
+(projects, bugs, tests, releases, including what you added there); other organizations and people are kept.
+Projects, bugs, suites, cases, runs and releases are written through the services (so every bug has its timeline and
+audit trail) and their dates are moved back from the moment of seeding by whole days, so the Past SLA, trend, pass rate
+and readiness figures are the same on any day. A project that already exists (same key) is left alone, so seeding twice
+changes nothing; switch scenarios with `--reset --yes`.
 
 ## Expected counts per scenario
 
-| Scenario | Organizations | Users | Memberships | Pending invitations | What it is for |
-|---|---|---|---|---|---|
-| `baseline` | 2 | 15 | 16 | 2 | Two organizations with every role; Priya Raman belongs to both. Stage 4 adds projects, about 60 bugs, suites, runs and releases. |
-| `empty` | 1 | 1 | 1 | 0 | One organization with only its Org Admin; every screen shows its empty state. |
-| `sla-breach` | 2 | 15 | 16 | 2 | Baseline people. Stage 4 adds bugs that are not fixed within their SLA (D-019). |
-| `release-blocked` | 2 | 15 | 16 | 2 | Baseline people. Stage 4 adds a release blocked by open Critical bugs and a low pass rate (D-014). |
-| `multi-tenant` | 2 | 10 | 10 | 0 | Two organizations with one user per role each and nobody shared, for isolation tests. |
+| Scenario | Orgs | Users | Memberships | Pending invitations | Projects | Bugs | Suites | Cases | Runs | Releases | What it is for |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `baseline` | 2 | 15 | 16 | 2 | 4 | 68 | 5 | 44 | 6 | 4 | Two organizations with every role; Priya Raman belongs to both. Lumen Freight has 3 projects, 60 bugs in every status, 4 suites with 40 cases, 5 runs and 3 releases (Blocked, At risk, Ready); Harbor Clinics has a small set. |
+| `empty` | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | One organization with only its Org Admin; every screen shows its empty state. |
+| `sla-breach` | 2 | 15 | 16 | 2 | 1 | 7 | 0 | 0 | 0 | 0 | Baseline people. One project with 7 bugs, 4 of them past their SLA (D-019): Critical 24 h, High 72 h. |
+| `release-blocked` | 2 | 15 | 16 | 2 | 1 | 5 | 1 | 9 | 1 | 1 | Baseline people. Release WEB 2.4.0 is Blocked by two open Critical bugs and a 63% pass rate (D-014), the two reasons the screens show. |
+| `multi-tenant` | 2 | 10 | 10 | 0 | 2 | 16 | 2 | 8 | 2 | 2 | Two organizations with one user per role each and nobody shared; the same small project in each, for isolation tests. |
 
 ## Logins: `baseline`
 
@@ -69,4 +72,3 @@ and this manifest grows with it.
 | Tenant B (`tenant-b`) | Viewer B | viewer@tenant-b.test | viewer |
 
 `sla-breach` and `release-blocked` use the same people as `baseline`.
-

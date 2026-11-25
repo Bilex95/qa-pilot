@@ -49,7 +49,7 @@ def test_every_scenario_is_idempotent_and_matches_the_manifest(db, scenario) -> 
 
 
 def test_seeded_people_can_sign_in(client, db) -> None:
-    seed(db, "baseline", PW)
+    seed(db, "baseline", PW, domain=False)
     r = client.post("/api/v1/auth/login", json={"email": "priya@lumenfreight.test", "password": PW})
     assert r.status_code == 200
     me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {r.json()['access_token']}"}).json()
@@ -59,9 +59,9 @@ def test_seeded_people_can_sign_in(client, db) -> None:
 
 def test_reset_only_removes_seeded_records(db) -> None:
     mine = make_user(db, "real.person@example.test")
-    seed(db, "baseline", PW)
+    seed(db, "baseline", PW, domain=False)
     reset(db)
-    assert counts(db, "baseline") == {"organizations": 0, "users": 0, "memberships": 0, "invitations": 0}
+    assert counts(db, "baseline") == dict.fromkeys(expected_counts("baseline"), 0)
     assert db.get(User, mine.id) is not None
 
 
@@ -74,4 +74,4 @@ def test_never_overwrites_a_real_user_with_the_same_email(db) -> None:
 def test_manifest_never_contains_the_password() -> None:
     text = manifest()
     assert "SEED_USER_PASSWORD" in text and PW not in text
-    assert "| `baseline` | 2 | 15 | 16 | 2 |" in text
+    assert "| `baseline` | 2 | 15 | 16 | 2 | 4 | 68 | 5 | 44 | 6 | 4 |" in text

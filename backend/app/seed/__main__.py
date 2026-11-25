@@ -22,6 +22,8 @@ from app.core.db import get_sessionmaker, utcnow
 from app.core.security import hash_password, password_problem, token_hash, verify_password
 from app.modules.auth.infrastructure.models import User
 from app.modules.orgs.infrastructure.models import Invitation, Membership, Organization
+from app.seed.domain import counts as domain_counts
+from app.seed.domain import seed_domain
 from app.seed.scenarios import (
     ALL_ORGS,
     SCENARIO_NOTES,
@@ -62,7 +64,8 @@ def reset(db: Session) -> None:
     db.commit()
 
 
-def seed(db: Session, scenario: str, password: str) -> None:
+def seed(db: Session, scenario: str, password: str, *, domain: bool = True) -> None:
+    """People, workspaces and (unless `domain` is false, which tests that only need people use) the scenario's projects and bugs."""
     orgs: list[SeedOrg] = SCENARIOS[scenario]
     pw_hash: str | None = None
     for su in users_for(orgs):
@@ -109,6 +112,8 @@ def seed(db: Session, scenario: str, password: str) -> None:
             if row.expires_at <= utcnow() + timedelta(days=1):
                 row.expires_at = utcnow() + timedelta(days=7)
     db.commit()
+    for so in orgs if domain else []:  # projects, bugs, tests and releases go through the services (I-12, D-066)
+        seed_domain(db, scenario, so)
 
 
 def counts(db: Session, scenario: str) -> dict[str, int]:
@@ -128,6 +133,7 @@ def counts(db: Session, scenario: str) -> dict[str, int]:
         "memberships": n(Membership, Membership.id.in_(membership_ids), Membership.status == "active"),
         "invitations": n(Invitation, Invitation.id.in_(invitation_ids), Invitation.accepted_at.is_(None),
                          Invitation.revoked_at.is_(None)),
+        **domain_counts(db, scenario, orgs).as_dict(),
     }
 
 
@@ -145,19 +151,23 @@ def manifest() -> str:
         "docker compose exec backend python -m app.seed --scenario multi-tenant --reset --yes",
         "```",
         "",
-        "`--reset --yes` removes only records whose ids belong to the seed; data you created yourself is kept.",
-        "Stage 3 seeds people and workspaces. Stage 4 extends each scenario with projects, bugs, tests and releases,",
-        "and this manifest grows with it.",
+        "`--reset --yes` removes the seeded organizations and people, and with them everything inside those organizations",
+        "(projects, bugs, tests, releases, including what you added there); other organizations and people are kept.",
+        "Projects, bugs, suites, cases, runs and releases are written through the services (so every bug has its timeline and",
+        "audit trail) and their dates are moved back from the moment of seeding by whole days, so the Past SLA, trend, pass rate",
+        "and readiness figures are the same on any day. A project that already exists (same key) is left alone, so seeding twice",
+        "changes nothing; switch scenarios with `--reset --yes`.",
         "",
         "## Expected counts per scenario",
         "",
-        "| Scenario | Organizations | Users | Memberships | Pending invitations | What it is for |",
-        "|---|---|---|---|---|---|",
+        "| Scenario | Orgs | Users | Memberships | Pending invitations | Projects | Bugs | Suites | Cases | Runs | Releases "
+        "| What it is for |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for name in SCENARIOS:
         c = expected_counts(name)
-        lines.append(f"| `{name}` | {c['organizations']} | {c['users']} | {c['memberships']} | {c['invitations']} | "
-                     f"{SCENARIO_NOTES[name]} |")
+        lines.append(f"| `{name}` | {c['organizations']} | {c['users']} | {c['memberships']} | {c['invitations']} | {c['projects']} | "
+                     f"{c['bugs']} | {c['suites']} | {c['cases']} | {c['runs']} | {c['releases']} | {SCENARIO_NOTES[name]} |")
     for name, orgs in SCENARIOS.items():
         if name in {"sla-breach", "release-blocked"}:
             continue
