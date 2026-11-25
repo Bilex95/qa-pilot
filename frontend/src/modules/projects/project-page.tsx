@@ -28,7 +28,7 @@ export function ProjectPage({ projectKey }: { projectKey: string }) {
   const project = useProjectByKey(projectKey);
   const crumbs = (label: string) => (
     <div className="crumbs">
-      <Link href={`/o/${org.slug}/projects`}>Projects</Link> / <span className="mono">{label}</span>
+      <Link href={`/o/${org.slug}/projects`}>Projects</Link> / <span className="mono" style={{ fontSize: "1em" }}>{label}</span>
     </div>
   );
   if (project.isPending) {
