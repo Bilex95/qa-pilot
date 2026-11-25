@@ -4,7 +4,7 @@ and writes one usage row per call. AI only suggests (REQ-049): nothing here save
 
 import time
 import uuid
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Protocol
@@ -65,7 +65,8 @@ def _refuse(db: Session, org: Organization, user_id: uuid.UUID, feature: str, pr
 
 def run[T: BaseModel](db: Session, org: Organization, user_id: uuid.UUID, *, feature: str, task: str, blocks: Sequence[Block],
                       output_model: type[T], fallback: T, max_tokens: int = 1024, provider: AIProvider | None = None,
-                      window: SlidingWindow | None = None, settings: Settings | None = None) -> AIResult[T]:
+                      window: SlidingWindow | None = None, settings: Settings | None = None,
+                      check: Callable[[T], str | None] | None = None) -> AIResult[T]:
     """Run one AI feature for one person. Raises 403 `ai_disabled`, or 429 `rate_limited` (per user per minute) and 429 `daily_limit`
     (the organization's limit); every refusal and every call writes a usage row. Never raises for a provider problem: the fallback is
     returned instead, with the status `error` or `invalid_output`."""
@@ -101,11 +102,16 @@ def run[T: BaseModel](db: Session, org: Organization, user_id: uuid.UUID, *, fea
         model = result.model
         try:
             value = output_model.model_validate_json(result.raw_text)
-            break
+            problem = check(value) if check else None  # a rule the schema cannot state (for example "one case of each type")
+            if problem:
+                value = None
+                correction = problem
+            else:
+                break
         except ValidationError as exc:
             correction = "; ".join(f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors()[:5])
-            if attempt == 2:
-                status = "invalid_output"
+        if attempt == 2:
+            status = "invalid_output"
     used_fallback = value is None
     row = repo.add(db, org_id=org.id, user_id=user_id, feature=feature, provider=provider.name, model=model, status=status,
                    input_tokens=input_tokens, output_tokens=output_tokens, latency_ms=int((time.perf_counter() - started) * 1000))

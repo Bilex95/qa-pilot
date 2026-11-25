@@ -2,6 +2,7 @@
 asks `service.run`, and maps the answer to ids the project really has: the model can never invent an id (AI_SPEC 2.7). Nothing is saved."""
 
 import uuid
+from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -18,6 +19,12 @@ from app.modules.ai.schemas.features import (
     DuplicatesIn,
     DuplicatesOut,
     ExplainLogIn,
+    GenerateCasesIn,
+    GenerateCasesOut,
+    GeneratedCase,
+    GeneratedCaseOut,
+    GeneratedStepOut,
+    GeneratedTestCases,
     LogExplanationAnswer,
     LogExplanationOut,
     TriageAnswer,
@@ -132,6 +139,50 @@ def triage(db: Session, org: service.Organization, user_id: uuid.UUID, body: Tri
     component, component_id = _named(v.component, components)
     return TriageOut(severity=v.severity, priority=v.priority, component=component, component_id=component_id, reason=v.reason,
                      confidence=v.confidence, fallback=False, usage_id=got.usage_id)
+
+
+TEST_CASES_TASK = (
+    "Write test cases that cover positive, negative and edge scenarios for this story. Each case has a title, preconditions, steps with "
+    "expected results, and a type. Do not duplicate cases. Use the type positive for the expected flow, negative for invalid input or a "
+    "refused action, and edge for limits and unusual input. Give priority p1 to p4 and at most five short tags."
+)
+CASE_TYPES = ("positive", "negative", "edge")
+
+
+def _type_gap(count: int) -> Callable[[GeneratedTestCases], str | None]:
+    """AI_SPEC 3.5: when 3 or more cases are asked for, at least one of each type; otherwise the answer is retried once."""
+    def check(answer: GeneratedTestCases) -> str | None:
+        if count < 3:
+            return None
+        missing = [t for t in CASE_TYPES if not any(c.case_type == t for c in answer.cases)]
+        return f"cases: there must be at least one case of each type, missing {', '.join(missing)}" if missing else None
+    return check
+
+
+def _pick(cases: list[GeneratedCase], count: int) -> list[GeneratedCase]:
+    """At most `count` cases in the model's order, the first case of every type kept so the coverage rule still holds."""
+    keep = {id(next(c for c in cases if c.case_type == t)) for t in CASE_TYPES if any(c.case_type == t for c in cases)}
+    rest = [c for c in cases if id(c) not in keep]
+    chosen = {id(c) for c in [c for c in cases if id(c) in keep] + rest[: max(count - len(keep), 0)]}
+    return [c for c in cases if id(c) in chosen][:count]
+
+
+def generate_test_cases(db: Session, org: service.Organization, user_id: uuid.UUID, body: GenerateCasesIn) -> GenerateCasesOut:
+    """Positive, negative and edge cases for a story (AI_SPEC 3.5). Nothing is saved: the person picks cases and saves them through the bulk
+    endpoint (API-100) with this answer's `usage_id`."""
+    project = _project(db, org.id, body.project_id)
+    components = [c.name for c in projects.list_components(db, org.id, project.id)]
+    blocks = [block("story", body.story), block("project_components", "\n".join(components)), block("case_count", str(body.count))]
+    fallback = GeneratedTestCases.model_construct(cases=[], coverage_notes="")
+    got = service.run(db, org, user_id, feature="test_cases", task=TEST_CASES_TASK, blocks=blocks, output_model=GeneratedTestCases,
+                      fallback=fallback, max_tokens=3000, check=_type_gap(body.count))
+    if got.fallback:
+        return GenerateCasesOut(cases=[], coverage_notes="AI could not produce test cases. You can write them yourself.", fallback=True,
+                                usage_id=got.usage_id)
+    picked = _pick(list(got.value.cases), body.count)
+    out = [GeneratedCaseOut(title=c.title, case_type=c.case_type, preconditions=c.preconditions, priority=c.priority, tags=list(c.tags),
+                            steps=[GeneratedStepOut(action=s.action, expected=s.expected) for s in c.steps]) for c in picked]
+    return GenerateCasesOut(cases=out, coverage_notes=got.value.coverage_notes, fallback=False, usage_id=got.usage_id)
 
 
 def explain_log(db: Session, org: service.Organization, user_id: uuid.UUID, body: ExplainLogIn) -> LogExplanationOut:

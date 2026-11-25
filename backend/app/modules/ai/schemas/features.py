@@ -128,6 +128,60 @@ class TriageOut(ApiModel):
     usage_id: uuid.UUID
 
 
+# Test case generator (AI_SPEC 3.5) -------------------------------------------------------------------------------------------------------
+
+CaseKind = Literal["positive", "negative", "edge"]
+Line = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=500)]
+
+
+class GeneratedStep(BaseModel):
+    action: Line
+    expected: Line
+
+
+class GeneratedCase(BaseModel):
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=5, max_length=200)]
+    case_type: CaseKind
+    preconditions: Annotated[str, StringConstraints(max_length=1000)] = ""
+    steps: Annotated[list[GeneratedStep], Field(min_length=1, max_length=15)]
+    priority: Priority = "p3"
+    tags: Annotated[list[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]], Field(max_length=5)] = []
+
+
+class GeneratedTestCases(BaseModel):
+    """What the model must answer. The rule "one case of each type when 3 or more were asked" is checked by the feature."""
+
+    cases: Annotated[list[GeneratedCase], Field(min_length=1, max_length=15)]
+    coverage_notes: Annotated[str, StringConstraints(max_length=1000)] = ""
+
+
+class GenerateCasesIn(ApiModel):
+    project_id: uuid.UUID
+    story: Annotated[str, StringConstraints(strip_whitespace=True, min_length=20, max_length=12_000)]
+    count: Annotated[int, Field(ge=3, le=15)] = 8
+
+
+class GeneratedStepOut(ApiModel):
+    action: str
+    expected: str
+
+
+class GeneratedCaseOut(ApiModel):
+    title: str
+    case_type: CaseKind
+    preconditions: str
+    steps: list[GeneratedStepOut]
+    priority: Priority
+    tags: list[str]
+
+
+class GenerateCasesOut(ApiModel):
+    cases: list[GeneratedCaseOut]  # empty when `fallback` is true
+    coverage_notes: str
+    fallback: bool
+    usage_id: uuid.UUID
+
+
 # Duplicate detector (AI_SPEC 3.4) --------------------------------------------------------------------------------------------------------
 
 class DuplicatesIn(ApiModel):

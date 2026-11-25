@@ -18,6 +18,8 @@ from app.modules.ai.schemas.features import (
     DuplicatesIn,
     DuplicatesOut,
     ExplainLogIn,
+    GenerateCasesIn,
+    GenerateCasesOut,
     LogExplanationOut,
     TriageIn,
     TriageOut,
@@ -34,6 +36,7 @@ Member = Annotated[OrgContext, Depends(require("org.read"))]
 BugWriter = Annotated[OrgContext, Depends(require("ai.bug_writer"))]
 LogReader = Annotated[OrgContext, Depends(require("ai.explain_log"))]
 Triager = Annotated[OrgContext, Depends(require("ai.triage"))]
+CaseWriter = Annotated[OrgContext, Depends(require("ai.test_cases"))]
 Duplicates = Annotated[OrgContext, Depends(require("ai.duplicates"))]
 FEATURE_ERR = errors(401, 403, 404, 422, 429)
 
@@ -50,6 +53,14 @@ def triage(body: TriageIn, db: DB, ctx: Triager) -> TriageOut:
     """Suggest severity, priority and component for a bug (`bug_id`) or for the fields of a bug not saved yet, with a reason. A suggestion
     only: accepting it is the normal bug update. `fallback` is true (and the suggestion empty) when the model could not help."""
     return features.triage(db, ctx.org, ctx.user.id, body)
+
+
+@router.post("/orgs/{org_id}/ai/test-cases", response_model=GenerateCasesOut, responses=FEATURE_ERR)
+def generate_test_cases(body: GenerateCasesIn, db: DB, ctx: CaseWriter) -> GenerateCasesOut:
+    """Positive, negative and edge test cases for a story (3 to 15, at least one of each type when 3 or more). Nothing is saved: the person
+    picks cases and saves them with the bulk endpoint, sending `usage_id` as `ai_usage_id`. `fallback` is true (no cases) when the model
+    could not help."""
+    return features.generate_test_cases(db, ctx.org, ctx.user.id, body)
 
 
 @router.post("/orgs/{org_id}/ai/explain-log", response_model=LogExplanationOut, responses=FEATURE_ERR)

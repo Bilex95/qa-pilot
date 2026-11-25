@@ -78,6 +78,41 @@ def triage(blocks: Sequence[Block]) -> dict[str, Any]:
             "confidence": "medium" if keywords else "low"}
 
 
+def _criteria(story: str) -> list[str]:
+    """Acceptance criteria of a story: the bulleted, numbered or Given lines; else its sentences (at most five)."""
+    lines = [ln.strip() for ln in story.splitlines() if ln.strip()]
+    marked = [heuristics.LIST_MARK.sub("", ln).strip() for ln in lines if heuristics.LIST_MARK.match(ln) or ln.lower().startswith("given")]
+    found = marked or [s.strip() for s in heuristics.SENTENCE_END.split(" ".join(lines)) if len(s.strip()) >= 5]
+    return [c for c in found if c][:5] or [story.strip()[:200]]
+
+
+def _case(title: str, kind: str, action: str, expected: str, priority: str, tags: list[str], pre: str = "") -> dict[str, Any]:
+    return {"title": title[:200], "case_type": kind, "preconditions": pre, "priority": priority, "tags": tags[:5],
+            "steps": [{"action": action[:500], "expected": expected}]}
+
+
+def test_cases(blocks: Sequence[Block]) -> dict[str, Any]:
+    """AI_SPEC 3.5: a positive case per criterion, two fixed negative and two fixed edge cases, taken in turn so every type is there."""
+    tags = _by_tag(blocks)
+    story, count = tags.get("story", ""), int(tags.get("case_count", "8") or 8)
+    area = [n.lower() for n in _names(tags.get("project_components", ""))[:1]]
+    positive = [_case(f"Works: {c}", "positive", f"Do what the story describes: {c}", "The expected result is shown.", "p2",
+                      ["smoke", *area], "The user is signed in.") for c in _criteria(story)]
+    negative = [_case("Empty input is rejected", "negative", "Submit the form with every field empty",
+                      "A clear error is shown and nothing is saved", "p2", ["validation", *area]),
+                _case("Invalid format is rejected", "negative", "Enter a value in the wrong format and submit",
+                      "The field shows an error and nothing is saved", "p3", ["validation", *area])]
+    edge = [_case("Maximum length input is accepted", "edge", "Enter the longest allowed value and submit",
+                  "The value is saved and shown in full", "p3", ["limits", *area]),
+            _case("Special characters are handled", "edge", "Enter quotes, angle brackets and emoji and submit",
+                  "The text is saved and shown as typed", "p4", ["limits", *area])]
+    ordered = [c for group in zip(positive, negative, edge, strict=False) for c in group]  # one of each type first
+    ordered += [c for c in (*positive, *negative, *edge) if c not in ordered]
+    notes = f"{len(positive)} acceptance criteria became positive cases, plus negative and edge checks."
+    return {"cases": ordered[:count], "coverage_notes": notes}
+
+
+register_mock("test_cases", test_cases)
 register_mock("bug_writer", bug_writer)
 register_mock("triage", triage)
 register_mock("explain_log", explain_log)
