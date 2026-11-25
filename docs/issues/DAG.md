@@ -120,7 +120,7 @@ flowchart LR
 | I-24 | Done | 562a4be, c1d81e2, b7db68a, af5eaec |
 | I-14 | Done | 0103b8a |
 | I-15 | Done | 34ece25, 08ec901, 96e6ffb |
-| I-16 | Planned |  |
+| I-16 | Done | 18f10f2, f782b7e |
 | I-17 | Planned |  |
 | I-18 | Planned |  |
 | I-19 | Planned |  |

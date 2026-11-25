@@ -6,11 +6,11 @@
 
 ## Resume here (updated 2026-11-25, token rules in CLAUDE.md)
 
-**State:** Stage 5, I-15 (AI Bug Writer, Explain this log, duplicate detector) is built and documented (D-070, D-071, review section, DAG). Last CI run 45600751358 (96e6ffb) failed on two things, both fixed in the following commits: the explained log list was `.mono` (nowrap) and scrolled the page sideways (layout, all shards); the dashboard flow read the reports figures before the project's answer arrived.
+**State:** Stage 5, I-16 (AI triage) is built and documented (D-072, review section, DAG). The CI run of I-15 (45618277192) failed only on `smoke-login` (a 90 s login wait on a cold runner, other flows passed); no code fix was made. The CI run of the I-16 push is not checked yet.
 
-**CI (check each run once, no polling):** `gh run list --branch stage/4-core-features --limit 3`, then `gh run view <id> --log-failed` for the run of the fix commit. If the "AI draft and an explained log" layout state or flow-i09 still fail, fix those first.
+**CI (check each run once, no polling):** `gh run list --branch stage/4-core-features --limit 3`, then `gh run view <id> --log-failed`. The new layout states "bug detail: AI triage ..." run in the layout shards.
 
-**Then:** I-16 (AI triage), I-17 (test case generator), I-18 (release summary), I-19 (AI usage screen), Stage 6 (I-20 to I-22), one final review. Each issue goes to the `issue-builder` subagent (CLAUDE.md "Token rules"). No full browser suites locally; stop only if CI stays red after two honest fixes of the same failure.
+**Then:** I-17 (test case generator), I-18 (release summary), I-19 (AI usage screen), Stage 6 (I-20 to I-22), one final review. Each issue goes to the `issue-builder` subagent (CLAUDE.md "Token rules"). No full browser suites locally; stop only if CI stays red after two honest fixes of the same failure.
 
 ## Done
 * Older entries (Stages 0 to 3, I-01 to I-12 and I-13 detail): `docs/progress-archive.md`.
@@ -18,6 +18,8 @@
 * I-13 Parity and states pass (D-067, D-068): found and built the missing Projects and Project overview screens, extended API-040 and API-042 with the project figures, ten parity comparisons reviewed (two fixed), the axe scan of 16 screens, the projects flow, CI split into parallel jobs, the layout fixture bug on a fresh database fixed. Verified locally: pytest 1476, Newman 549 requests and 945 assertions, lint, typecheck, build, projects flow, axe. CI: see the latest run.
 * I-14 AI foundation (D-069): migration 0014, `ai/application/service.run` (switch, limits, tagged prompts, validation with one retry, fallback, one usage row per call), mock and Anthropic providers, API-146 to API-148, the `ai_usage_id` check. Verified: ruff, mypy, pytest 1553 passed, migration round trip with no drift, Newman 568 requests and 979 assertions. No live Anthropic call (no key).
 * I-15 AI Bug Writer, Explain this log, duplicate detector (D-070, D-071): API-140, API-141, API-143, the AI panel and duplicate warning on New bug, layout states, parity compared. Verified: pytest 1633, Newman 590 requests and 1019 assertions, lint, typecheck, build, AI flow. CI fixes after run 45600751358: see D-071.
+
+* I-16 AI Triage (D-072): API-142, the AI triage panel on the bug page (Accept is the normal PATCH with activity), layout states, parity compared. Verified: pytest 1670, Newman 600 requests and 1036 assertions, lint, typecheck, build, AI flow.
 
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete

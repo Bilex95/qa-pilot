@@ -608,3 +608,22 @@ API-140 (bug writer), API-141 (explain log), API-143 (duplicates) and the AI pan
 `e2e/parity/stage4/i03/compare/` (bug-new default desktop, error desktop, default mobile) recaptured with the AI panel: panel, fields and error banner match. Known differences (D-071): no file drop zone until attachments are wired into the form, labels as chips, no "View as" switcher, sample data. No live Anthropic call was made (no key).
 
 Backlog: none.
+
+### I-16 AI Triage (SCR-10; REQ-045; D-072)
+
+API-142 (`POST {O}/ai/triage`) and the AI triage panel on the bug page.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Backend | ruff and mypy clean, **pytest 1670 passed** (35 new), **Newman 600 requests and 1036 assertions, 0 failed** (after a reseed) |
+| Frontend (local) | lint, typecheck, build clean; AI flow PASS (triage part: nothing changes on ask, Accept sets Critical, P1, Checkout with activity entries, outcomes in the usage log, no panel for a Developer or with AI off) |
+| CI of I-15 (run 45618277192) | all jobs green except the sign in smoke (`smoke-login`, a 90 s wait for the dashboard after login on a cold runner; the 26 sign outs of the next script passed). Not caused by code; not changed |
+| New layout states | AI triage thinking, suggestion, discarded, failed (in `check-app-layout.mjs`); run locally at 390 only: **170 states PASS** (the first attempt timed out signing in on a cold stack, the retry passed). The other widths run in the CI shards |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+`e2e/parity/stage5/i16/compare/` (bug detail default desktop, with the AI suggestion desktop, default mobile). The panel sits above Details with the dashed suggestion box, tag, severity badge, priority tag, component, confidence, reason and Accept, Edit, Discard like the prototype. Differences: the prototype's note says "Mock provider." (the app does not name the provider), the sample data differs, and Edit keeps the suggestion and focuses Severity because the bug page has no form to copy into (D-072).
+
+Backlog: none.
