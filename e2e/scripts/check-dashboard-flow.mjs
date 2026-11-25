@@ -159,6 +159,11 @@ async function main() {
     await page.getByRole('heading', { name: 'Reports' }).waitFor();
     await page.selectOption('#rp-p', { label: `${NAME} data` });
     await page.locator('.panel', { hasText: 'Bugs by status' }).locator('.hbar').first().waitFor();
+    // The panel first shows the previous figures (all projects) until the project's answer arrives: wait for it, then read
+    await page.waitForFunction(() => {
+      const p = [...document.querySelectorAll('.panel')].find((el) => el.textContent?.includes('Bugs by status'));
+      return p?.querySelector('.hbar .v')?.textContent === '3';
+    }, undefined, { timeout: 15000 }).catch(() => {});
     const statuses = await page.locator('.panel', { hasText: 'Bugs by status' }).locator('.hbar .v').allInnerTexts();
     check(statuses.length === 9 && statuses[0] === '3' && statuses[5] === '1', `bugs by status: ${statuses}`);
     const people = await page.locator('.panel', { hasText: 'Open bugs per person' }).locator('tbody tr').allInnerTexts();

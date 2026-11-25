@@ -197,7 +197,7 @@ export function AiBugWriter({ projectId, values, setsSeverity, onFill, onRestore
                       </p>
                       {explained.text.likely_cause ? <p className="small" style={{ overflowWrap: "anywhere" }}><b>Likely cause:</b> {explained.text.likely_cause}</p> : null}
                       {explained.text.key_lines.length ? (
-                        <ul className="small mono" style={{ paddingLeft: 16, margin: 0, fontSize: 12, overflowWrap: "anywhere" }}>
+                        <ul className="small mono" style={{ paddingLeft: 16, margin: 0, fontSize: 12, whiteSpace: "normal", overflowWrap: "anywhere" }}>
                           {explained.text.key_lines.map((l, i) => <li key={i}>{l}</li>)}
                         </ul>
                       ) : null}
