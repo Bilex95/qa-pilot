@@ -260,8 +260,22 @@ async function main() {
     await d2.getByRole('heading', { name: 'Release summary' }).waitFor();
     check((await d2.locator('.ai-panel').count()) === 0, 'a Developer sees the AI summary panel');
     await dctx2.close();
+    // 7c. The AI usage screen (I-19): a lead sees the totals and the request log; a Developer sees no access
+    await l.goto(`${BASE}/o/lumen/ai-usage`);
+    await l.getByRole('heading', { name: 'Recent requests' }).waitFor();
+    check((await l.locator('table.t tbody tr', { hasText: 'Release summary' }).count()) >= 2, 'the usage screen does not list the release summary');
+    check((await l.locator('.readout .num').first().innerText()) !== '0', 'requests today is zero');
+    await l.locator('#ai-r').selectOption('7');
+    await l.getByRole('heading', { name: 'By feature' }).waitFor();
+    const udev = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const ud = await udev.newPage();
+    ud.setDefaultTimeout(30_000);
+    await signIn(ud, dev.email);
+    await ud.goto(`${BASE}/o/lumen/ai-usage`);
+    await ud.getByText('You do not have access to AI usage').waitFor();
+    await udev.close();
     await lctx.close();
-    log('release summary: drafted without saving, edited and published, outcome "edited" in the log, a Viewer reads it, no panel for a Developer');
+    log('release summary: drafted without saving, edited and published, outcome "edited" in the log, a Viewer reads it, no panel for a Developer; AI usage lists the requests for a lead and is closed to a Developer');
 
     // 8. A Developer: severity stays Medium, the draft still fills the rest
     const dctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });

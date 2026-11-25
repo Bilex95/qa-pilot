@@ -1340,6 +1340,55 @@ for (const vp of VIEWPORTS.filter(wanted)) {
   await page.waitForSelector('text=This release was not found');
   await check('release: not found', { shot: 'release-not-found' });
 
+  // AI usage (I-19): default with long text, empty, loading and error
+  step = 'show the AI usage screen';
+  const usageUrl = /\/api\/v1\/orgs\/[^/]+\/ai\/usage(\/summary)?(\?.*)?$/;
+  const usageCors = { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' };
+  const longName = `Averyveryverylongunbrokenname ${'Averyveryverylongunbrokenword'.repeat(4)}`;
+  const featureRow = (feature, calls, accept) => ({ feature, calls, input_tokens: calls * 900, output_tokens: calls * 300, avg_latency_ms: 1900, acceptance_rate: accept });
+  const usageBody = (route, empty) => {
+    const summary = /summary/.test(route.request().url());
+    const totals = empty ? [] : ['bug_writer', 'explain_log', 'triage', 'duplicates', 'test_cases', 'release_summary'].map((f, i) => featureRow(f, 40 + i, f === 'duplicates' ? null : 70 + i));
+    const rows = empty ? [] : ['ok', 'fallback', 'rate_limited', 'error'].map((status, i) => ({
+      id: `00000000-0000-4000-8000-00000000000${i}`, user_id: `00000000-0000-4000-8000-00000000010${i}`, user_name: i === 0 ? longName : 'Sam Lee',
+      feature: ['bug_writer', 'triage', 'test_cases', 'release_summary'][i], provider: 'mock', model: 'mock-1', status, input_tokens: 1200, output_tokens: 400,
+      latency_ms: 1800, outcome: i === 0 ? 'accepted' : null, created_at: new Date(Date.now() - 3_600_000 * (i + 1)).toISOString() }));
+    return summary
+      ? { provider: 'mock', model: 'mock-1', ai_enabled: true, daily_limit: 500, used_today: empty ? 0 : 37, totals_by_feature: totals }
+      : { items: rows, page: 1, page_size: 10, total: empty ? 0 : 23 };
+  };
+  const usageRoute = (mode) => async (route) => {
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: usageCors });
+    if (mode === 'error') {
+      return route.fulfill({ status: 500, contentType: 'application/json', headers: { ...usageCors, 'x-request-id': 'req-layout-i19' },
+        body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) });
+    }
+    if (mode === 'slow') await new Promise((r) => setTimeout(r, 3000));
+    return route.fulfill({ status: 200, contentType: 'application/json', headers: usageCors, body: JSON.stringify(usageBody(route, mode === 'empty')) });
+  };
+  await page.route(usageUrl, usageRoute('default'));
+  await go(page, '/o/lumen/ai-usage');
+  await page.waitForSelector('text=By feature');
+  await check('ai usage', { shot: 'ai-usage' });
+  await page.unroute(usageUrl);
+  await page.route(usageUrl, usageRoute('empty'));
+  await go(page, '/o/lumen/ai-usage');
+  await page.waitForSelector('text=No AI requests yet');
+  await check('ai usage: empty', { shot: 'ai-usage-empty' });
+  await page.unroute(usageUrl);
+  await page.route(usageUrl, usageRoute('slow'));
+  await page.goto(`${BASE}/o/lumen/ai-usage`, { waitUntil: 'commit' });
+  await page.waitForSelector('.crumbs');
+  await page.waitForSelector('.sk');
+  await check('ai usage: loading', { shot: 'ai-usage-loading' });
+  await page.waitForSelector('text=By feature');
+  await page.unroute(usageUrl);
+  await page.route(usageUrl, usageRoute('error'));
+  await go(page, '/o/lumen/ai-usage');
+  await page.waitForSelector('.state-box.error');
+  await check('ai usage: error', { shot: 'ai-usage-error' });
+  await page.unroute(usageUrl);
+
   // Projects and Project overview (I-13): the list, New project errors, loading, empty, error; the overview with its dialogs, loading,
   // error and not found
   step = 'open the projects list';

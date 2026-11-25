@@ -77,6 +77,30 @@ export function useDuplicates(input: { projectId: string; title: string; actualR
   });
 }
 
+export type UsageSummary = Schemas["UsageSummaryOut"];
+export type UsageRow = Schemas["UsageOut"];
+
+/** API-147: totals by feature, the provider and model, and today's calls against the daily limit, for the last `days` days. */
+export function useUsageSummary(from: string, to: string, enabled = true) {
+  const org = useOrg();
+  return useQuery({
+    enabled,
+    queryKey: ["ai-usage-summary", org.id, from, to],
+    queryFn: () => unwrap(api.GET("/api/v1/orgs/{org_id}/ai/usage/summary", { params: { path: { org_id: org.id }, query: { from, to } } })),
+  });
+}
+
+/** API-146: the request log, newest first, one page at a time. */
+export function useUsageLog(from: string, to: string, page: number, enabled = true) {
+  const org = useOrg();
+  return useQuery({
+    enabled,
+    queryKey: ["ai-usage-log", org.id, from, to, page],
+    placeholderData: (previous) => previous,
+    queryFn: () => unwrap(api.GET("/api/v1/orgs/{org_id}/ai/usage", { params: { path: { org_id: org.id }, query: { from, to, page, page_size: 10 } } })),
+  });
+}
+
 /** API-148: what the person did with a suggestion. Best effort: a failure never gets in the way of the form. */
 export function useAiOutcome() {
   const org = useOrg();
