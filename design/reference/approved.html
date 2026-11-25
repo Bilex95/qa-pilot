@@ -359,6 +359,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
 .step-ed .textarea { min-height: 60px; }
 .gen-case { display: grid; grid-template-columns: 22px 1fr; gap: var(--sp-3); padding: var(--sp-3) 0; border-top: 1px dashed rgba(154,116,0,.4); }
 .gen-case:first-of-type { border-top: 0; }
+.gen-case input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); margin-top: 3px; }
 .type-tag { font-size: var(--fs-xs); font-weight: var(--fw-bold); padding: 1px 6px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line-strong); }
 
 /* Suite list */
@@ -507,6 +508,8 @@ body.clean .devbar { display: none; }
   .t .title-cell a, .crumbs a, .panel-head a, a.small, .dupe a, .row > a:not(.btn) { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
   .card .ttl a { display: flex; align-items: center; min-height: 44px; }
   .checkbox { min-height: 44px; }
+  .gen-case { grid-template-columns: 44px 1fr; }
+  .gen-case input[type="checkbox"] { width: 44px; height: 44px; margin: 0; }
   summary { padding: 12px 0; line-height: 20px; cursor: pointer; }
   .switch { width: 52px; height: 44px; }
   .switch span { top: 8px; bottom: 8px; }
@@ -1353,7 +1356,7 @@ function genPanel(ai) {
     <div class="field"><label for="g-story">User story or acceptance criteria</label><textarea class="textarea" id="g-story" placeholder="As a shipper I want...">${ai ? 'As a shipper I want my discount to stay applied when I change the delivery address, so the price I saw is the price I pay.\n- Discount stays after address change\n- Total shows new shipping cost\n- Expired codes are removed' : ''}</textarea></div>
     <div class="field"><label for="g-count">How many cases</label><select class="select" id="g-count"><option>6</option><option>8</option><option>12</option></select></div>
     ${ai ? `<div class="suggest"><div class="suggest-tag">${ic.spark}6 suggested cases, not saved</div>
-      ${gen.map(([t, title, n], i) => `<label class="gen-case"><input type="checkbox" checked aria-label="Include ${esc(title)}" style="width:16px;height:16px;accent-color:var(--primary);margin-top:3px"><span><span class="type-tag">${t[0].toUpperCase() + t.slice(1)}</span> <b class="small">${esc(title)}</b><span class="xs muted" style="display:block">${n} steps with expected results</span></span></label>`).join('')}
+      ${gen.map(([t, title, n], i) => `<label class="gen-case"><input type="checkbox" checked aria-label="Include ${esc(title)}"><span><span class="type-tag">${t[0].toUpperCase() + t.slice(1)}</span> <b class="small">${esc(title)}</b><span class="xs muted" style="display:block">${n} steps with expected results</span></span></label>`).join('')}
       <div class="suggest-actions"><button class="btn primary sm" data-action="ai-accept" data-msg="6 test cases added to Checkout">${ic.check}Add 6 to Checkout</button><button class="btn sm" data-action="ai-edit">Edit first</button><button class="btn ghost sm" data-action="ai-discard">Discard</button></div></div>`
     : `<button class="btn" data-action="ai-run" data-state="ai">${ic.spark}Generate cases</button>`}
     <p class="ai-note">Covers positive, negative and edge cases. You choose which ones to add.</p></div></section>`;

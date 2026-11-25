@@ -141,7 +141,6 @@ export function CaseGenerator({ projectId, suiteId, suiteName, onEditFirst }: Pr
             {result.cases.map((c, i) => (
               <label className="gen-case" key={i}>
                 <input type="checkbox" checked={!!picked[i]} aria-label={`Include ${c.title}`} disabled={add.isPending}
-                  style={{ width: 16, height: 16, accentColor: "var(--primary)", marginTop: 3 }}
                   onChange={(e) => setPicked(picked.map((p, j) => (j === i ? e.target.checked : p)))} />
                 <span style={{ minWidth: 0 }}>
                   <span className="type-tag">{CASE_TYPE_NAME[c.case_type] ?? c.case_type}</span>{" "}
