@@ -795,7 +795,7 @@ const F = { q: '', project: '', status: '', sev: '', assignee: '', view: 'all', 
 let selSuite = 's1';
 let tabState = {};
 let dragKey = null;
-let editing = ''; // bug detail inline edit: '', 'title', 'desc' or 'labels' (also ?edit= in the address, for screenshots)
+let editing = ''; // bug detail inline edit: '', 'title', 'desc', 'steps', 'ea' (expected and actual) or 'labels' (also ?edit= in the address, for screenshots)
 let lastPath = '';
 
 const STATE_OPTIONS = {
@@ -1202,8 +1202,10 @@ function scrBugDetail(key) {
       <section class="panel"><div class="panel-body prose">
         <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3 style="margin:0">Description</h3>${canEdit && editing !== 'desc' ? `<button class="btn ghost sm" data-action="edit-start" data-what="desc" aria-label="Edit description">Edit</button>` : ''}</div>
         ${editing === 'desc' ? `<form class="stack" data-action="edit-desc" style="margin-top:8px"><div class="field"><label class="sr-only" for="e-desc">Description</label><textarea class="textarea" id="e-desc" style="min-height:140px">After applying discount code SAVE10 at checkout, changing the delivery address recalculates shipping but drops the discount. The order total goes up by the discount amount and the code disappears from the summary. Seen by 3 customers in support tickets today.</textarea><div class="hint">Plain text. Up to 20,000 characters.</div></div><div class="row"><button class="btn primary sm" type="submit">Save description</button><button class="btn sm" type="button" data-action="edit-cancel">Cancel</button></div></form>` : `<p style="margin-top:8px">After applying discount code SAVE10 at checkout, changing the delivery address recalculates shipping but drops the discount. The order total goes up by the discount amount and the code disappears from the summary. Seen by 3 customers in support tickets today.</p>`}
-        <h3>Steps to reproduce</h3><ol><li>Sign in as a shipper with a parcel in the cart.</li><li>Apply discount code SAVE10.</li><li>On the checkout page choose Change address and pick another saved address.</li><li>Look at the order summary.</li></ol>
-        <h3>Expected and actual</h3><div class="ea"><div class="exp"><div class="ea-title">Expected</div>Total includes the new shipping cost and still applies SAVE10.</div><div class="act"><div class="ea-title">Actual</div>SAVE10 is removed and the total rises by the discount amount.</div></div>
+        <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3 style="margin:0">Steps to reproduce</h3>${canEdit && editing !== 'steps' ? `<button class="btn ghost sm" data-action="edit-start" data-what="steps" aria-label="Edit steps to reproduce">Edit</button>` : ''}</div>
+        ${editing === 'steps' ? `<form class="stack" data-action="edit-steps" style="margin-top:8px">${['Sign in as a shipper with a parcel in the cart.', 'Apply discount code SAVE10.', 'On the checkout page choose Change address and pick another saved address.', 'Look at the order summary.'].map((s, i) => `<div class="row" style="flex-wrap:nowrap"><span class="mono muted" style="width:20px;text-align:right">${i + 1}</span><input class="input" id="e-step-${i + 1}" aria-label="Step ${i + 1}" value="${esc(s)}"><button type="button" class="btn ghost sm icon-btn" data-action="toast" data-msg="Step removed" aria-label="Remove step ${i + 1}">${ic.trash}</button></div>`).join('')}<div class="row"><button type="button" class="btn sm" data-action="toast" data-msg="Step added">${ic.plus}Add step</button><span class="hint">Up to 50 steps of 1,000 characters.</span></div><div class="row"><button class="btn primary sm" type="submit">Save steps</button><button class="btn sm" type="button" data-action="edit-cancel">Cancel</button></div></form>` : `<ol style="margin-top:8px"><li>Sign in as a shipper with a parcel in the cart.</li><li>Apply discount code SAVE10.</li><li>On the checkout page choose Change address and pick another saved address.</li><li>Look at the order summary.</li></ol>`}
+        <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3 style="margin:0">Expected and actual</h3>${canEdit && editing !== 'ea' ? `<button class="btn ghost sm" data-action="edit-start" data-what="ea" aria-label="Edit expected and actual result">Edit</button>` : ''}</div>
+        ${editing === 'ea' ? `<form class="stack" data-action="edit-ea" style="margin-top:8px"><div class="grid g2"><div class="field"><label for="e-exp">Expected result</label><textarea class="textarea" id="e-exp">Total includes the new shipping cost and still applies SAVE10.</textarea></div><div class="field"><label for="e-act">Actual result</label><textarea class="textarea" id="e-act">SAVE10 is removed and the total rises by the discount amount.</textarea></div></div><div class="hint">Plain text. Up to 5,000 characters each.</div><div class="row"><button class="btn primary sm" type="submit">Save results</button><button class="btn sm" type="button" data-action="edit-cancel">Cancel</button></div></form>` : `<div class="ea" style="margin-top:8px"><div class="exp"><div class="ea-title">Expected</div>Total includes the new shipping cost and still applies SAVE10.</div><div class="act"><div class="ea-title">Actual</div>SAVE10 is removed and the total rises by the discount amount.</div></div>`}
         <h3>Attachments</h3><div class="files"><span class="file">${ic.img}checkout-summary.png <span class="muted xs">412 KB</span></span><span class="file">${ic.file}console.log <span class="muted xs">8 KB</span></span>${can('attachment.upload') ? `<button class="btn sm" data-action="toast" data-msg="Attachment uploaded">${ic.clip}Attach file</button>` : ''}</div>
       </div></section>
       <section class="panel"><div class="panel-body">
@@ -1585,7 +1587,7 @@ document.addEventListener('click', e => {
     'confirm-delete': () => openModal(`<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="del-h" data-stop><div class="modal-head"><h2 id="del-h">Delete this bug?</h2></div><div class="modal-body"><p>The bug disappears from lists and boards. It stays in the audit log.</p></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" style="background:var(--danger);border-color:var(--danger)" data-action="deleted">Delete bug</button></div></div></div>`),
     deleted: () => { closeModal(); toast('Bug deleted'); go(o('/bugs')); },
     'close-modal': () => closeModal(),
-    'edit-start': () => { editing = el.dataset.what; render(); const f = document.querySelector('#e-title, #e-desc'); if (f) f.focus(); },
+    'edit-start': () => { editing = el.dataset.what; render(); const f = document.querySelector('#e-title, #e-desc, #e-step-1, #e-exp'); if (f) f.focus(); },
     'edit-cancel': () => { editing = ''; render(); },
     invite: () => openModal(inviteDialog(false)),
     'create-invite': () => { closeModal(); openModal(inviteDialog(true)); },
@@ -1611,7 +1613,7 @@ document.addEventListener('submit', e => {
   if (a === 'org-setup') go(o('/dashboard'));
   if (a === 'accept-invite') go(o('/dashboard'));
   if (a === 'comment') { toast('Comment posted'); e.target.reset(); }
-  if (a === 'edit-title' || a === 'edit-desc' || a === 'edit-labels') { editing = ''; render(); toast({ 'edit-title': 'Title updated', 'edit-desc': 'Description updated', 'edit-labels': 'Labels updated' }[a]); }
+  if (a === 'edit-title' || a === 'edit-desc' || a === 'edit-labels' || a === 'edit-steps' || a === 'edit-ea') { editing = ''; render(); toast({ 'edit-title': 'Title updated', 'edit-desc': 'Description updated', 'edit-labels': 'Labels updated', 'edit-steps': 'Steps updated', 'edit-ea': 'Results updated' }[a]); }
   if (a === 'submit-bug') { toast('WEB-143 saved'); go(o('/bugs/WEB-142')); }
 });
 document.addEventListener('input', e => {

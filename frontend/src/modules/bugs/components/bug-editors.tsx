@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState, type FormEvent, type ReactNode } from "react";
 
+import { IconPlus, IconTrash } from "@/components/icons";
 import { Button, Spinner } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { useToast } from "@/components/ui/toast";
@@ -12,7 +13,7 @@ import { useOrg } from "@/modules/shell/org-context";
 
 import { useRefreshBug, type BugDetail } from "../detail-hooks";
 import { useLabelOptions } from "../hooks";
-import { DESCRIPTION_MAX, LABEL_MAX, TITLE_MAX, titleSchema } from "../schemas";
+import { DESCRIPTION_MAX, LABEL_MAX, RESULT_MAX, STEP_LENGTH, STEP_MAX, TITLE_MAX, titleSchema } from "../schemas";
 
 type Changes = Schemas["BugUpdateIn"];
 
@@ -132,6 +133,135 @@ export function BugDescription({ bug, canEdit }: { bug: BugDetail; canEdit: bool
         <p style={{ marginTop: 8, whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{bug.description}</p>
       ) : (
         <p className="muted" style={{ marginTop: 8 }}>No description.</p>
+      )}
+    </>
+  );
+}
+
+/** The Steps to reproduce heading with its Edit button, and the numbered list or the step editor (empty steps are dropped on save). */
+export function BugSteps({ bug, canEdit }: { bug: BugDetail; canEdit: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [steps, setSteps] = useState<string[]>([]);
+  const save = useBugUpdate(bug, "Steps updated", () => setEditing(false));
+  const kept = steps.map((s) => s.trim()).filter(Boolean);
+  const problem = kept.length > STEP_MAX ? `Use ${STEP_MAX} steps or fewer.`
+    : kept.some((s) => s.length > STEP_LENGTH) ? `Each step can have up to ${STEP_LENGTH.toLocaleString("en-US")} characters.` : undefined;
+  const same = kept.join("\n") === bug.steps_to_reproduce.join("\n") && kept.length === bug.steps_to_reproduce.length;
+
+  function open() {
+    setSteps(bug.steps_to_reproduce.length ? [...bug.steps_to_reproduce] : [""]);
+    setEditing(true);
+  }
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    if (save.isPending || problem) return;
+    if (same) return setEditing(false); // nothing changed: no request, no timeline entry
+    save.mutate({ steps_to_reproduce: kept });
+  }
+
+  return (
+    <>
+      <div className="row" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
+        <h3 style={{ margin: 0 }}>Steps to reproduce</h3>
+        {canEdit && !editing ? <Button variant="ghost" size="sm" aria-label="Edit steps to reproduce" onClick={open}>Edit</Button> : null}
+      </div>
+      {editing ? (
+        <form className="stack" style={{ marginTop: 8 }} onSubmit={submit} noValidate>
+          {steps.map((s, i) => (
+            <div key={i} className="row" style={{ flexWrap: "nowrap" }}>
+              <span className="mono muted" style={{ width: 20, textAlign: "right" }}>{i + 1}</span>
+              <Input id={`e-step-${i + 1}`} aria-label={`Step ${i + 1}`} value={s} autoComplete="off" autoFocus={i === 0}
+                onChange={(e) => setSteps(steps.map((x, j) => (j === i ? e.target.value : x)))} />
+              <Button variant="ghost" size="icon" aria-label={`Remove step ${i + 1}`} onClick={() => setSteps(steps.filter((_, j) => j !== i))}>
+                <IconTrash />
+              </Button>
+            </div>
+          ))}
+          <div className="row">
+            <Button size="sm" disabled={steps.length >= STEP_MAX} onClick={() => setSteps([...steps, ""])}>
+              <IconPlus />
+              Add step
+            </Button>
+            <span className="hint">Up to {STEP_MAX} steps of {STEP_LENGTH.toLocaleString("en-US")} characters.</span>
+          </div>
+          {problem ?? fieldMessage(save.error, "steps_to_reproduce") ? <div className="err">{problem ?? fieldMessage(save.error, "steps_to_reproduce")}</div> : null}
+          <div className="row">
+            <Button variant="primary" size="sm" type="submit" disabled={save.isPending || !!problem}>
+              {save.isPending ? <Spinner /> : null}
+              Save steps
+            </Button>
+            <Button size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+          </div>
+        </form>
+      ) : bug.steps_to_reproduce.length ? (
+        <ol style={{ listStyle: "decimal", marginTop: 8 }}>{bug.steps_to_reproduce.map((s, i) => <li key={i} style={{ overflowWrap: "anywhere" }}>{s}</li>)}</ol>
+      ) : (
+        <p className="muted" style={{ marginTop: 8 }}>No steps recorded.</p>
+      )}
+    </>
+  );
+}
+
+/** The Expected and actual heading with its Edit button, the two boxes or the two text areas (one request for both). */
+export function BugResults({ bug, canEdit }: { bug: BugDetail; canEdit: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [expected, setExpected] = useState(bug.expected_result);
+  const [actual, setActual] = useState(bug.actual_result);
+  const save = useBugUpdate(bug, "Results updated", () => setEditing(false));
+  const expTooLong = expected.length > RESULT_MAX;
+  const actTooLong = actual.length > RESULT_MAX;
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    if (save.isPending || expTooLong || actTooLong) return;
+    const changes: Changes = {};
+    if (expected !== bug.expected_result) changes.expected_result = expected;
+    if (actual !== bug.actual_result) changes.actual_result = actual;
+    if (!Object.keys(changes).length) return setEditing(false); // nothing changed: no request, no timeline entry
+    save.mutate(changes);
+  }
+  const hint = (v: string) => `Plain text. ${v.length.toLocaleString("en-US")} of ${RESULT_MAX.toLocaleString("en-US")} characters.`;
+
+  return (
+    <>
+      <div className="row" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
+        <h3 style={{ margin: 0 }}>Expected and actual</h3>
+        {canEdit && !editing ? (
+          <Button variant="ghost" size="sm" aria-label="Edit expected and actual result"
+            onClick={() => { setExpected(bug.expected_result); setActual(bug.actual_result); setEditing(true); }}>Edit</Button>
+        ) : null}
+      </div>
+      {editing ? (
+        <form className="stack" style={{ marginTop: 8 }} onSubmit={submit} noValidate>
+          <div className="grid g2">
+            <Field id="e-exp" label="Expected result" hint={hint(expected)}
+              error={expTooLong ? `Use ${RESULT_MAX.toLocaleString("en-US")} characters or fewer.` : fieldMessage(save.error, "expected_result")}>
+              {(aria) => <Textarea {...aria} value={expected} autoFocus onChange={(e) => setExpected(e.target.value)} />}
+            </Field>
+            <Field id="e-act" label="Actual result" hint={hint(actual)}
+              error={actTooLong ? `Use ${RESULT_MAX.toLocaleString("en-US")} characters or fewer.` : fieldMessage(save.error, "actual_result")}>
+              {(aria) => <Textarea {...aria} value={actual} onChange={(e) => setActual(e.target.value)} />}
+            </Field>
+          </div>
+          <div className="row">
+            <Button variant="primary" size="sm" type="submit" disabled={save.isPending || expTooLong || actTooLong}>
+              {save.isPending ? <Spinner /> : null}
+              Save results
+            </Button>
+            <Button size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+          </div>
+        </form>
+      ) : (
+        <div className="ea" style={{ marginTop: 8 }}>
+          <div className="exp">
+            <div className="ea-title">Expected</div>
+            <span style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{bug.expected_result || <span className="muted">Not provided.</span>}</span>
+          </div>
+          <div className="act">
+            <div className="ea-title">Actual</div>
+            <span style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{bug.actual_result || <span className="muted">Not provided.</span>}</span>
+          </div>
+        </div>
       )}
     </>
   );

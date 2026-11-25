@@ -70,6 +70,46 @@ def test_long_text_fields_record_that_they_changed_but_not_their_words(client, w
     assert got == {("description", None, None), ("steps_to_reproduce", None, None)}
 
 
+def test_expected_and_actual_result_each_write_one_entry_without_their_words(client, world, bug) -> None:
+    patch(client, world.a, bug, expected_result="A receipt", actual_result="Nothing happens")
+    got = {(e["field"], e["old_value"], e["new_value"]) for e in trail(client, world.a, bug)["items"][:2]}
+    assert got == {("expected_result", None, None), ("actual_result", None, None)}
+    patch(client, world.a, bug, expected_result="A receipt and an email", actual_result="Nothing happens")  # one changed, one not
+    page = trail(client, world.a, bug)
+    assert page["total"] == 4 and (page["items"][0]["field"], page["items"][0]["old_value"]) == ("expected_result", None)
+
+
+def test_steps_changed_only_by_order_or_text_write_an_entry_and_the_same_list_writes_none(client, world, bug) -> None:
+    patch(client, world.a, bug, steps_to_reproduce=["One", "Two"])
+    patch(client, world.a, bug, steps_to_reproduce=["One", "Two"])
+    assert trail(client, world.a, bug)["total"] == 2
+    patch(client, world.a, bug, steps_to_reproduce=["Two", "One"])
+    patch(client, world.a, bug, steps_to_reproduce=[])
+    assert trail(client, world.a, bug)["total"] == 4
+    got = client.get(f"{O}/{world.a.org.id}/bugs/{bug['id']}", headers=world.a.h("viewer")).json()
+    assert got["steps_to_reproduce"] == []
+
+
+@pytest.mark.parametrize("changes", [{"steps_to_reproduce": ["x" * 1001]}, {"steps_to_reproduce": ["a"] * 51},
+                                     {"expected_result": "x" * 5001}, {"actual_result": "x" * 5001}])
+def test_steps_and_results_over_their_limits_are_refused_and_change_nothing(client, world, bug, changes) -> None:
+    r = client.patch(f"{O}/{world.a.org.id}/bugs/{bug['id']}", json=changes, headers=world.a.h("qa_lead"))
+    assert r.status_code == 422 and code(r) == "validation_error"
+    assert trail(client, world.a, bug)["total"] == 1
+
+
+def test_a_developer_edits_the_steps_of_their_own_report_only(client, world) -> None:
+    mine = make_bug(client, world.a, make_project(client, world.a, key="DVA"), role="developer")
+    other = make_bug(client, world.a, make_project(client, world.a, key="DVB"), role="qa_engineer")
+    ok = client.patch(f"{O}/{world.a.org.id}/bugs/{mine['id']}", json={"steps_to_reproduce": ["Mine"], "actual_result": "Bad"},
+                      headers=world.a.h("developer"))
+    assert ok.status_code == 200 and ok.json()["steps_to_reproduce"] == ["Mine"]
+    no = client.patch(f"{O}/{world.a.org.id}/bugs/{other['id']}", json={"steps_to_reproduce": ["Theirs"]}, headers=world.a.h("developer"))
+    assert no.status_code == 403 and code(no) == "forbidden"
+    viewer = client.patch(f"{O}/{world.a.org.id}/bugs/{mine['id']}", json={"expected_result": "x"}, headers=world.a.h("viewer"))
+    assert viewer.status_code == 403
+
+
 def test_a_save_that_changes_nothing_writes_nothing(client, world, bug) -> None:
     patch(client, world.a, bug, severity="medium", title=bug["title"])
     assert trail(client, world.a, bug)["total"] == 1

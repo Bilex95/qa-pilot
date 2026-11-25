@@ -20,7 +20,7 @@ import { useOrg } from "@/modules/shell/org-context";
 
 import { PriorityTag, SeverityBadge, SlaBadge, StatusBadge } from "./components/bug-badges";
 import { BugDetailsPanel } from "./components/bug-details-panel";
-import { BugDescription, BugHeadline } from "./components/bug-editors";
+import { BugDescription, BugHeadline, BugResults, BugSteps } from "./components/bug-editors";
 import { BugFiles } from "./components/bug-files";
 import { BugTimeline } from "./components/bug-timeline";
 import { useBug, useRefreshBug, type BugDetail } from "./detail-hooks";
@@ -128,7 +128,6 @@ function Loaded({ bug, crumbs }: { bug: BugDetail; crumbs: React.ReactNode }) {
   const note = org.role === "viewer" ? "Viewers can comment but cannot change bugs."
     : org.role === "developer" && bug.assignee_id !== null && bug.assignee_id !== me?.user.id ? "Only the assignee can move this bug."
     : "No status changes available.";
-  const steps = bug.steps_to_reproduce;
 
   return (
     <>
@@ -164,21 +163,8 @@ function Loaded({ bug, crumbs }: { bug: BugDetail; crumbs: React.ReactNode }) {
           <section className="panel">
             <div className="panel-body prose">
               <BugDescription bug={bug} canEdit={canEdit} />
-              <h3>Steps to reproduce</h3>
-              {steps.length ? (
-                <ol style={{ listStyle: "decimal" }}>{steps.map((s, i) => <li key={i} style={{ overflowWrap: "anywhere" }}>{s}</li>)}</ol>
-              ) : <p className="muted">No steps recorded.</p>}
-              <h3>Expected and actual</h3>
-              <div className="ea">
-                <div className="exp">
-                  <div className="ea-title">Expected</div>
-                  <span style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{bug.expected_result || <span className="muted">Not provided.</span>}</span>
-                </div>
-                <div className="act">
-                  <div className="ea-title">Actual</div>
-                  <span style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{bug.actual_result || <span className="muted">Not provided.</span>}</span>
-                </div>
-              </div>
+              <BugSteps bug={bug} canEdit={canEdit} />
+              <BugResults bug={bug} canEdit={canEdit} />
               <BugFiles bug={bug} />
             </div>
           </section>

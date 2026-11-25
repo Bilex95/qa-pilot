@@ -181,6 +181,39 @@ async function main() {
     await page.getByText('With a second line.').first().waitFor();
     await entry('edited the description').waitFor();
     check((await fresh(bugA)).description === 'Edited description.\nWith a second line.', 'the description was not saved');
+    // steps to reproduce: remove one, add one, an empty step is dropped, one change is one timeline entry
+    await page.getByRole('button', { name: 'Edit steps to reproduce' }).click();
+    await page.getByRole('button', { name: 'Add step' }).click();
+    await page.fill('#e-step-1', 'Open the checkout page.');
+    await page.fill('#e-step-2', 'Press Pay.');
+    await page.getByRole('button', { name: 'Add step' }).click(); // the third stays empty
+    await page.getByRole('button', { name: 'Save steps' }).click();
+    await toast('Steps updated').waitFor();
+    await page.locator('.prose ol li', { hasText: 'Press Pay.' }).waitFor();
+    await entry('edited the steps to reproduce').waitFor();
+    const afterSteps = await fresh(bugA);
+    check(JSON.stringify(afterSteps.steps_to_reproduce.slice(0, 2)) === JSON.stringify(['Open the checkout page.', 'Press Pay.']) && !afterSteps.steps_to_reproduce.includes(''), `steps saved as ${JSON.stringify(afterSteps.steps_to_reproduce)}`);
+    // Save with no change sends nothing: the timeline keeps one entry
+    const countSteps = () => page.locator('.timeline li', { hasText: 'edited the steps to reproduce' }).count();
+    await page.getByRole('button', { name: 'Edit steps to reproduce' }).click();
+    await page.getByRole('button', { name: 'Save steps' }).click();
+    await page.getByRole('button', { name: 'Edit steps to reproduce' }).waitFor();
+    check((await countSteps()) === 1, 'Save without a change added a timeline entry');
+    // expected and actual: both in one request, two timeline entries; a text over 5,000 characters is refused in the form
+    await page.getByRole('button', { name: 'Edit expected and actual result' }).click();
+    await page.fill('#e-exp', 'x'.repeat(5001));
+    await page.getByText('Use 5,000 characters or fewer.').waitFor();
+    check(await page.getByRole('button', { name: 'Save results' }).isDisabled(), 'Save results is enabled with a text over 5,000 characters');
+    await page.fill('#e-exp', 'The total keeps the discount.');
+    await page.fill('#e-act', 'The discount is gone.\nThe total rises.');
+    await page.getByRole('button', { name: 'Save results' }).click();
+    await toast('Results updated').waitFor();
+    await page.getByText('The total rises.').first().waitFor();
+    await entry('edited the expected result').waitFor();
+    await entry('edited the actual result').waitFor();
+    const afterEa = await fresh(bugA);
+    check(afterEa.expected_result === 'The total keeps the discount.' && afterEa.actual_result === 'The discount is gone.\nThe total rises.', 'expected and actual were not saved');
+    log('inline edit: steps (add, edit, empty dropped, no change sends nothing) and expected and actual (limit in the form) saved, each in the timeline');
     await page.getByRole('button', { name: 'Edit labels' }).click();
     await page.getByRole('button', { name: flowLabel.name, exact: true }).click();
     await page.getByRole('button', { name: 'Save labels' }).click();
