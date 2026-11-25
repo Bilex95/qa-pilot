@@ -915,6 +915,33 @@ for (const vp of VIEWPORTS.filter(wanted)) {
   await page.click('button:has-text("Save case")');
   await page.waitForSelector('.banner.error');
   await check('new case: error banner', { shot: 'case-new-error' });
+  // Test Case Generator (I-17): the empty panel, a story that is too short, thinking, the pick list, the choice added and a failed answer
+  step = 'use the test case generator';
+  await check('case editor: generator panel', { shot: 'case-generator' });
+  await page.getByRole('button', { name: 'Generate cases' }).click();
+  await page.waitForSelector('#g-story-e');
+  await check('case editor: generator story too short', { shot: 'case-generator-short' });
+  await page.fill('#g-story', `As a shipper I want my discount to stay applied when I change the delivery address, ${'Averyveryverylongunbrokenword'.repeat(8)} so the price I saw is the price I pay.`);
+  const genUrl = /\/api\/v1\/orgs\/[^/]+\/ai\/test-cases$/;
+  await page.route(genUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.getByRole('button', { name: 'Generate cases' }).click();
+  await page.waitForSelector('.ai-panel .thinking');
+  await check('case editor: generator thinking', { shot: 'case-generator-thinking' });
+  await page.waitForSelector('.ai-panel .gen-case');
+  await page.unroute(genUrl);
+  await check('case editor: generator pick list', { shot: 'case-generator-picks' });
+  await page.locator('.ai-panel .gen-case input').first().uncheck();
+  await check('case editor: generator one case unticked', { shot: 'case-generator-unticked' });
+  step = 'show a generator answer that failed';
+  const genCors = { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'POST,OPTIONS' };
+  await page.route(genUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: genCors })
+    : route.fulfill({ status: 200, contentType: 'application/json', headers: genCors, body: JSON.stringify({
+      cases: [], coverage_notes: '', fallback: true, usage_id: '00000000-0000-4000-8000-000000000000' }) }));
+  await page.getByRole('button', { name: 'Generate again' }).click();
+  await page.waitForSelector('.ai-panel p[role="status"]');
+  await check('case editor: generator failed', { shot: 'case-generator-failed' });
+  await page.unroute(genUrl);
 
   // Settings (I-11): Organization, Audit log and My profile as the Org Admin, with their error, loading and empty states
   step = 'open the Organization tab';

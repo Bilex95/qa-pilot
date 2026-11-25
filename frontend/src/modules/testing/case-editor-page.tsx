@@ -13,8 +13,9 @@ import { useToast } from "@/components/ui/toast";
 import { api, unwrap } from "@/lib/api/client";
 import { isApiError } from "@/lib/api/errors";
 import { can } from "@/lib/permissions";
-import { useOrg } from "@/modules/shell/org-context";
+import { useAiEnabled, useOrg } from "@/modules/shell/org-context";
 
+import { CaseGenerator } from "./components/case-generator";
 import { DeleteCaseDialog } from "./components/delete-dialogs";
 import { groupSuites } from "./components/suite-list";
 import { StepEditor } from "./components/step-editor";
@@ -30,7 +31,7 @@ const FIELD_NAMES: Record<keyof CaseErrors, string> = {
 
 /**
  * SCR-13 Test case editor (API-096 to API-099; REQ-031). Org Admin, QA Lead and QA Engineer edit (case.manage); everyone else
- * reads the same screen with every field disabled. The AI Test Case Generator panel of the prototype arrives with I-17.
+ * reads the same screen with every field disabled. The AI Test Case Generator panel (I-17, API-144 and API-100) sits beside the form.
  * `caseRef` is a key like TC-103 or a UUID; without it the screen writes a new case (`?suite=` picks the suite).
  */
 export function CaseEditorPage({ caseRef }: { caseRef?: string }) {
@@ -93,6 +94,7 @@ function CaseForm({ existing, suites, projects }: { existing?: TestCaseFull; sui
   const qc = useQueryClient();
   const toast = useToast();
   const wanted = useSearchParams().get("suite");
+  const aiOn = useAiEnabled();
   const editable = can(org.role, "case.manage");
   const groups = groupSuites(suites, projects);
   const firstSuite = groups[0]?.suites[0];
@@ -177,7 +179,7 @@ function CaseForm({ existing, suites, projects }: { existing?: TestCaseFull; sui
   const suiteGroups = existing ? groups.filter((g) => g.suites.some((s) => s.project_id === existing.project_id)) : groups;
 
   const form = (
-    <form id="case-form" className="panel" style={editable ? { maxWidth: 980 } : undefined} onSubmit={submit} noValidate>
+    <form id="case-form" className="panel" onSubmit={submit} noValidate>
       <div className="panel-body stack">
         {failed && errorCount > 0 ? (
           <Banner kind="error">
@@ -261,14 +263,17 @@ function CaseForm({ existing, suites, projects }: { existing?: TestCaseFull; sui
           </div>
         ) : null}
       </div>
-      {editable ? form : (
-        <div className="split">
-          {form}
-          <aside className="stack">
+      <div className="split">
+        {form}
+        <aside className="stack">
+          {can(org.role, "ai.test_cases") && aiOn ? (
+            <CaseGenerator projectId={suiteOf?.project_id} suiteId={values.suite_id} suiteName={suiteOf?.name ?? "the suite"}
+              onEditFirst={existing ? undefined : (patch) => setValues((v) => ({ ...v, ...patch, steps: patch.steps ?? v.steps }))} />
+          ) : !editable ? (
             <section className="panel panel-body small muted">Only QA roles can edit test cases.</section>
-          </aside>
-        </div>
-      )}
+          ) : null}
+        </aside>
+      </div>
       {deleting && existing ? (
         <DeleteCaseDialog caseKey={existing.key} title={existing.title} pending={remove.isPending}
           onConfirm={() => remove.mutate()} onClose={() => setDeleting(false)} />

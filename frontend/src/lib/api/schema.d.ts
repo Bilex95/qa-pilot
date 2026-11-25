@@ -1175,6 +1175,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/ai/test-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Test Cases
+         * @description Positive, negative and edge test cases for a story (3 to 15, at least one of each type when 3 or more). Nothing is saved: the person
+         *     picks cases and saves them with the bulk endpoint, sending `usage_id` as `ai_usage_id`. `fallback` is true (no cases) when the model
+         *     could not help.
+         */
+        post: operations["generate_test_cases_api_v1_orgs__org_id__ai_test_cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/ai/explain-log": {
         parameters: {
             query?: never;
@@ -2194,6 +2216,63 @@ export interface components {
             avg_latency_ms: number;
             /** Acceptance Rate */
             acceptance_rate: number | null;
+        };
+        /** GenerateCasesIn */
+        GenerateCasesIn: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Story */
+            story: string;
+            /**
+             * Count
+             * @default 8
+             */
+            count: number;
+        };
+        /** GenerateCasesOut */
+        GenerateCasesOut: {
+            /** Cases */
+            cases: components["schemas"]["GeneratedCaseOut"][];
+            /** Coverage Notes */
+            coverage_notes: string;
+            /** Fallback */
+            fallback: boolean;
+            /**
+             * Usage Id
+             * Format: uuid
+             */
+            usage_id: string;
+        };
+        /** GeneratedCaseOut */
+        GeneratedCaseOut: {
+            /** Title */
+            title: string;
+            /**
+             * Case Type
+             * @enum {string}
+             */
+            case_type: "positive" | "negative" | "edge";
+            /** Preconditions */
+            preconditions: string;
+            /** Steps */
+            steps: components["schemas"]["GeneratedStepOut"][];
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "p1" | "p2" | "p3" | "p4";
+            /** Tags */
+            tags: string[];
+        };
+        /** GeneratedStepOut */
+        GeneratedStepOut: {
+            /** Action */
+            action: string;
+            /** Expected */
+            expected: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -9409,6 +9488,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TriageOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    generate_test_cases_api_v1_orgs__org_id__ai_test_cases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateCasesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateCasesOut"];
                 };
             };
             /** @description Not signed in */

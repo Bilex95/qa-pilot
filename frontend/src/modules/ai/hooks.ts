@@ -41,6 +41,18 @@ export function useTriage() {
   });
 }
 
+export type GeneratedCases = Schemas["GenerateCasesOut"];
+export type GeneratedCase = GeneratedCases["cases"][number];
+
+/** API-144: positive, negative and edge cases for a story. Suggestions only; cases are created later through the bulk endpoint. */
+export function useGenerateCases() {
+  const org = useOrg();
+  return useMutation({
+    mutationFn: (body: { project_id: string; story: string; count: number }) =>
+      unwrap(api.POST("/api/v1/orgs/{org_id}/ai/test-cases", { params: { path: { org_id: org.id } }, body })),
+  });
+}
+
 /** API-141: what a log shows. */
 export function useExplainLog() {
   const org = useOrg();

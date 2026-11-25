@@ -120,8 +120,13 @@ def test_a_project_of_another_workspace_or_unknown_is_a_422_and_nothing_is_asked
 
 
 def test_an_archived_project_is_refused(client, world, project) -> None:
-    assert client.post(f"{O}/{world.a.org.id}/projects/{project['id']}/archive", headers=world.a.h("qa_lead")).status_code == 200
-    assert generate(client, world.a, {"project_id": project["id"], "story": STORY}).status_code == 422
+    # Archiving is PATCH {archived: true}; there is no /archive route (the first version of this test called one and got a 404).
+    archived = client.patch(f"{O}/{world.a.org.id}/projects/{project['id']}", json={"archived": True}, headers=world.a.h("qa_lead"))
+    assert archived.status_code == 200
+    r = generate(client, world.a, {"project_id": project["id"], "story": STORY})
+    # Same refusal as the other creators on an archived project: 422 validation_error naming project_id.
+    assert r.status_code == 422 and code(r) == "validation_error"
+    assert r.json()["error"]["details"][0]["loc"] == ["body", "project_id"]
 
 
 def test_the_switch_applies(client, db, world, project) -> None:
