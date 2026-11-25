@@ -16,7 +16,8 @@ const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i
 const BASE = arg('--base', 'http://localhost:3000');
 const API = arg('--api', 'http://localhost:8000');
 const SHOTS = arg('--shots', null);
-const ONLY = arg('--only', null); // run a single viewport label, for debugging
+const ONLY = arg('--only', null)?.split(',') ?? null; // run only these viewport labels (comma separated), for debugging and for the CI shards
+const wanted = (v) => !ONLY || ONLY.includes(v.label);
 const TRACE = process.argv.includes('--trace');
 const envFile = resolve(root, '.env');
 const PW = process.env.SEED_USER_PASSWORD
@@ -245,7 +246,9 @@ async function ensureRunFixture() {
   const start = async (name) => {
     const found = existing.items.find((r) => r.name === name);
     if (found) return must(await fetch(`${org}/test-runs/${found.id}`, { headers: h }), 'get run');
-    return must(await post('/test-runs', { project_id: project.id, name, environment_id: envs[0].id, suite_ids: [suite.id] }), `start ${name}`);
+    const created = await must(await post('/test-runs', { project_id: project.id, name, environment_id: envs[0].id, suite_ids: [suite.id] }), `start ${name}`);
+    existing.items.push(created); // a second call for the same name finds this run: on a fresh database it used to start another, untouched one
+    return created;
   };
   const a = await start(RUN_A);
   if (a.status === 'in_progress' && a.counts.untested === a.total) {
@@ -486,7 +489,7 @@ await browser.close();
 browser = undefined;
 let screens = 0;
 let started = 0;
-for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
+for (const vp of VIEWPORTS.filter(wanted)) {
   if (started % BATCH === 0) { if (browser) await browser.close(); browser = await chromium.launch(); }
   started++;
   const touch = vp.width <= TOUCH_MAX;
@@ -1541,7 +1544,7 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
 if (browser) await browser.close();
 await cleanupAll();
 
-console.log(`Checked ${screens} screen and popup states at ${VIEWPORTS.filter((v) => !ONLY || v.label === ONLY).map((v) => v.label).join(', ')}`);
+console.log(`Checked ${screens} screen and popup states at ${VIEWPORTS.filter(wanted).map((v) => v.label).join(', ')}`);
 if (problems.size) {
   console.log(`FAIL: ${problems.size} problem(s)`);
   for (const [k, labels] of problems) console.log(`  - [${labels.join(', ')}] ${k}`);

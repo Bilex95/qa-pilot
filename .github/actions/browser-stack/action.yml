@@ -1,0 +1,38 @@
+name: Browser stack
+description: >
+  The full stack with the baseline seed, Node, Playwright and a warmed up dev server, for the browser jobs of CI (layout shards, screen flows,
+  parity). Every job has its own runner and its own database, so the shards never share fixtures.
+runs:
+  using: composite
+  steps:
+    - name: Create .env with throwaway secrets
+      shell: bash
+      run: |
+        cp .env.example .env
+        sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
+        sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -hex 32)|" .env
+        PW="Ci$(openssl rand -hex 6)9"
+        echo "::add-mask::${PW}"
+        sed -i "s|^SEED_USER_PASSWORD=.*|SEED_USER_PASSWORD=${PW}|" .env
+        echo "SEED_USER_PASSWORD=${PW}" >> "$GITHUB_ENV"
+    - name: Start the full stack
+      shell: bash
+      run: docker compose up -d --build --wait
+    - name: Seed baseline
+      shell: bash
+      run: docker compose exec -T backend python -m app.seed --scenario baseline
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+        cache: npm
+        cache-dependency-path: e2e/package-lock.json
+    - name: Install Playwright
+      shell: bash
+      working-directory: e2e
+      run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+    - name: Warm up the dev server (the first compile of a route can take minutes on a cold runner)
+      shell: bash
+      run: |
+        for p in /login /register /o/lumen/dashboard /o/lumen/projects /o/lumen/projects/WEB /o/lumen/bugs /o/lumen/bugs/new /o/lumen/bugs/WEB-1 /o/lumen/board /o/lumen/tests /o/lumen/runs /o/lumen/runs/R-1 /o/lumen/releases /o/lumen/releases/00000000-0000-4000-8000-000000000000 /o/lumen/reports /o/lumen/tests/cases/new /o/lumen/settings /o/lumen/members; do
+          curl -s -o /dev/null --max-time 300 "http://localhost:3000$p" || echo "warm up of $p did not finish"
+        done

@@ -152,76 +152,89 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  responsive:
-    name: Responsive and popup checks (360 to 2560 px, 200% zoom)
+  # The browser checks run as parallel jobs, each with its own runner and database (D-060, D-068): the layout check in five shards of
+  # widths, the screen flows in three groups, the parity capture on its own. A failure shows up as soon as its shard finishes.
+  layout:
+    name: Layout (${{ matrix.name }})
     runs-on: ubuntu-24.04
     needs: [backend, frontend]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "360 and 390 px", widths: "360,390" }
+          - { name: "768 and 1024 px", widths: "768,1024" }
+          - { name: "1280 and 1440 px", widths: "1280,1440" }
+          - { name: "1920 and 2560 px", widths: "1920,2560" }
+          - { name: "200% zoom", widths: "1280-zoom200,1920-zoom200" }
     steps:
       - uses: actions/checkout@v4
-      - name: Create .env with throwaway secrets
-        run: |
-          cp .env.example .env
-          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
-          sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -hex 32)|" .env
-          PW="Ci$(openssl rand -hex 6)9"
-          echo "::add-mask::${PW}"
-          sed -i "s|^SEED_USER_PASSWORD=.*|SEED_USER_PASSWORD=${PW}|" .env
-          echo "SEED_USER_PASSWORD=${PW}" >> "$GITHUB_ENV"
-      - name: Start the full stack
-        run: docker compose up -d --build --wait
-      - name: Seed baseline
-        run: docker compose exec -T backend python -m app.seed --scenario baseline
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
-      - name: Install Playwright
+      - uses: ./.github/actions/browser-stack
+      - name: Layout check of these widths
         working-directory: e2e
-        run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
-      - name: Warm up the dev server (the first compile of a route can take minutes on a cold runner)
-        run: |
-          for p in /login /register /o/lumen/dashboard /o/lumen/bugs /o/lumen/bugs/new /o/lumen/bugs/WEB-1 /o/lumen/board /o/lumen/tests /o/lumen/runs /o/lumen/runs/R-1 /o/lumen/releases /o/lumen/releases/00000000-0000-4000-8000-000000000000 /o/lumen/reports /o/lumen/tests/cases/new /o/lumen/settings /o/lumen/members; do
-            curl -s -o /dev/null --max-time 300 "http://localhost:3000$p" || echo "warm up of $p did not finish"
-          done
-      - name: Browser login smoke
-        working-directory: e2e
-        run: node scripts/smoke-login.mjs
-      - name: Sign out from every signed in page
-        working-directory: e2e
-        run: node scripts/check-signout.mjs
-      - name: Responsive and popup checks (full layout check)
-        working-directory: e2e
-        run: node scripts/check-app-layout.mjs --shots ci-layout-shots --batch 3 2>&1 | tee layout-result.txt; exit "${PIPESTATUS[0]}"
+        run: node scripts/check-app-layout.mjs --shots ci-layout-shots --batch 2 --only "${{ matrix.widths }}" 2>&1 | tee layout-result.txt; exit "${PIPESTATUS[0]}"
         shell: bash
-      - name: Screen flows
-        working-directory: e2e
-        run: |
-          for f in check-bugs-flow check-tests-flow check-board-flow check-bug-detail-flow check-projects-flow check-runs-flow check-releases-flow check-dashboard-flow check-settings-flow check-members-flow check-reset-flow; do
-            echo "== $f"; node "scripts/$f.mjs" || exit 1
-          done
-        shell: bash
-      - name: Accessibility scan (axe, WCAG 2.0 and 2.1 A and AA, every screen at 1440 and 390 px)
-        working-directory: e2e
-        run: node scripts/check-app-axe.mjs
-      - name: Parity capture (real screens next to the locked screenshots)
+      - name: Layout screenshots and result
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-screenshots-${{ matrix.name }}
+          path: |
+            e2e/ci-layout-shots
+            e2e/layout-result.txt
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail 200 backend frontend
+
+  flows:
+    name: Screen flows (${{ matrix.name }})
+    runs-on: ubuntu-24.04
+    needs: [backend, frontend]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: sign in, bugs, tests, board
+            scripts: smoke-login check-signout check-bugs-flow check-tests-flow check-board-flow
+          - name: bug detail, projects, runs, releases
+            scripts: check-bug-detail-flow check-projects-flow check-runs-flow check-releases-flow
+          - name: dashboard, settings, members, reset, axe
+            scripts: check-dashboard-flow check-settings-flow check-members-flow check-reset-flow check-app-axe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/browser-stack
+      - name: Run the scripts
+        working-directory: e2e
+        run: |
+          failed=""
+          for f in ${{ matrix.scripts }}; do
+            echo "== $f"; node "scripts/$f.mjs" || failed="$failed $f"
+          done
+          if [ -n "$failed" ]; then echo "FAILED:$failed"; exit 1; fi
+        shell: bash
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail 200 backend frontend
+
+  parity:
+    name: Parity capture (real screens next to the locked screenshots)
+    runs-on: ubuntu-24.04
+    needs: [backend, frontend]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/browser-stack
+      - name: Capture
         working-directory: e2e
         run: |
           for f in capture-bugs-parity capture-tests-parity capture-members-parity capture-settings-parity capture-board-parity capture-bug-detail-parity capture-runs-parity capture-releases-parity capture-dashboard-parity capture-projects-parity; do
             echo "== $f"; node "scripts/$f.mjs" || true
           done
         shell: bash
-      - name: Layout screenshots and result
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: layout-screenshots
-          path: |
-            e2e/ci-layout-shots
-            e2e/layout-result.txt
-          if-no-files-found: ignore
-          retention-days: 30
       - name: Parity screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -230,9 +243,3 @@ jobs:
           path: e2e/parity
           if-no-files-found: ignore
           retention-days: 30
-      - name: Logs on failure
-        if: failure()
-        run: docker compose logs --tail 200 backend frontend
-      - name: Stop
-        if: always()
-        run: docker compose down -v
