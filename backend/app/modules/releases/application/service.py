@@ -17,6 +17,7 @@ from app.modules.audit.application import service as audit
 from app.modules.auth.application import service as auth
 from app.modules.bugs.application import service as bugs
 from app.modules.bugs.infrastructure.models import Bug
+from app.modules.projects.application import hooks as projects_hooks
 from app.modules.projects.application import service as projects
 from app.modules.releases.domain.readiness import Inputs, Verdict, evaluate
 from app.modules.releases.domain.rules import can_move
@@ -85,6 +86,17 @@ def unreleased_readiness(db: Session, org_id: uuid.UUID, project_id: uuid.UUID |
     rows = list(db.scalars(stmt))
     evals = evaluate_many(db, org_id, rows)
     return [(r, evals[r.id]) for r in rows]
+
+
+def next_releases(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, projects_hooks.NextRelease]:
+    """Public contract for the projects list: the soonest release of each project that is not released yet, with its readiness."""
+    out: dict[uuid.UUID, projects_hooks.NextRelease] = {}
+    for project_id in project_ids:
+        found = unreleased_readiness(db, org_id, project_id, limit=1)
+        if found:
+            release, evaluation = found[0]
+            out[project_id] = projects_hooks.NextRelease(id=release.id, name=release.name, readiness=evaluation.verdict.status)
+    return out
 
 
 def names_of(db: Session, org_id: uuid.UUID, ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:

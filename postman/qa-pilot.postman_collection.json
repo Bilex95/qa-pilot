@@ -5320,7 +5320,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"lists the project\", () => pm.expect(pm.response.json().items.map(p => p.id)).to.include(pm.environment.get(\"projectId\")));"
+                  "pm.test(\"lists the project\", () => pm.expect(pm.response.json().items.map(p => p.id)).to.include(pm.environment.get(\"projectId\")));",
+                  "pm.test(\"carries the figures of the list (I-13)\", () => { const p = pm.response.json().items.find(x => x.id === pm.environment.get(\"projectId\")); pm.expect(p.open_bug_count).to.be.a(\"number\"); pm.expect(p.critical_bug_count).to.be.a(\"number\"); pm.expect(p.suite_count).to.be.a(\"number\"); pm.expect(p).to.have.property(\"last_run_pass_rate\"); pm.expect(p).to.have.property(\"pass_rate\"); pm.expect(p).to.have.property(\"next_release\"); });"
                 ]
               }
             }
@@ -5454,7 +5455,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"has environments\", () => pm.expect(pm.response.json().environments.length).to.eql(3));"
+                  "pm.test(\"has environments\", () => pm.expect(pm.response.json().environments.length).to.eql(3));",
+                  "pm.test(\"a new project has empty figures (I-13)\", () => { const p = pm.response.json(); pm.expect(p.critical_bug_count).to.eql(0); pm.expect(p.suite_count).to.eql(0); pm.expect(p.last_run_pass_rate).to.eql(null); pm.expect(p.next_release).to.eql(null); });"
                 ]
               }
             }
@@ -27568,6 +27570,63 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archive the Newman project (cleanup: it stays out of the Projects list)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orgs/{{orgId}}/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orgs",
+                "{{orgId}}",
+                "projects",
+                "{{projectId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"archived\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
                 ]
               }
             }

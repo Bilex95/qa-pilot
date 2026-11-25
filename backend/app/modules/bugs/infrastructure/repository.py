@@ -240,6 +240,14 @@ def open_counts_by_project(db: Session, org_id: uuid.UUID, project_ids: list[uui
     return {project_id: int(n) for project_id, n in rows}
 
 
+def open_critical_counts_by_project(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    if not project_ids:
+        return {}
+    rows = db.execute(select(Bug.project_id, func.count()).where(
+        Bug.org_id == org_id, Bug.project_id.in_(project_ids), Bug.severity == "critical", open_clause()).group_by(Bug.project_id))
+    return {project_id: int(n) for project_id, n in rows}
+
+
 def open_counts_by_component(db: Session, org_id: uuid.UUID, component_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
     if not component_ids:
         return {}

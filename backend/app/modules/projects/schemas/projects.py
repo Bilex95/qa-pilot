@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints
 
@@ -26,6 +26,12 @@ class ProjectUpdateIn(ApiModel):
     archived: bool | None = None
 
 
+class NextReleaseOut(ApiModel):
+    id: uuid.UUID
+    name: str
+    readiness: Literal["ready", "at_risk", "blocked"]
+
+
 class ProjectOut(ApiModel):
     id: uuid.UUID
     name: str
@@ -33,6 +39,11 @@ class ProjectOut(ApiModel):
     description: str
     archived_at: datetime | None
     open_bug_count: int = 0
+    critical_bug_count: int = Field(0, description="Open Critical bugs")
+    last_run_pass_rate: int | None = Field(None, description="Pass rate of the newest run, null when nothing is decided")
+    pass_rate: int | None = Field(None, description="Pass rate of all runs together, null when nothing is decided")
+    suite_count: int = 0
+    next_release: NextReleaseOut | None = Field(None, description="The soonest release that is not released yet")
     created_at: datetime
 
 

@@ -315,11 +315,16 @@ folders = [
         req("Create project without token (API-041 unauthorized)", "POST", f"{O}/projects",
             body={"name": "Nope", "key": "NOPE"}, tests=[status(401)]),
         req("List projects (API-040)", "GET", f"{O}/projects?page_size=100", token="viewerToken",
-            tests=[status(200), 'pm.test("lists the project", () => pm.expect(pm.response.json().items.map(p => p.id)).to.include(pm.environment.get("projectId")));']),
+            tests=[status(200), 'pm.test("lists the project", () => pm.expect(pm.response.json().items.map(p => p.id)).to.include(pm.environment.get("projectId")));',
+                   'pm.test("carries the figures of the list (I-13)", () => { const p = pm.response.json().items.find(x => x.id === pm.environment.get("projectId")); '
+                   'pm.expect(p.open_bug_count).to.be.a("number"); pm.expect(p.critical_bug_count).to.be.a("number"); pm.expect(p.suite_count).to.be.a("number"); '
+                   'pm.expect(p).to.have.property("last_run_pass_rate"); pm.expect(p).to.have.property("pass_rate"); pm.expect(p).to.have.property("next_release"); });']),
         req("List projects bad page size (API-040 invalid)", "GET", f"{O}/projects?page_size=0", token="viewerToken", tests=[status(422)]),
         req("List projects of other org (API-040 cross tenant)", "GET", f"{F}/projects", token="adminToken", tests=[status(404)]),
         req("Get project (API-042)", "GET", f"{O}/projects/{{{{projectId}}}}", token="devToken",
-            tests=[status(200), 'pm.test("has environments", () => pm.expect(pm.response.json().environments.length).to.eql(3));']),
+            tests=[status(200), 'pm.test("has environments", () => pm.expect(pm.response.json().environments.length).to.eql(3));',
+                   'pm.test("a new project has empty figures (I-13)", () => { const p = pm.response.json(); pm.expect(p.critical_bug_count).to.eql(0); '
+                   'pm.expect(p.suite_count).to.eql(0); pm.expect(p.last_run_pass_rate).to.eql(null); pm.expect(p.next_release).to.eql(null); });']),
         req("Get project through other org path (API-042 cross tenant)", "GET", f"{F}/projects/{{{{projectId}}}}", token="foreignToken",
             tests=[status(404), err("not_found")]),
         req("Rename project (API-043)", "PATCH", f"{O}/projects/{{{{projectId}}}}", token="leadToken", body={"name": "Newman project renamed"},
@@ -1315,6 +1320,8 @@ folders = [
         req("Export of another workspace (API-133 cross tenant)", "GET", O + "/reports/bugs.csv", token="foreignToken",
             tests=[status(404), err("org_not_found")]),
         req("Delete the CSV check bug (cleanup)", "DELETE", O + "/bugs/{{csvBugId}}", token="leadToken", tests=[status(204)]),
+        req("Archive the Newman project (cleanup: it stays out of the Projects list)", "PATCH", f"{O}/projects/{{{{projectId}}}}",
+            token="adminToken", body={"archived": True}, tests=[status(200)]),
     ]},
     {"name": "Sign out", "item": [
         req("Logout (API-013)", "POST", "/api/v1/auth/logout", token="adminToken", body={"refresh_token": "{{adminRefresh}}"},

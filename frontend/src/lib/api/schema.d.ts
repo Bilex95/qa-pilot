@@ -2236,6 +2236,21 @@ export interface components {
             org: components["schemas"]["OrgOut"];
             role: components["schemas"]["Role"];
         };
+        /** NextReleaseOut */
+        NextReleaseOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Readiness
+             * @enum {string}
+             */
+            readiness: "ready" | "at_risk" | "blocked";
+        };
         /** OpenBySeverity */
         OpenBySeverity: {
             /** Critical */
@@ -2493,6 +2508,29 @@ export interface components {
              */
             open_bug_count: number;
             /**
+             * Critical Bug Count
+             * @description Open Critical bugs
+             * @default 0
+             */
+            critical_bug_count: number;
+            /**
+             * Last Run Pass Rate
+             * @description Pass rate of the newest run, null when nothing is decided
+             */
+            last_run_pass_rate?: number | null;
+            /**
+             * Pass Rate
+             * @description Pass rate of all runs together, null when nothing is decided
+             */
+            pass_rate?: number | null;
+            /**
+             * Suite Count
+             * @default 0
+             */
+            suite_count: number;
+            /** @description The soonest release that is not released yet */
+            next_release?: components["schemas"]["NextReleaseOut"] | null;
+            /**
              * Created At
              * Format: date-time
              */
@@ -2522,6 +2560,29 @@ export interface components {
              * @default 0
              */
             open_bug_count: number;
+            /**
+             * Critical Bug Count
+             * @description Open Critical bugs
+             * @default 0
+             */
+            critical_bug_count: number;
+            /**
+             * Last Run Pass Rate
+             * @description Pass rate of the newest run, null when nothing is decided
+             */
+            last_run_pass_rate?: number | null;
+            /**
+             * Pass Rate
+             * @description Pass rate of all runs together, null when nothing is decided
+             */
+            pass_rate?: number | null;
+            /**
+             * Suite Count
+             * @default 0
+             */
+            suite_count: number;
+            /** @description The soonest release that is not released yet */
+            next_release?: components["schemas"]["NextReleaseOut"] | null;
             /**
              * Created At
              * Format: date-time

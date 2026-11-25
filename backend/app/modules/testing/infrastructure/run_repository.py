@@ -68,6 +68,37 @@ def counts_by_run(db: Session, org_id: uuid.UUID, run_ids: list[uuid.UUID]) -> d
     return out
 
 
+def project_result_counts(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict[str, int]]:
+    """Results of every run of each project, by result (for the pass rate of all runs together)."""
+    out: dict[uuid.UUID, dict[str, int]] = {pid: {} for pid in project_ids}
+    if project_ids:
+        rows = db.execute(select(TestRun.project_id, TestRunResult.result, func.count())
+                          .join(TestRun, TestRun.id == TestRunResult.run_id)
+                          .where(TestRun.org_id == org_id, TestRun.project_id.in_(project_ids))
+                          .group_by(TestRun.project_id, TestRunResult.result))
+        for pid, result, n in rows:
+            out[pid][result] = int(n)
+    return out
+
+
+def last_run_counts(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict[str, int]]:
+    """Results of the newest run of each project (a project without runs is left out)."""
+    if not project_ids:
+        return {}
+    newest = db.execute(select(TestRun.project_id, TestRun.id).where(TestRun.org_id == org_id, TestRun.project_id.in_(project_ids))
+                        .order_by(TestRun.project_id, TestRun.started_at.desc(), TestRun.id).distinct(TestRun.project_id)).all()
+    per_run = counts_by_run(db, org_id, [run_id for _, run_id in newest])
+    return {pid: per_run[run_id] for pid, run_id in newest}
+
+
+def suite_counts(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    if not project_ids:
+        return {}
+    rows = db.execute(select(TestSuite.project_id, func.count()).where(
+        TestSuite.org_id == org_id, TestSuite.project_id.in_(project_ids), TestSuite.deleted_at.is_(None)).group_by(TestSuite.project_id))
+    return {pid: int(n) for pid, n in rows}
+
+
 def cases_for_run(db: Session, org_id: uuid.UUID, project_id: uuid.UUID, *, suite_ids: list[uuid.UUID],
                   case_ids: list[uuid.UUID]) -> list[tuple[TestCase, TestSuite]]:
     """The cases of the chosen suites plus the chosen cases, each once, in case number order. Only cases and suites that are

@@ -20,6 +20,7 @@ from app.modules.projects.schemas.projects import (
     EnvironmentIn,
     EnvironmentOut,
     EnvironmentUpdateIn,
+    NextReleaseOut,
     ProjectCreateIn,
     ProjectDetailOut,
     ProjectOut,
@@ -52,9 +53,25 @@ def delete_label(label_id: uuid.UUID, db: DB, ctx: Annotated[OrgContext, Depends
     service.delete_label(db, ctx.org_id, label_id, actor_id=ctx.user.id)
 
 
+def _projects_out(db: Session, ctx: OrgContext, projects: list[Project]) -> list[ProjectOut]:
+    """The projects with the figures other modules own (open and Critical bugs, test figures, next release), asked once for all."""
+    ids = [p.id for p in projects]
+    sums = service.project_summaries(db, ctx.org_id, ids)
+    out = []
+    for p in projects:
+        tests = sums.testing.get(p.id)
+        nxt = sums.next_release.get(p.id)
+        out.append(ProjectOut.model_validate(p).model_copy(update={
+            "open_bug_count": sums.open_bugs.get(p.id, 0), "critical_bug_count": sums.critical_bugs.get(p.id, 0),
+            "last_run_pass_rate": tests.last_run_pass_rate if tests else None, "pass_rate": tests.pass_rate if tests else None,
+            "suite_count": tests.suite_count if tests else 0,
+            "next_release": NextReleaseOut(id=nxt.id, name=nxt.name, readiness=nxt.readiness) if nxt else None,  # type: ignore[arg-type]
+        }))
+    return out
+
+
 def _project_out(db: Session, ctx: OrgContext, project: Project) -> ProjectOut:
-    counts = service.open_bug_counts(db, ctx.org_id, [project.id])
-    return ProjectOut.model_validate(project).model_copy(update={"open_bug_count": counts.get(project.id, 0)})
+    return _projects_out(db, ctx, [project])[0]
 
 
 def _components_out(db: Session, ctx: OrgContext, items: list[Component]) -> list[ComponentOut]:
@@ -70,9 +87,7 @@ def _no_changes() -> Unprocessable:
 def list_projects(db: DB, ctx: Read, params: Annotated[PageParams, Depends(page_params)],
                   include_archived: Annotated[bool, Query()] = False) -> Page[ProjectOut]:
     rows, total = service.list_projects(db, ctx.org_id, params, include_archived=include_archived)
-    counts = service.open_bug_counts(db, ctx.org_id, [p.id for p in rows])
-    items = [ProjectOut.model_validate(p).model_copy(update={"open_bug_count": counts.get(p.id, 0)}) for p in rows]
-    return Page(items=items, page=params.page, page_size=params.page_size, total=total)
+    return Page(items=_projects_out(db, ctx, list(rows)), page=params.page, page_size=params.page_size, total=total)
 
 
 @router.post("/orgs/{org_id}/projects", status_code=status.HTTP_201_CREATED, response_model=ProjectDetailOut,

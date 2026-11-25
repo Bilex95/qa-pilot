@@ -2,11 +2,14 @@
 Imported once by the release routes."""
 
 from app.modules.bugs.application import hooks as bug_hooks
+from app.modules.projects.application import hooks as project_hooks
 from app.modules.releases.application import service
 from app.modules.testing.application import hooks as test_hooks
 
 
 def register() -> None:
+    if service.next_releases not in project_hooks.next_release_by_project:
+        project_hooks.next_release_by_project.append(service.next_releases)
     if service.exists_in_project not in bug_hooks.release_exists:  # importing twice (tests, reloads) must not register twice
         bug_hooks.release_exists.append(service.exists_in_project)
         bug_hooks.release_names.append(service.names_of)

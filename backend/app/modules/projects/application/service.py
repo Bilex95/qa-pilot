@@ -4,6 +4,7 @@ Public contract for other modules: get_project, get_component, get_components, g
 """
 
 import uuid
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
@@ -56,6 +57,28 @@ def take_bug_number(db: Session, org_id: uuid.UUID, project_id: uuid.UUID) -> tu
 
 def open_bug_counts(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
     return hooks.count(hooks.open_bugs_by_project, db, org_id, project_ids)
+
+
+@dataclass(frozen=True)
+class Summaries:
+    """The figures of the projects list and overview that other modules own, by project id (I-13)."""
+
+    open_bugs: dict[uuid.UUID, int]
+    critical_bugs: dict[uuid.UUID, int]
+    testing: dict[uuid.UUID, hooks.ProjectTesting]
+    next_release: dict[uuid.UUID, hooks.NextRelease]
+
+
+def project_summaries(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> Summaries:
+    testing: dict[uuid.UUID, hooks.ProjectTesting] = {}
+    for testing_hook in hooks.testing_by_project:
+        testing.update(testing_hook(db, org_id, project_ids))
+    releases: dict[uuid.UUID, hooks.NextRelease] = {}
+    for release_hook in hooks.next_release_by_project:
+        releases.update(release_hook(db, org_id, project_ids))
+    return Summaries(open_bugs=open_bug_counts(db, org_id, project_ids),
+                     critical_bugs=hooks.count(hooks.critical_bugs_by_project, db, org_id, project_ids),
+                     testing=testing, next_release=releases)
 
 
 # Labels (I-02; REQ-022) ---------------------------------------------------
