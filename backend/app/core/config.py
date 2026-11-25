@@ -7,6 +7,9 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+DEV_DATABASE_URL = "postgresql+psycopg://qapilot:qapilot@localhost:5433/qapilot"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -14,7 +17,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     version: str = "0.3.0"
 
-    database_url: str = "postgresql+psycopg://qapilot:qapilot@localhost:5433/qapilot"
+    # Local development default only (the throwaway compose database). get_settings() refuses it in production.
+    database_url: str = DEV_DATABASE_URL
     test_database_url: str = ""
 
     jwt_secret: str = Field(default="", repr=False)
@@ -62,4 +66,6 @@ def get_settings() -> Settings:
     settings = Settings()
     if not settings.jwt_secret:
         raise RuntimeError("JWT_SECRET is not set. Copy .env.example to .env and fill it in.")
+    if settings.is_production and settings.database_url == DEV_DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is the development default. Set your own database credentials in production.")
     return settings
