@@ -506,4 +506,24 @@ Side by side: `e2e/parity/stage4/i09/compare/*.png` (locked on the left, app on 
 | Loading, empty, error | Same skeletons, the empty state ("Nothing to measure yet", "No activity in this range") and the error box with the request id |
 | Bug detail, default | The locked screenshots were regenerated: Edit buttons now sit beside Steps to reproduce and Expected and actual (prototype first, D-065) |
 
-Backlog: BL-023 is closed by D-065. NFR-PERF-02 (dashboard p95 under 500 ms) is measured on the I-12 baseline seed, where there is enough data to mean anything.
+Backlog: BL-023 is closed by D-065. NFR-PERF-02 (dashboard p95 under 500 ms) is measured under I-12 below.
+
+### I-12 Seed data for every scenario (REQ-060; D-066)
+
+Projects, components, labels, bugs, suites, cases, runs, results and releases for the baseline, sla-breach, release-blocked and multi-tenant scenarios, written through the services; `docs/SEED_MANIFEST.md` regenerated with the new counts.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Backend suites | ruff and mypy clean (143 source files), **pytest 1471 passed** (1459 before, 12 seed tests added), Newman 548 requests and 942 assertions, 0 failed, on the seeded database |
+| Seed tests | amounts per scenario; idempotent for every scenario (seeding twice adds nothing); Lumen has all nine statuses, all four severities and three releases that read Blocked, At risk and Ready (MOB 3.1.0 with the reason "No open Critical or High bugs, pass rate 100%"); the dashboard has figures and a trend with opened and closed bugs; a seeded bug's timeline is in order and agrees with its dates; **sla-breach: exactly the 4 bugs past their SLA**; **release-blocked: WEB 2.4.0 Blocked, pass rate 63%, reasons "2 open Critical bugs" then the pass rate**; two tenants have the same data and cannot read each other's bugs; reset removes every project and bug |
+| Seed in the dev stack | `python -m app.seed --scenario baseline`: "Counts match the manifest" (4 projects, 68 bugs, 5 suites, 44 cases, 6 runs, 4 releases) |
+| Flows on the seeded data | All twelve scripts (login smoke, sign out, bugs, tests, board, bug detail, runs, releases, dashboard, settings, members, reset) pass. Three failed on the first run because the frontend gate had cleared the `.next` cache (a cold dev server compiles each route on its first visit and the toast was gone before the flow looked for it): the runs and releases flows now wait for the toast before the page loads, the CI warm up covers the reports, release and new case routes, and `scripts/run-flows.ps1` warms the routes and runs every flow. The runs, releases and dashboard flows and parity captures were missing from the CI lists and are added |
+| NFR-PERF-02 | `e2e/scripts/measure-api-latency.mjs` on the seeded baseline (68 bugs, 50 requests each): **dashboard p95 33 ms** (target 500 ms), bug trend p95 21 ms, summary p95 20 ms, bug list p95 14 ms, releases p95 17 ms. The data set is small; the bug list was also measured on 5,000 bugs in I-03 (p95 54 ms) |
+
+#### M. Parity
+
+The dashboard on the seeded baseline (`e2e/parity/stage4/i09/compare/dashboard-default-desktop.png`) shows the same four figures, severity bars, trend, components and the three readiness badges as the locked screenshot (Blocked, At risk, Ready, with the prototype's reasons). Numbers differ because the dev database also holds leftover fixtures (runs cannot be deleted in v1, BL-027) and a fixture project made by the capture itself. A duplicate React key on the components list (two projects with a "Checkout" component) was found through the dev overlay and fixed.
+
+Known gaps: audit events of the seeded rows carry the time of seeding, not the backdated time (only the timeline, bug, run and result dates are moved); the full layout run with the seeded data is the CI job.

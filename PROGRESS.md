@@ -8,9 +8,10 @@
 
 **Current issue: I-09 Dashboard and reports is finished except its CI proof.** Done on 2026-11-25: the dashboard flow passes, the dashboard and reports layout states are in `check-app-layout.mjs` (1440 px PASS, 145 states), the parity capture is done (`e2e/parity/stage4/i09/`), D-064 and D-065 are written, the review section is in `docs/reviews/STAGE_4_REVIEW.md`. Also done: inline editing of the steps to reproduce and of expected and actual result (D-065, BL-023 closed).
 
-* **Exact counts:** pytest **1459 passed**, ruff and mypy clean, Newman **548 requests and 942 assertions**, lint, typecheck and `next build` clean, design validation PASS.
+* **I-12 seed data is done too** (D-066; see Done). The dev database is seeded with the baseline (4 projects, 68 bugs). All twelve browser scripts pass on it.
+* **Exact counts:** pytest **1471 passed**, ruff and mypy clean, Newman **548 requests and 942 assertions** (also on the seeded data), lint, typecheck and `next build` clean (the last gate run was before the one line dashboard key fix), design validation PASS.
 * **Not done:** the 390 px local layout run was stopped for low memory (second time this stage); it also holds the new bug detail editor states. Do not restart it by hand: the CI `responsive` job is the full run (D-060). Check `gh run list --branch stage/4-core-features` after the push and fix what it reports.
-* **Then in DAG order:** I-12 seed data (the `release-blocked` scenario with WEB 2.4.0 Blocked with two reasons; seed history must be written through the services so the timeline and trend have data), I-13 parity and states pass, Stage 5 (I-14 to I-19), Stage 6 (I-20 to I-22), one final review.
+* **Then in DAG order:** I-13 parity and states pass (compare every screen with the locked screenshots on the seeded baseline, fix the gaps), Stage 5 (I-14 to I-19), Stage 6 (I-20 to I-22), one final review.
 * **Open items:**
   * Layout CI job (D-060): the `responsive` job runs the full layout check, every screen flow and every parity capture on each push. The last CI run (stop script commit) failed in the smoke login, which expected the old empty dashboard text: fixed in `smoke-login.mjs`, not yet seen green in CI. The I-04, I-05, I-07, I-08, I-09 and I-11 states have only had local runs (390 and 1440, or 1440 only for I-09) plus the CI layout pass.
   * Bug inline editing: all five fields done (D-061, D-065). Orphaned uploads cleanup: done (`clean-layout-fixtures.mjs`). Exact pytest count: recorded above.
@@ -53,12 +54,14 @@
 
 * I-09 Dashboard and reports (D-064) and inline editing of steps and results (D-065): API-130 to API-133 (dashboard, trend, summary, CSV with formula escaping and a 50,000 row cap), Dashboard and Reports screens with SVG charts and a table alternative, the Reports custom range, inline edit of the steps to reproduce and of expected and actual result (BL-023 closed). Verified: ruff, mypy, pytest 1459 passed, Newman 548 requests and 942 assertions, lint, typecheck and `next build` clean, dashboard and bug detail flows PASS, design validation PASS, layout at 1440 PASS (145 states), parity captured. **The 390 px layout run was stopped for low memory** (see Resume here).
 
+* I-12 Seed data (D-066): `backend/app/seed/domain_data.py` (pure data) and `domain.py` (writes through the services, then moves dates back by relative ages). Baseline: Lumen with 3 projects, 60 bugs in every status and severity, 4 suites, 40 cases, 5 runs, 3 releases (Blocked, At risk, Ready), Harbor with a small set; sla-breach (4 of 7 bugs past SLA), release-blocked (WEB 2.4.0, 63%, two reasons), multi-tenant (the same small project in both). Verified: ruff, mypy, pytest 1471 passed, Newman 548 requests and 942 assertions on the seeded data, all twelve browser scripts PASS on it, dashboard p95 33 ms, manifest regenerated. New helpers: `scripts/seed.ps1`, `scripts/run-flows.ps1`, `e2e/scripts/measure-api-latency.mjs`. CI now also runs the runs, releases and dashboard flows and captures.
+
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs (done, see Done); I-06 suites and cases (done, see Done); I-11 settings (done, see Done); I-23 password reset (done, see Done)
 - [ ] 4C: I-04 workflow and board (done, see Done); I-05 bug detail (done, see Done); I-07 runs (done, see Done)
 - [ ] 4D: I-08 releases (done, see Done)
-- [ ] 4E: I-09 dashboard and reports (done, see Done); I-12 seed data
+- [ ] 4E: I-09 dashboard and reports (done, see Done); I-12 seed data (done, see Done)
 - [ ] 4F: I-13 parity and states pass
 - [ ] Gate: review, before and after screenshots at each width (D-044), push, PR
 
