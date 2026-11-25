@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 import { IconLock, IconPlus } from "@/components/icons";
 import { Button, Spinner } from "@/components/ui/button";
@@ -14,7 +14,9 @@ import { api, unwrap } from "@/lib/api/client";
 import { isApiError } from "@/lib/api/errors";
 import { can } from "@/lib/permissions";
 import { useSession } from "@/lib/session/session-provider";
-import { useOrg } from "@/modules/shell/org-context";
+import { AiBugWriter } from "@/modules/ai/components/ai-bug-writer";
+import { DuplicatesBox } from "@/modules/ai/components/duplicates-box";
+import { useAiEnabled, useOrg } from "@/modules/shell/org-context";
 
 import { useComponents, useEnvironments, useLabelOptions, useMemberOptions, useProjects } from "./hooks";
 import {
@@ -27,8 +29,8 @@ const FIELD_NAMES: Record<keyof FieldErrors, string> = {
 };
 
 /**
- * SCR-11 New bug (API-061; REQ-017, D-032). Without the AI Bug Writer, the duplicate warning and file attachments, which
- * arrive with I-15 and I-05. Developers see severity and priority disabled and the request leaves them out entirely.
+ * SCR-11 New bug (API-061; REQ-017, D-032). With the AI Bug Writer beside the form and the duplicate warning under the title (I-15, D-071)
+ * when AI is on for the workspace. Developers see severity and priority disabled and the request leaves them out entirely.
  */
 export function NewBugPage() {
   const org = useOrg();
@@ -49,6 +51,9 @@ export function NewBugPage() {
   const environments = useEnvironments(projectId || undefined);
   const canCreate = can(org.role, "bug.create");
   const setsSeverity = can(org.role, "bug.set_severity_priority");
+  const aiOn = useAiEnabled();
+  const titleRef = useRef<HTMLInputElement>(null);
+  const [aiAssisted, setAiAssisted] = useState(false);
 
   // A bug drafted from a failed step of a test run (API-106): the form is filled once the draft arrives, nothing is saved until Save bug
   const params = useSearchParams();
@@ -78,7 +83,9 @@ export function NewBugPage() {
 
   const create = useMutation({
     mutationFn: (v: NewBugValues) =>
-      unwrap(api.POST("/api/v1/orgs/{org_id}/bugs", { params: { path: { org_id: org.id } }, body: buildCreateBody(org.role, v, source) })),
+      unwrap(api.POST("/api/v1/orgs/{org_id}/bugs", {
+        params: { path: { org_id: org.id } }, body: { ...buildCreateBody(org.role, v, source), ai_assisted: aiAssisted },
+      })),
     onSuccess: async (bug) => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["bugs", org.id] }),
@@ -140,7 +147,7 @@ export function NewBugPage() {
       <div className="page-head">
         <div className="grow">
           <h1>Report a bug</h1>
-          <p>Write what went wrong and how to see it. Saved bugs start as New.</p>
+          <p>{aiOn ? "Write it yourself, or paste rough notes and let the AI Bug Writer draft it." : "Write what went wrong and how to see it. Saved bugs start as New."}</p>
         </div>
       </div>
       {projects.data && projects.data.items.length === 0 ? (
@@ -149,7 +156,8 @@ export function NewBugPage() {
           A bug belongs to a project. Ask a QA Lead or an Org Admin to create one.
         </EmptyState>
       ) : (
-        <form className="panel" style={{ maxWidth: 860 }} onSubmit={submit} noValidate>
+        <div className="split">
+        <form className="panel" style={aiOn ? undefined : { maxWidth: 860 }} onSubmit={submit} noValidate>
           <div className="panel-body stack">
             {draft.data ? (
               <Banner kind="info">
@@ -188,10 +196,12 @@ export function NewBugPage() {
             </div>
             <Field id="n-title" label="Title" error={errors.title}>
               {(aria) => (
-                <Input {...aria} value={values.title} placeholder="What is wrong, where" autoComplete="off"
+                <Input {...aria} ref={titleRef} value={values.title} placeholder="What is wrong, where" autoComplete="off"
                   onChange={(e) => { set({ title: e.target.value }); if (errors.title) setErrors({ ...errors, title: undefined }); }} />
               )}
             </Field>
+            <DuplicatesBox projectId={projectId} projectName={(projects.data?.items ?? []).find((p) => p.id === projectId)?.name ?? "this project"}
+              title={values.title} actualResult={values.actual_result} />
             <div className="field">
               <label htmlFor="n-step-1">Steps to reproduce</label>
               <div className="stack" style={{ gap: 8 }}>
@@ -283,6 +293,14 @@ export function NewBugPage() {
             </div>
           </div>
         </form>
+        {aiOn ? (
+          <aside className="stack">
+            <AiBugWriter projectId={projectId} values={{ ...values, project_id: projectId }} setsSeverity={setsSeverity}
+              onFill={(patch) => set(patch)} onRestore={(previous) => setValues(previous)} onAssist={setAiAssisted} onFocusTitle={() => titleRef.current?.focus()}
+              onActual={(text) => set({ actual_result: [values.actual_result.trim(), text].filter(Boolean).join("\n\n").slice(0, RESULT_MAX) })} />
+          </aside>
+        ) : null}
+        </div>
       )}
     </>
   );

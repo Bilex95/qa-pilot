@@ -35,7 +35,7 @@ export function ProjectPage({ projectKey }: { projectKey: string }) {
     return (
       <>
         {crumbs(projectKey.toUpperCase())}
-        {project.listed ? <ProjectHead project={project.listed} onEdit={() => undefined} /> : null}
+        {project.listed ? <ProjectHead project={project.listed} /> : null}
         <div role="status" aria-live="polite">
           <span className="sr-only">Loading</span>
           <div aria-hidden="true">
@@ -77,7 +77,7 @@ export function ProjectPage({ projectKey }: { projectKey: string }) {
 }
 
 /** The title, the description and the Edit project button of the overview (the locked error state keeps them above the error box). */
-function ProjectHead({ project, onEdit }: { project: Pick<Project, "name" | "key" | "description" | "archived_at">; onEdit: () => void }) {
+function ProjectHead({ project, onEdit }: { project: Pick<Project, "name" | "key" | "description" | "archived_at">; onEdit?: () => void }) {
   const org = useOrg();
   const archived = project.archived_at !== null;
   return (
@@ -87,7 +87,7 @@ function ProjectHead({ project, onEdit }: { project: Pick<Project, "name" | "key
         {project.description ? <p style={{ overflowWrap: "anywhere" }}>{project.description}</p> : null}
         {archived ? <p className="small muted">This project is archived. Its bugs and tests stay readable; it takes nothing new.</p> : null}
       </div>
-      {can(org.role, "project.manage") && !archived ? <div className="actions"><Button onClick={onEdit}>Edit project</Button></div> : null}
+      {onEdit && can(org.role, "project.manage") && !archived ? <div className="actions"><Button onClick={onEdit}>Edit project</Button></div> : null}
     </div>
   );
 }
