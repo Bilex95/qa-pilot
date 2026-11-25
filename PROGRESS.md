@@ -6,14 +6,9 @@
 
 ## Resume here (updated 2026-11-25, token rules in CLAUDE.md)
 
-**State:** Stage 5, I-15 (AI Bug Writer, Explain this log, duplicate detector). Branch pushed up to `96e6ffb`. Backend done (D-070, pytest 1633, Newman 590 requests and 1019 assertions). Frontend done and passing locally (AI flow PASS, lint, typecheck, build clean).
+**State:** Stage 5, I-15 (AI Bug Writer, Explain this log, duplicate detector) is built and documented (D-070, D-071, review section, DAG). Last CI run 45600751358 (96e6ffb) failed on two things, both fixed in the following commits: the explained log list was `.mono` (nowrap) and scrolled the page sideways (layout, all shards); the dashboard flow read the reports figures before the project's answer arrived.
 
-**CI (check each run once, no polling):** run 45596069987 (1d74866) was green except layout shards 360/390, 768/1024, 1920/2560, which were still running; the breadcrumb 12 px fix is in 1d74866. The projects flow failure (Edit project button too early) is fixed in 08ec901. Runs for 34ece25, 08ec901 and 96e6ffb not read yet: `gh run list --branch stage/4-core-features --limit 5`, then `gh run view <id> --log-failed`.
-
-**I-15 still open:**
-1. Look at `e2e/parity/stage4/i03/compare/bug-new-default-desktop.png`, `bug-new-error-desktop.png`, `bug-new-default-mobile.png` (recaptured with the AI panel; mobile stacking unchecked).
-2. New layout states in `check-app-layout.mjs` (AI panel idle, drafting, draft, explained log, failed suggestion, duplicate warning with a 200 character row) have never run: CI runs them, fix what it reports.
-3. Write D-071 (frontend decisions: a draft's description not shown because the locked form has no description field; "Add to actual result" instead of "Insert into description"; saved bugs marked `ai_assisted`; AI controls render nothing when AI is off), the I-15 review section in `docs/reviews/STAGE_4_REVIEW.md`, the Done entry here and the DAG entry (`scripts/build_issues.py` DONE map).
+**CI (check each run once, no polling):** `gh run list --branch stage/4-core-features --limit 3`, then `gh run view <id> --log-failed` for the run of the fix commit. If the "AI draft and an explained log" layout state or flow-i09 still fail, fix those first.
 
 **Then:** I-16 (AI triage), I-17 (test case generator), I-18 (release summary), I-19 (AI usage screen), Stage 6 (I-20 to I-22), one final review. Each issue goes to the `issue-builder` subagent (CLAUDE.md "Token rules"). No full browser suites locally; stop only if CI stays red after two honest fixes of the same failure.
 
@@ -22,6 +17,7 @@
 
 * I-13 Parity and states pass (D-067, D-068): found and built the missing Projects and Project overview screens, extended API-040 and API-042 with the project figures, ten parity comparisons reviewed (two fixed), the axe scan of 16 screens, the projects flow, CI split into parallel jobs, the layout fixture bug on a fresh database fixed. Verified locally: pytest 1476, Newman 549 requests and 945 assertions, lint, typecheck, build, projects flow, axe. CI: see the latest run.
 * I-14 AI foundation (D-069): migration 0014, `ai/application/service.run` (switch, limits, tagged prompts, validation with one retry, fallback, one usage row per call), mock and Anthropic providers, API-146 to API-148, the `ai_usage_id` check. Verified: ruff, mypy, pytest 1553 passed, migration round trip with no drift, Newman 568 requests and 979 assertions. No live Anthropic call (no key).
+* I-15 AI Bug Writer, Explain this log, duplicate detector (D-070, D-071): API-140, API-141, API-143, the AI panel and duplicate warning on New bug, layout states, parity compared. Verified: pytest 1633, Newman 590 requests and 1019 assertions, lint, typecheck, build, AI flow. CI fixes after run 45600751358: see D-071.
 
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete

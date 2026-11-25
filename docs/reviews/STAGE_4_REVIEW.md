@@ -589,3 +589,22 @@ Migration `0014_ai_usage`, the AI service every feature goes through, the mock a
 Not applicable: no screen in this issue.
 
 Backlog: none. Next: I-15 (bug writer, explain log, duplicate detector) on this service.
+
+### I-15 AI Bug Writer, Explain this log and duplicate detector (SCR-11; REQ-043, REQ-044, REQ-049; D-070, D-071)
+
+API-140 (bug writer), API-141 (explain log), API-143 (duplicates) and the AI panel, the explained log and the duplicate warning on the New bug screen.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Backend | ruff and mypy clean, **pytest 1633 passed** (80 new), **Newman 590 requests and 1019 assertions, 0 failed** |
+| Frontend (local) | lint, typecheck, build clean; AI flow PASS |
+| CI run 45600751358 | backend, frontend, contract, Newman and the other flows green. Layout: all five shards failed on one state, "new bug: AI draft and an explained log" (page scrolled sideways by 900 to 1700 px, cause: `.mono` is `white-space: nowrap`, fixed inline, D-071). Dashboard flow: "bugs by status" read the previous figures (race in the check, fixed). Both fixed and re-run in CI after the fix |
+| New layout states | AI idle, drafting, draft, explained log, failed suggestion, duplicate warning with a 200 character row |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+`e2e/parity/stage4/i03/compare/` (bug-new default desktop, error desktop, default mobile) recaptured with the AI panel: panel, fields and error banner match. Known differences (D-071): no file drop zone until attachments are wired into the form, labels as chips, no "View as" switcher, sample data. No live Anthropic call was made (no key).
+
+Backlog: none.

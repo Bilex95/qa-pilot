@@ -1,6 +1,6 @@
 # I-15 AI Bug Writer, Explain log and Duplicate detector
 
-**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

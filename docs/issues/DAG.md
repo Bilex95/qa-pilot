@@ -118,8 +118,8 @@ flowchart LR
 | I-13 | Done | c9b2db2, 49569c4, e3b3bd0, 1739e8e, d155cf4 |
 | I-23 | Done | cfb9ba1, 1af7cee, adc120f, b236d13, 3552994, 2555f2c, 190ba90, 7438afd |
 | I-24 | Done | 562a4be, c1d81e2, b7db68a, af5eaec |
-| I-14 | Planned |  |
-| I-15 | Planned |  |
+| I-14 | Done | 0103b8a |
+| I-15 | Done | 34ece25, 08ec901, 96e6ffb |
 | I-16 | Planned |  |
 | I-17 | Planned |  |
 | I-18 | Planned |  |
