@@ -1,6 +1,6 @@
 # I-13 Stage 4 design parity and states pass
 
-**Stage:** 4 | **Batch:** 4F (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4F (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

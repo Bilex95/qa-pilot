@@ -1133,6 +1133,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/ai/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Usage
+         * @description The log of AI calls, newest first: who asked, which feature, the status, tokens, latency and the outcome. Never the text.
+         */
+        get: operations["list_usage_api_v1_orgs__org_id__ai_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/ai/usage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Summary
+         * @description Totals by feature (calls, tokens, average latency, acceptance rate), the provider and model in use, and today's calls against the
+         *     daily limit.
+         */
+        get: operations["get_summary_api_v1_orgs__org_id__ai_usage_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/ai/usage/{usage_id}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Outcome
+         * @description What the person who asked did with the suggestion: accepted, edited or discarded. Once; only the caller of the original request.
+         */
+        post: operations["set_outcome_api_v1_orgs__org_id__ai_usage__usage_id__outcome_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/audit-events/actors": {
         parameters: {
             query?: never;
@@ -1950,6 +2011,24 @@ export interface components {
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
         };
+        /** FeatureTotalsOut */
+        FeatureTotalsOut: {
+            /**
+             * Feature
+             * @enum {string}
+             */
+            feature: "bug_writer" | "explain_log" | "triage" | "duplicates" | "test_cases" | "release_summary";
+            /** Calls */
+            calls: number;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Output Tokens */
+            output_tokens: number;
+            /** Avg Latency Ms */
+            avg_latency_ms: number;
+            /** Acceptance Rate */
+            acceptance_rate: number | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -2330,6 +2409,14 @@ export interface components {
             ai_daily_limit: number;
             my_role: components["schemas"]["Role"];
         };
+        /** OutcomeIn */
+        OutcomeIn: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "accepted" | "edited" | "discarded";
+        };
         /** Page[ActivityOut] */
         Page_ActivityOut_: {
             /** Items */
@@ -2433,6 +2520,17 @@ export interface components {
         Page_SuiteOut_: {
             /** Items */
             items: components["schemas"]["SuiteOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[UsageOut] */
+        Page_UsageOut_: {
+            /** Items */
+            items: components["schemas"]["UsageOut"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -3285,6 +3383,60 @@ export interface components {
             opened: number;
             /** Closed */
             closed: number;
+        };
+        /** UsageOut */
+        UsageOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** User Id */
+            user_id: string | null;
+            /** User Name */
+            user_name?: string | null;
+            /**
+             * Feature
+             * @enum {string}
+             */
+            feature: "bug_writer" | "explain_log" | "triage" | "duplicates" | "test_cases" | "release_summary";
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "invalid_output" | "error" | "rate_limited" | "fallback";
+            /** Input Tokens */
+            input_tokens: number;
+            /** Output Tokens */
+            output_tokens: number;
+            /** Latency Ms */
+            latency_ms: number;
+            /** Outcome */
+            outcome: ("accepted" | "edited" | "discarded") | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** UsageSummaryOut */
+        UsageSummaryOut: {
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+            /** Ai Enabled */
+            ai_enabled: boolean;
+            /** Totals By Feature */
+            totals_by_feature: components["schemas"]["FeatureTotalsOut"][];
+            /** Daily Limit */
+            daily_limit: number;
+            /** Used Today */
+            used_today: number;
         };
         /** UserOut */
         UserOut: {
@@ -8918,6 +9070,207 @@ export interface operations {
             };
             /** @description Not found, or not a member of the org */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_usage_api_v1_orgs__org_id__ai_usage_get: {
+        parameters: {
+            query?: {
+                feature?: ("bug_writer" | "explain_log" | "triage" | "duplicates" | "test_cases" | "release_summary") | null;
+                user_id?: string | null;
+                from?: string | null;
+                to?: string | null;
+                /** @description Page number, starting at 1 */
+                page?: number;
+                /** @description Items per page, at most 100 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_UsageOut_"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_summary_api_v1_orgs__org_id__ai_usage_summary_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageSummaryOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    set_outcome_api_v1_orgs__org_id__ai_usage__usage_id__outcome_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                usage_id: string;
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutcomeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

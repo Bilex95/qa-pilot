@@ -33,7 +33,7 @@ for (const vp of VIEWPORTS) {
   page.setDefaultTimeout(120_000);
   for (const path of PAGES) {
     const where = `[${vp.label}] ${path}`;
-    try {
+    for (let attempt = 1; attempt <= 2; attempt++) try {
       // Sign in through the session route (sets the httpOnly cookie), then open the page
       const res = await page.request.post(`${BASE}/api/session/login`, { data: { email: 'amara@lumenfreight.test', password: PW } });
       if (!res.ok()) throw new Error(`sign in failed with ${res.status()}`);
@@ -64,8 +64,12 @@ for (const vp of VIEWPORTS) {
       if (kept !== TYPED) failures.push(`${where}: text typed after Sign out was not kept (field holds "${kept}")`);
       if (refresh.status() !== 401) failures.push(`${where}: session still alive after Sign out (refresh returned ${refresh.status()})`);
       console.log(`${failures.some((f) => f.startsWith(where)) ? 'FAIL' : 'ok  '} ${where}`);
+      break;
     } catch (e) {
-      failures.push(`${where}: could not run the check: ${String(e.message || e).split(/\r?\n/)[0]}`);
+      const message = String(e.message || e).split(/\r?\n/)[0];
+      // The check itself could not run (the dev server dropped a connection): once more, so a real result is never lost to a socket error
+      if (attempt === 1) { console.log(`retry ${where}: ${message}`); continue; }
+      failures.push(`${where}: could not run the check: ${message}`);
       console.log(`FAIL ${where}`);
     }
   }

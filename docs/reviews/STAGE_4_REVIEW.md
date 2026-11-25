@@ -563,3 +563,29 @@ Side by side: `e2e/parity/stage4/i13/compare/*.png`; app captures in `e2e/parity
 | Overview, mobile | Matches: the figures in two columns, the stacked bug cards. Edit project sits under the title as locked |
 
 Backlog: BL-028 (archived projects list and restore, lookup by key beyond 100 projects, environment order).
+
+## 3. Stage 5 issues
+
+### I-14 AI provider, guardrails, usage log and limits (REQ-042, REQ-049 to REQ-052; D-069)
+
+Migration `0014_ai_usage`, the AI service every feature goes through, the mock and Anthropic providers, the prompt builder, the usage log, the per person and daily limits, and API-146 to API-148. Backend only: the AI usage screen is I-19.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Migration `0014_ai_usage` | down to 0013, up to head, `alembic check`: no new operations |
+| Backend suites | ruff and mypy clean (155 source files), **pytest 1553 passed** (77 new, all on the mock or a scripted provider), **Newman 568 requests and 979 assertions, 0 failed**, OpenAPI and TypeScript types regenerated |
+| Guardrails (AI_SPEC 2) | tested: content only inside tags and a closing tag cannot end it early; 12,000 character cut; a log keeps its last 300 lines; one retry with the validation error; two invalid answers fall back as `invalid_output`; provider errors and timeouts fall back as `error`; unknown keys are ignored; the injection test of 2.9 (the text only inside its tag, never in the system prompt, output outside the schema falls back, the mock never echoes the system prompt) |
+| Usage rows | one row per call with status, tokens (both attempts), latency, model and provider; no text column; a secret in the notes is in no column; refused calls write `rate_limited` rows |
+| Limits | 20 per person per minute with a fake clock (21st refused with 429 `rate_limited`, another person unaffected, the window slides); the daily limit of the workspace (429 `daily_limit`, refused calls never count, another workspace unaffected); the switch (403 `ai_disabled`, nothing asked, no row) |
+| Endpoints | API-146 and API-147 for Org Admin and QA Lead (403 for the others), filters, paging, 422s, no rows of another workspace, acceptance rate arithmetic; API-148 once by the person who asked (409 `outcome_set`), 404 for anyone else, a refused call, an unknown or foreign id |
+| Anthropic provider | tested against a stub client only: model, temperature 0.2, forced tool answer, 30 second timeout, tokens read, retry correction appended; failures carry only the class name and never the key. **No live call was made** (no `ANTHROPIC_API_KEY` here), so the live smoke of AI_SPEC section 5 is not done |
+| Hook | the testing module's `ai_usage_id` check now accepts a real, non refused call of the same workspace (and refuses another workspace's, a refused call and a random id) |
+| CI (2026-11-25) | On the run for the projects fixes, the backend, frontend, contract, Newman, two of three flow groups (bug detail, projects, runs, releases; dashboard, settings, members, reset, axe) were green. The sign in group failed on one page of the sign out check with a socket hang up in the check's own request (25 of 26 pages passed): that check now retries once when it could not run |
+
+#### M. Parity
+
+Not applicable: no screen in this issue.
+
+Backlog: none. Next: I-15 (bug writer, explain log, duplicate detector) on this service.

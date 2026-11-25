@@ -4,9 +4,9 @@
 **Branch:** stage/4-core-features
 **Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
-## Open decision (2026-11-25): stopped after the second low memory stop
+## Decision taken (2026-11-25, product owner): CI is the judge
 
-The machine ran out of memory twice today (the 390 px layout run, then the run of all browser scripts), which the autonomy rules treat as truly blocked. Everything is committed and pushed; nothing is running. **I-13 is partly done:** the missing Projects and Project overview screens are built (D-067) and verified by backend suites, Newman, lint, typecheck, build, the projects flow and the axe scan. Not verified locally: the other flows after the I-13 changes, the layout states of the new screens, and a look at eight of the ten parity pairs. CI runs all of it (`gh run list --branch stage/4-core-features`). Options for the next step: close other programs and run `scripts/run-flows.ps1` and `scripts/layout-check.ps1 -Name i13 -Only 390 -Batch 1` by hand, or let CI be the judge and continue with Stage 5 (I-14). Not started: I-14 to I-22 and the final review.
+After the second low memory stop the product owner chose: fix what CI reports, split the browser checks into parallel jobs (done, D-068), review all ten Projects parity comparisons (done, two fixed), then Stage 5. **From now on the full browser suites are not run locally**; only the screens that changed, at 390 and 1440. Stop only if CI stays red after two honest fixes of the same failure. Current: Stage 5, I-14 done (backend); next I-15.
 
 ## Resume here (resumed 2026-11-25)
 
@@ -59,6 +59,9 @@ The machine ran out of memory twice today (the 390 px layout run, then the run o
 * I-09 Dashboard and reports (D-064) and inline editing of steps and results (D-065): API-130 to API-133 (dashboard, trend, summary, CSV with formula escaping and a 50,000 row cap), Dashboard and Reports screens with SVG charts and a table alternative, the Reports custom range, inline edit of the steps to reproduce and of expected and actual result (BL-023 closed). Verified: ruff, mypy, pytest 1459 passed, Newman 548 requests and 942 assertions, lint, typecheck and `next build` clean, dashboard and bug detail flows PASS, design validation PASS, layout at 1440 PASS (145 states), parity captured. **The 390 px layout run was stopped for low memory** (see Resume here).
 
 * I-12 Seed data (D-066): `backend/app/seed/domain_data.py` (pure data) and `domain.py` (writes through the services, then moves dates back by relative ages). Baseline: Lumen with 3 projects, 60 bugs in every status and severity, 4 suites, 40 cases, 5 runs, 3 releases (Blocked, At risk, Ready), Harbor with a small set; sla-breach (4 of 7 bugs past SLA), release-blocked (WEB 2.4.0, 63%, two reasons), multi-tenant (the same small project in both). Verified: ruff, mypy, pytest 1471 passed, Newman 548 requests and 942 assertions on the seeded data, all twelve browser scripts PASS on it, dashboard p95 33 ms, manifest regenerated. New helpers: `scripts/seed.ps1`, `scripts/run-flows.ps1`, `e2e/scripts/measure-api-latency.mjs`. CI now also runs the runs, releases and dashboard flows and captures.
+
+* I-13 Parity and states pass (D-067, D-068): found and built the missing Projects and Project overview screens, extended API-040 and API-042 with the project figures, ten parity comparisons reviewed (two fixed), the axe scan of 16 screens, the projects flow, CI split into parallel jobs, the layout fixture bug on a fresh database fixed. Verified locally: pytest 1476, Newman 549 requests and 945 assertions, lint, typecheck, build, projects flow, axe. CI: see the latest run.
+* I-14 AI foundation (D-069): migration 0014, `ai/application/service.run` (switch, limits, tagged prompts, validation with one retry, fallback, one usage row per call), mock and Anthropic providers, API-146 to API-148, the `ai_usage_id` check. Verified: ruff, mypy, pytest 1553 passed, migration round trip with no drift, Newman 568 requests and 979 assertions. No live Anthropic call (no key).
 
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete

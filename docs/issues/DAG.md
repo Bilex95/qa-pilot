@@ -115,7 +115,7 @@ flowchart LR
 | I-10 | Done | 870e66a, 1e226d1, d4d776d, 111036e |
 | I-11 | Done | e1de501, 2e5b26c, 816a2a2, 305989c, 8002211, 5aab6b0 |
 | I-12 | Done | d78eac7, b26f723 |
-| I-13 | Planned |  |
+| I-13 | Done | c9b2db2, 49569c4, e3b3bd0, 1739e8e, d155cf4 |
 | I-23 | Done | cfb9ba1, 1af7cee, adc120f, b236d13, 3552994, 2555f2c, 190ba90, 7438afd |
 | I-24 | Done | 562a4be, c1d81e2, b7db68a, af5eaec |
 | I-14 | Planned |  |

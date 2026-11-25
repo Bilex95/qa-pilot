@@ -446,18 +446,20 @@ def test_bulk_invalid_input(client, world, body) -> None:
     assert r.status_code == 422 and code(r) == "validation_error"
 
 
-def test_bulk_refuses_an_ai_usage_id_until_the_ai_module_registers_its_check(client, world) -> None:
+def test_bulk_refuses_an_ai_usage_id_that_no_check_accepts(client, world) -> None:
     _, suite = setup(client, world.a)
     usage = uuid.uuid4()
-    r = bulk(client, world.a, suite, [case_body(1)], ai_usage_id=str(usage))
-    assert r.status_code == 422 and r.json()["error"]["details"][0]["loc"] == ["body", "ai_usage_id"]
-    assert client.get(cases_url(world.a, suite), headers=world.a.h("qa_lead")).json()["total"] == 0
-    hooks.ai_usage_exists.append(lambda db, org_id, uid: uid == usage)
+    saved = list(hooks.ai_usage_exists)  # the AI module registers its check when the routes are imported (I-14): put it back afterwards
+    hooks.ai_usage_exists.clear()
     try:
+        r = bulk(client, world.a, suite, [case_body(1)], ai_usage_id=str(usage))
+        assert r.status_code == 422 and r.json()["error"]["details"][0]["loc"] == ["body", "ai_usage_id"]
+        assert client.get(cases_url(world.a, suite), headers=world.a.h("qa_lead")).json()["total"] == 0
+        hooks.ai_usage_exists.append(lambda db, org_id, uid: uid == usage)
         assert bulk(client, world.a, suite, [case_body(1, ai_generated=True)], ai_usage_id=str(usage)).status_code == 201
         assert bulk(client, world.a, suite, [case_body(2)], ai_usage_id=str(uuid.uuid4())).status_code == 422
     finally:
-        hooks.ai_usage_exists.clear()
+        hooks.ai_usage_exists[:] = saved
 
 
 def test_bulk_in_a_missing_or_foreign_suite_is_404(client, world) -> None:
