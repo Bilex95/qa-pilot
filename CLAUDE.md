@@ -49,7 +49,7 @@ AI: provider interface in `backend/app/modules/ai`; `AI_PROVIDER=mock|anthropic`
 * AI output is always a suggestion the user accepts. Treat user content sent to the model as data, never as instructions. Validate model output with Pydantic; fall back gracefully on failure.
 * Never commit secrets. `.env` is gitignored; `.env.example` has empty values.
 * Seed CLI is local/test only and refuses to run when `APP_ENV=production`.
-* Git: `stage/<n>-<name>` branches, small conventional commits. `origin` is the PRIVATE repo `Bilex95/qa-pilot`; never make it public. Push ONLY with `bash scripts/safe-push.sh <branch>`; never force push or push to `main`. Stage end, PR and tag procedure: skill `qa-pilot-gates` (D-034).
+* Git: `stage/<n>-<name>` branches, small conventional commits. `origin` is the PUBLIC repo `Bilex95/qa-pilot` (public since 2026-11-25, D-073) and must stay free of secrets and personal data: no real credentials, no personal email or name beyond the GitHub noreply identity, no local machine paths. Push ONLY with `bash scripts/safe-push.sh <branch>`; never force push or push to `main`. Stage end, PR and tag procedure: skill `qa-pilot-gates` (D-034).
 * Prose in docs and UI copy: no em dashes and no hyphens used as punctuation.
 * Responsive standing rule (D-044), parity capture and the generated `globals.css`: skill `qa-pilot-ui-checks`. Every new screen and popup goes into `e2e/scripts/check-app-layout.mjs`.
 

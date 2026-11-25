@@ -2,15 +2,13 @@
 
 **Current stage:** 4 Core features
 **Branch:** stage/4-core-features
-**Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
+**Remote:** origin = github.com/Bilex95/qa-pilot (PUBLIC since 2026-11-25, keep it free of secrets and personal data). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
 ## Resume here (updated 2026-11-25, token rules in CLAUDE.md)
 
 **State:** Stage 5. I-16 (AI triage) is done (D-072). I-17 (test case generator) is a `wip(I-17)` commit: backend API-144 written, tests not yet run; frontend, layout states, parity, D-074 (D-073 is taken by the repository hardening), review section still to do.
 
-**Repository (D-073, 2026-11-25):** history rewritten to the noreply address and published to a NEW private repo `Bilex95/qa-pilot` (the old one is `Bilex95/qa-pilot-archive`, private, kept). **GitHub Actions are DISABLED on the new repo** (private minutes): CI does not run until the owner makes it public and says so, then re-enable with `gh api -X PUT repos/Bilex95/qa-pilot/actions/permissions -F enabled=true` and confirm a run. Until then check CI results from the archive runs only for the earlier commits. Backups: `C:\Users\HP\Documents\qa-pilot-backup\`. After the owner flips visibility: relax `safe-push.sh` (public allowed, keep every other check) and the CLAUDE.md "never make it public" line. The production frontend build for CI (`docker-compose.ci.yml`, a0db301) has not been seen in CI yet; its first-request timings are in the browser-stack step log.
-
-**CI of the earlier pushes (unchecked):** runs for I-16 (45630850580) and the CI production frontend are on the archive repo: `gh run list --repo Bilex95/qa-pilot-archive --branch stage/4-core-features --limit 3`.
+**Repository (D-073, 2026-11-25):** history rewritten to the noreply address and published to the new repo `Bilex95/qa-pilot`, now PUBLIC (the old one is the private `Bilex95/qa-pilot-archive`, kept). Actions are enabled again, `safe-push.sh` accepts a public repo, CLAUDE.md updated. Backups: `C:\Users\HP\Documents\qa-pilot-backup\`. Open: private vulnerability reporting and the "all outside contributors need approval" policy returned GitHub 500s (retry or set in Settings); the first full CI run on the new repo is the proof for I-15, I-16 and the production frontend build (`docker-compose.ci.yml`, first-request timings are in the browser-stack step log). Check it once: `gh run list --branch stage/4-core-features --limit 3`.
 
 **Then:** I-17 (test case generator), I-18 (release summary), I-19 (AI usage screen), Stage 6 (I-20 to I-22), one final review. Each issue goes to the `issue-builder` subagent (CLAUDE.md "Token rules"). No full browser suites locally; stop only if CI stays red after two honest fixes of the same failure.
 

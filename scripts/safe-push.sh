@@ -4,7 +4,7 @@
 #   1. branch mode: branch is not main (main changes only through an approved PR merge)
 #      tag mode: tag exists locally, points at a commit already on origin/main (approved work only),
 #      and does not exist on origin yet (tags are never moved or overwritten)
-#   2. origin is the PRIVATE repo Bilex95/qa-pilot
+#   2. origin is the repo Bilex95/qa-pilot (public since 2026-11-25, D-073)
 #   3. git config user.email is a verified email on the GitHub account
 #      (public profile email, or the verified list from gh api user/emails when the email is private)
 #   4. no .env file in any commit
@@ -52,15 +52,18 @@ else
   echo "ok   branch $BRANCH"
 fi
 
-# 2. origin must be the private repo
+# 2. origin must be the expected repo
 ORIGIN_URL="$(git remote get-url origin 2>/dev/null)" || fail "no origin remote"
 case "$ORIGIN_URL" in
   *github.com/$REPO.git|*github.com/$REPO|*github.com:$REPO.git) ;;
   *) fail "origin is $ORIGIN_URL, expected $REPO" ;;
 esac
 VISIBILITY="$(gh repo view "$REPO" --json visibility --jq .visibility)" || fail "could not read repo visibility"
-[ "$VISIBILITY" = "PRIVATE" ] || fail "$REPO visibility is $VISIBILITY, must be PRIVATE"
-echo "ok   origin $REPO is PRIVATE"
+case "$VISIBILITY" in
+  PRIVATE|PUBLIC) ;;
+  *) fail "$REPO visibility is $VISIBILITY, expected PRIVATE or PUBLIC" ;;
+esac
+echo "ok   origin $REPO visibility is $VISIBILITY (the repository is public since 2026-11-25, D-073; every other check below still applies)"
 
 # 3. commit email must be verified on the account
 LOCAL_EMAIL="$(git config user.email | tr '[:upper:]' '[:lower:]')"
