@@ -677,7 +677,7 @@ The AI usage screen on API-146 and API-147 (both built in I-14, so no backend ch
 
 | Check | Result |
 |---|---|
-| Backend | unchanged since I-18: PYTEST_RESULT |
+| Backend | unchanged since I-18: ruff and mypy clean, **pytest 1756 passed**; Newman not repeated (no API change, I-18 run: 620 requests, 1073 assertions) |
 | Frontend (local) | lint, typecheck, build clean; `check-ai-flow.mjs` passes with the new usage part (a lead sees the requests and the totals, switches the range, a Developer sees no access) |
 | New layout states | default with long names and every result status, empty, loading, error (in `check-app-layout.mjs`, mocked answers). The full local layout run was not repeated (it hung twice for I-17); the states run in the CI shards |
 
