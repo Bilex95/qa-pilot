@@ -4,19 +4,16 @@
 **Branch:** stage/4-core-features
 **Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
-## Resume here (paused 2026-11-22, resume Monday)
+## Resume here (resumed 2026-11-25)
 
-**Current issue: I-09 Dashboard and reports. Current step: the browser flow `e2e/scripts/check-dashboard-flow.mjs` fails on its first step** (the heading "Dashboard" is not found at `/o/lumen/dashboard`; the page was rewritten in I-09 and has never been looked at in a browser). Start there: open the page, read the console, fix, rerun the flow.
+**Current issue: I-09 Dashboard and reports is finished except its CI proof.** Done on 2026-11-25: the dashboard flow passes, the dashboard and reports layout states are in `check-app-layout.mjs` (1440 px PASS, 145 states), the parity capture is done (`e2e/parity/stage4/i09/`), D-064 and D-065 are written, the review section is in `docs/reviews/STAGE_4_REVIEW.md`. Also done: inline editing of the steps to reproduce and of expected and actual result (D-065, BL-023 closed).
 
-* **Done and pushed or committed on `stage/4-core-features`:** I-04, I-05 (with inline editing of title, description and labels, D-061), I-07 test runs (D-062), I-08 releases and readiness (D-063). I-09 backend (API-130 to API-133, tests, Postman, OpenAPI) is committed. The user's note called I-07 unfinished: it is finished; the only unfinished work is I-09.
-* **I-09 left in a `wip(I-09)` commit:** dashboard page, reports page, chart components, hooks, the flow script, and the prototype's custom range date inputs on the Reports filters (prototype edit in `design/reference/approved.html`; `globals.css` unchanged, the locked Reports screenshots were not regenerated yet).
-* **I-09 next:** (1) fix the flow; (2) `check-app-layout.mjs` states for dashboard and reports (default, empty, loading, error, Developer, custom range error) plus 390 and 1440 local runs; (3) `capture-dashboard-parity.mjs` against the locked screenshots; (4) NFR-PERF-02 (dashboard p95 under 500 ms) is only meaningful on the baseline seed of I-12: measure there; (5) D-064 (trend definition: opened by created date, closed by the timeline's moves into Verified, Closed or Won't fix, reopens add back; range at most 366 days; CSV capped at 50,000 rows and built before the response starts), review section, PROGRESS, DAG entry (`scripts/build_issues.py`: add "I-09"), commit, push.
+* **Exact counts:** pytest **1459 passed**, ruff and mypy clean, Newman **548 requests and 942 assertions**, lint, typecheck and `next build` clean, design validation PASS.
+* **Not done:** the 390 px local layout run was stopped for low memory (second time this stage); it also holds the new bug detail editor states. Do not restart it by hand: the CI `responsive` job is the full run (D-060). Check `gh run list --branch stage/4-core-features` after the push and fix what it reports.
 * **Then in DAG order:** I-12 seed data (the `release-blocked` scenario with WEB 2.4.0 Blocked with two reasons; seed history must be written through the services so the timeline and trend have data), I-13 parity and states pass, Stage 5 (I-14 to I-19), Stage 6 (I-20 to I-22), one final review.
 * **Open items:**
-  * Layout CI job (D-060): the `responsive` job runs the full layout check, every screen flow and every parity capture on each push. Its full layout check passed once; the flows step failed twice in CI on `check-bugs-flow` (the bugs flow was stale for I-05 and I-11 and is fixed; one failure was a 60 s timeout on a cold dev server, so a warm up step was added). Look at the latest run of `stage/4-core-features` first (`gh run list --branch stage/4-core-features`) and fix what it reports. The I-04, I-05, I-07, I-08 and I-11 states have only had local 390 and 1440 runs plus the CI layout pass.
-  * Bug inline editing: done (D-061). Steps, expected and actual result stay read only (BL-023).
-  * Orphaned uploads: `python -m app.maintenance orphan-uploads`, run by `clean-layout-fixtures.mjs` (done).
-  * Exact pytest count: the last full green run was 1414 passed (I-08). With I-09 the full run showed 1433 passed and 19 failures that were a SQL grouping bug in the trend query; after the fix the dashboard file passes on its own (about 38 tests), so the full suite should be about 1452. It has not been rerun in one go: run `scripts/py-checks.ps1` first thing and record the exact number. Newman after I-09 passed (540 requests).
+  * Layout CI job (D-060): the `responsive` job runs the full layout check, every screen flow and every parity capture on each push. The last CI run (stop script commit) failed in the smoke login, which expected the old empty dashboard text: fixed in `smoke-login.mjs`, not yet seen green in CI. The I-04, I-05, I-07, I-08, I-09 and I-11 states have only had local runs (390 and 1440, or 1440 only for I-09) plus the CI layout pass.
+  * Bug inline editing: all five fields done (D-061, D-065). Orphaned uploads cleanup: done (`clean-layout-fixtures.mjs`). Exact pytest count: recorded above.
   * Known flaky: `with-wsl.ps1 -Up` now waits for the API to report the database ok three times; scripts started right after another run used to fail with 500s.
 * **Fixtures:** test runs and the released flow release cannot be deleted in v1 (BL-027): leftovers are named `flow-i0x ...`, `Newman ...`, `parity-i0x` or `Layout ...`; a reseed removes them. The layout check's planned release is deleted by `clean-layout-fixtures.mjs`. No live reset links were left at the last cleanup.
 
@@ -54,12 +51,14 @@
 
 * I-08 Releases and readiness (D-063): migration 0013, API-110 to API-119, readiness rules with boundaries, forward only status, links inside a project, release names on bugs, runs and the timeline, Releases list and Release detail, the Release select on the bug page and in the New test run dialog. Verified: ruff, mypy, pytest 1414 passed, migration up/down/up with no drift, Newman 518 requests and 886 assertions, lint, typecheck and `next build` clean, releases flow PASS, design validation PASS, layout at 390 and 1440 PASS for the changed screens, parity captured. BL-026 closed.
 
+* I-09 Dashboard and reports (D-064) and inline editing of steps and results (D-065): API-130 to API-133 (dashboard, trend, summary, CSV with formula escaping and a 50,000 row cap), Dashboard and Reports screens with SVG charts and a table alternative, the Reports custom range, inline edit of the steps to reproduce and of expected and actual result (BL-023 closed). Verified: ruff, mypy, pytest 1459 passed, Newman 548 requests and 942 assertions, lint, typecheck and `next build` clean, dashboard and bug detail flows PASS, design validation PASS, layout at 1440 PASS (145 states), parity captured. **The 390 px layout run was stopped for low memory** (see Resume here).
+
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs (done, see Done); I-06 suites and cases (done, see Done); I-11 settings (done, see Done); I-23 password reset (done, see Done)
 - [ ] 4C: I-04 workflow and board (done, see Done); I-05 bug detail (done, see Done); I-07 runs (done, see Done)
 - [ ] 4D: I-08 releases (done, see Done)
-- [ ] 4E: I-09 dashboard and reports; I-12 seed data
+- [ ] 4E: I-09 dashboard and reports (done, see Done); I-12 seed data
 - [ ] 4F: I-13 parity and states pass
 - [ ] Gate: review, before and after screenshots at each width (D-044), push, PR
 

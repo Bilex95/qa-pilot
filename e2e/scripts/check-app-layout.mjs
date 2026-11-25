@@ -986,6 +986,19 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await page.waitForSelector('.timeline li[data-comment-id]');
   await page.getByRole('button', { name: /^Download / }).first().waitFor();
   await check('bug detail', { shot: 'bug-detail' });
+  step = 'open the steps editor';
+  await page.getByRole('button', { name: 'Edit steps to reproduce' }).click();
+  await page.waitForSelector('#e-step-1');
+  await page.getByRole('button', { name: 'Add step' }).click();
+  await check('bug detail: editing the steps', { shot: 'bug-detail-edit-steps' });
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  step = 'open the expected and actual editor with a text that is too long';
+  await page.getByRole('button', { name: 'Edit expected and actual result' }).click();
+  await page.waitForSelector('#e-exp');
+  await page.fill('#e-exp', 'x'.repeat(5001));
+  await page.waitForSelector('.err');
+  await check('bug detail: editing expected and actual (too long)', { shot: 'bug-detail-edit-results' });
+  await page.getByRole('button', { name: 'Cancel' }).click();
   step = 'open the delete bug dialog';
   await page.click('button[aria-label="Delete bug"]');
   await page.waitForSelector('.modal');
@@ -1201,6 +1214,80 @@ for (const vp of VIEWPORTS.filter((v) => !ONLY || v.label === ONLY)) {
   await go(page, '/o/lumen/releases/00000000-0000-4000-8000-000000000000');
   await page.waitForSelector('text=This release was not found');
   await check('release: not found', { shot: 'release-not-found' });
+
+  // Dashboard and Reports (I-09): filled, one project, loading, empty, error, then the Reports custom range and its range error
+  step = 'open the dashboard for the fixture project';
+  await go(page, '/o/lumen/dashboard');
+  await page.waitForSelector('.readout');
+  await page.selectOption('#d-proj', { label: BUG_PROJECT.name });
+  await page.waitForSelector('.readout');
+  await check('dashboard (one project)', { shot: 'dashboard-project' });
+  step = 'show the dashboard loading, empty and error states';
+  const dashUrl = /\/api\/v1\/orgs\/[^/]+\/dashboard(\?|$)/;
+  await page.route(dashUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/dashboard`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Dashboard")');
+  await page.waitForSelector('.sk');
+  await check('dashboard: loading', { shot: 'dashboard-loading' });
+  await page.waitForSelector('.readout');
+  await page.unroute(dashUrl);
+  await page.route(dashUrl, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { ...(await res.json()), has_data: false } });
+  });
+  await go(page, '/o/lumen/dashboard');
+  await page.waitForSelector('text=Nothing to measure yet');
+  await check('dashboard: empty', { shot: 'dashboard-empty' });
+  await page.unroute(dashUrl);
+  await page.route(dashUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i09' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/dashboard');
+  await page.waitForSelector('.state-box.error');
+  await check('dashboard: error', { shot: 'dashboard-error' });
+  await page.unroute(dashUrl);
+
+  step = 'open the reports';
+  await go(page, '/o/lumen/reports');
+  await page.waitForSelector('.panel .panel-head h2');
+  await check('/o/lumen/reports', { shot: 'reports' });
+  step = 'pick a custom range that is too long';
+  await page.selectOption('#rp-r', 'custom');
+  await page.fill('#rp-f', '2020-01-01');
+  await page.fill('#rp-t', '2026-01-01');
+  await page.waitForSelector('[role=alert]');
+  await check('reports: custom range error', { shot: 'reports-range-error' });
+  await page.fill('#rp-f', '2026-01-01');
+  await page.fill('#rp-t', '2026-01-31');
+  await check('reports: custom range', { shot: 'reports-custom' });
+  step = 'show the reports loading, empty and error states';
+  const repUrl = /\/api\/v1\/orgs\/[^/]+\/reports\/(bug-trend|summary)/;
+  await page.route(repUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.goto(`${BASE}/o/lumen/reports`, { waitUntil: 'commit' });
+  await page.waitForSelector('h1:has-text("Reports")');
+  await page.waitForSelector('.sk');
+  await check('reports: loading', { shot: 'reports-loading' });
+  await page.waitForSelector('.panel .panel-head h2');
+  await page.unroute(repUrl);
+  await page.route(repUrl, async (route) => {
+    const res = await route.fetch();
+    const body = await res.json();
+    await route.fulfill({ response: res, json: Array.isArray(body) ? body.map((p) => ({ ...p, opened: 0, closed: 0 }))
+      : { ...body, total: 0, by_status: [], by_severity: [], by_component: [], by_assignee: [], run_pass_rate: [] } });
+  });
+  await go(page, '/o/lumen/reports');
+  await page.waitForSelector('text=No activity in this range');
+  await check('reports: empty', { shot: 'reports-empty' });
+  await page.unroute(repUrl);
+  await page.route(repUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'GET,OPTIONS' } })
+    : route.fulfill({ status: 500, contentType: 'application/json', headers: { ...cors, 'x-request-id': 'req-layout-i09' },
+      body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));
+  await go(page, '/o/lumen/reports');
+  await page.waitForSelector('.state-box.error');
+  await check('reports: error', { shot: 'reports-error' });
+  await page.unroute(repUrl);
 
   // The QA Lead reads the same screen without any controls (REQ-006, PERSONAS_AND_ROLES.md section 3.1)
   step = 'sign out to sign in as the QA Lead';

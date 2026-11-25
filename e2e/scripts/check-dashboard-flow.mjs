@@ -116,20 +116,25 @@ async function main() {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
     const page = await ctx.newPage();
     page.setDefaultTimeout(30_000);
+    page.on('pageerror', (e) => log(`page error: ${e.message}`));
+    page.on('console', (m) => { if (m.type() === 'error') log(`console error: ${m.text().slice(0, 300)}`); });
     await signIn(page, lead.email);
     const num = async (cap) => (await page.locator('.readout > div', { hasText: cap }).locator('.num').innerText()).trim();
 
     // 1. The dashboard for the data project
     await page.goto(`${BASE}/o/lumen/dashboard`);
-    await page.getByRole('heading', { name: 'Dashboard' }).waitFor();
+    await page.getByRole('heading', { name: 'Dashboard' }).waitFor().catch(async (e) => {
+      log(`url ${page.url()}; body: ${(await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 400)}`);
+      throw e;
+    });
     await page.waitForSelector('.readout');
     await page.selectOption('#d-proj', { label: `${NAME} data` });
-    await page.waitForFunction(() => document.querySelector('.readout .num')?.textContent === '3');
+    await page.waitForFunction(() => document.querySelector('.readout')?.textContent?.includes('67%') ?? false);
     check((await num('Open bugs')) === '3', 'open bugs is not 3');
     check((await page.locator('.readout > div', { hasText: 'Open bugs' }).innerText()).includes('1 resolved or closed'), 'the finished count is not 1');
     check((await num('Open Critical')) === '1' && (await page.locator('.readout > div', { hasText: 'Open Critical' }).innerText()).includes('1 not triaged yet'), 'open Critical is not 1 with 1 not triaged');
     check((await num('Past SLA')) === '0', 'past SLA is not 0');
-    check((await num('Run pass rate')) === '67%', `the pass rate is ${await num('Run pass rate')}`);
+    check((await num('Run pass rate')) === '67%', `the pass rate is ${await num('Run pass rate')} (API says ${JSON.stringify((await api_(`${O()}/dashboard?project_id=${full.id}`, { token: T })).json?.pass_rate)}; run results ${JSON.stringify(run.results.map((r) => r.result))})`);
     const bars = await page.locator('.panel', { hasText: 'Open bugs by severity' }).locator('.hbar .v').allInnerTexts();
     check(bars.join(',') === '1,1,1,0', `severity bars: ${bars}`);
     const comps = await page.locator('.panel', { hasText: 'Components with most open bugs' }).locator('.hbar').allInnerTexts();
@@ -185,7 +190,7 @@ async function main() {
     d.setDefaultTimeout(30_000);
     await signIn(d, dev.email);
     await d.goto(`${BASE}/o/lumen/dashboard`);
-    await d.getByText('Assigned to you').waitFor();
+    await d.getByRole('heading', { name: 'Assigned to you' }).waitFor();
     await d.locator('.panel', { hasText: 'Assigned to you' }).locator('tr', { hasText: `${NAME} high bug` }).waitFor();
     log('Developer: the dashboard says how many open bugs are assigned and lists them');
     await dctx.close();

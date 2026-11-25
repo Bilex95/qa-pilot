@@ -477,3 +477,33 @@ Side by side: `e2e/parity/stage4/i08/compare/*.png` (locked on the left, app on 
 | Loading, error | Same skeletons and error box (request id shown); an unknown release shows a "was not found" panel |
 
 Backlog: none added. BL-026 is closed by D-063 (release names on bugs, runs and the timeline).
+
+### I-09 Dashboard and reports (SCR-05, SCR-18; REQ-038, REQ-039, REQ-040; D-064), with inline editing of steps and results (D-065)
+
+API-130 to API-133 (dashboard, bug trend, summary, CSV export), the Dashboard and Reports screens with their charts, and, in the same stretch, the inline edit of the steps to reproduce and of the expected and actual result on the bug detail (product owner request, closes BL-023).
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Backend suites | ruff and mypy clean (141 source files), **pytest 1459 passed** in one run (1452 before the steps and results tests, 7 added), Newman **548 requests and 942 assertions, 0 failed**, OpenAPI regenerated |
+| Lint, typecheck, `next build` | Clean; `/o/[org]/dashboard` and `/o/[org]/reports` in the route list |
+| Design validation | `scripts/validate-design.ps1` PASS after the prototype changes; `globals.css` has no drift |
+| `e2e/scripts/check-dashboard-flow.mjs` | PASS. The figures match the data (3 open, 1 finished, 1 Critical not triaged, 67% pass rate, severity and component bars, the Blocked release, the trend adds up); the project select narrows them and a project without bugs shows the empty state; Reports (status, per person with Unassigned last, pass rate per run, the 366 day and end before start messages); CSV (header, fixture bugs, release name, a `=HYPERLINK` title quoted); Developer sees and lists their own open bugs; Viewer reads and exports. The first failures were the flow's own (it read the page before the project filtered figures arrived, and a text matched two elements) |
+| `e2e/scripts/check-bug-detail-flow.mjs` | PASS with the new steps and results editing (empty step dropped, a save with no change sends nothing and adds no timeline entry, a result over 5,000 characters disables Save, one timeline entry per changed field) |
+| `e2e/scripts/smoke-login.mjs` | Fixed: it expected the empty dashboard text, which a workspace with bugs no longer shows (this broke the CI run of the stop script commit). Now accepts the figures or the empty state |
+| Layout, 1440 px (local) | **PASS**, 145 states, including the new dashboard (one project, loading, empty, error) and Reports (default, custom range error, custom range, loading, empty, error) states |
+| Layout, 390 px (local) | **Not completed: the run was stopped for low memory** (second time this stage). It also holds the new bug detail editor states (steps, expected and actual too long), which were added after the 1440 run, so those are not run at 1440 either. The full run of all widths is the CI job (D-060); its result goes in the final review. Fixtures were cleaned afterwards (1 live reset link revoked, none left) |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+Side by side: `e2e/parity/stage4/i09/compare/*.png` (locked on the left, app on the right); app captures in `e2e/parity/stage4/i09/app/`, which also holds the Reports custom range.
+
+| State | Result |
+|---|---|
+| Dashboard, default, desktop and mobile | Same four figures, severity bars, trend with its legend and "Show as table", components and release readiness. The numbers differ because the app shows the real workspace, not the prototype's sample data. The prototype's "View as" switch is a prototype tool and is not in the app |
+| Reports, default | Same filters, trend, pass rate per run with the 80% gate line, status bars and the table of people (titled "Open bugs per person", the prototype says "per developer", because QA people can hold bugs too). Differences: the Export CSV button has no download icon; with 12 runs the "80% gate" label touches the last bar |
+| Loading, empty, error | Same skeletons, the empty state ("Nothing to measure yet", "No activity in this range") and the error box with the request id |
+| Bug detail, default | The locked screenshots were regenerated: Edit buttons now sit beside Steps to reproduce and Expected and actual (prototype first, D-065) |
+
+Backlog: BL-023 is closed by D-065. NFR-PERF-02 (dashboard p95 under 500 ms) is measured on the I-12 baseline seed, where there is enough data to mean anything.
