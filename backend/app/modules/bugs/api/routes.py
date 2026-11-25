@@ -17,7 +17,7 @@ from app.modules.bugs.domain import workflow
 from app.modules.bugs.domain.filters import BugFilters
 from app.modules.bugs.domain.rules import SORT_FIELDS, STATUSES, Priority, Severity, Status
 from app.modules.bugs.infrastructure.models import Attachment, Bug, Comment
-from app.modules.bugs.schemas.bugs import BugCreateIn, BugOut, BugSummaryOut, BugUpdateIn, LabelRef, SourceRunOut
+from app.modules.bugs.schemas.bugs import BugCreateIn, BugOut, BugSummaryOut, BugUpdateIn, SourceRunOut
 from app.modules.bugs.schemas.detail import ActivityOut, AttachmentOut, CommentIn, CommentOut
 from app.modules.bugs.schemas.views import SavedViewIn, SavedViewOut
 from app.modules.bugs.schemas.workflow import (
@@ -40,16 +40,7 @@ def _actor(ctx: OrgContext) -> service.Actor:
     return service.Actor(user_id=ctx.user.id, role=ctx.role)
 
 
-def _summary_fields(bug: Bug, bc: service.BugContext) -> dict[str, object]:
-    return {
-        "id": bug.id, "key": bug.key, "number": bug.number, "project_id": bug.project_id, "title": bug.title,
-        "status": bug.status, "severity": bug.severity, "priority": bug.priority, "component_id": bug.component_id,
-        "environment_id": bug.environment_id, "reporter_id": bug.reporter_id,
-        "reporter_name": bc.names.get(bug.reporter_id, ""), "assignee_id": bug.assignee_id,
-        "assignee_name": bc.names.get(bug.assignee_id) if bug.assignee_id else None, "release_id": bug.release_id,
-        "labels": [LabelRef.model_validate(x) for x in bc.labels.get(bug.id, [])], "sla_breached": bc.sla(bug),
-        "created_at": bug.created_at, "updated_at": bug.updated_at,
-    }
+_summary_fields = service.summary_fields  # moved to the service so other modules can list bugs the same way (I-15)
 
 
 def _detail(db: DB, ctx: OrgContext, bug: Bug) -> BugOut:

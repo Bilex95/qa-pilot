@@ -9119,6 +9119,309 @@
         }
       }
     },
+    "/api/v1/orgs/{org_id}/ai/bug-writer": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Bug Writer",
+        "description": "Turn rough notes (and a log) into a structured bug report. A suggestion only: nothing is saved. `environment_id` and `component_id`\nare ids of the project, never invented; `fallback` is true when the model could not help.",
+        "operationId": "bug_writer_api_v1_orgs__org_id__ai_bug_writer_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BugWriterIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BugWriterOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/ai/explain-log": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Explain Log",
+        "description": "Explain what a log shows: the error, the likely cause and the key lines (the last 300 lines, 12,000 characters, are used).",
+        "operationId": "explain_log_api_v1_orgs__org_id__ai_explain_log_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainLogIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogExplanationOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org_id}/ai/duplicates": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Find Duplicates",
+        "description": "Open bugs of the project that look like this one (TF-IDF, up to five with a score of at least 0.25). No model is called.",
+        "operationId": "find_duplicates_api_v1_orgs__org_id__ai_duplicates_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicatesIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicatesOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{org_id}/ai/usage": {
       "get": {
         "tags": [
@@ -11151,6 +11454,157 @@
         "title": "BugUpdateIn",
         "description": "Only the fields that are sent change. A field that is sent as null is cleared where that makes sense\n(component, environment, release, assignee) and is a 422 otherwise."
       },
+      "BugWriterIn": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Notes"
+          },
+          "log": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 12000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "project_id",
+          "notes"
+        ],
+        "title": "BugWriterIn"
+      },
+      "BugWriterOut": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "steps_to_reproduce": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Steps To Reproduce"
+          },
+          "expected_result": {
+            "type": "string",
+            "title": "Expected Result"
+          },
+          "actual_result": {
+            "type": "string",
+            "title": "Actual Result"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment"
+          },
+          "environment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment Id"
+          },
+          "component": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component"
+          },
+          "component_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component Id"
+          },
+          "suggested_severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Suggested Severity"
+          },
+          "missing_information": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Information"
+          },
+          "fallback": {
+            "type": "boolean",
+            "title": "Fallback"
+          },
+          "usage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Usage Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "steps_to_reproduce",
+          "expected_result",
+          "actual_result",
+          "environment",
+          "environment_id",
+          "component",
+          "component_id",
+          "suggested_severity",
+          "missing_information",
+          "fallback",
+          "usage_id"
+        ],
+        "title": "BugWriterOut"
+      },
       "BulkCasesIn": {
         "properties": {
           "cases": {
@@ -11868,6 +12322,111 @@
         ],
         "title": "DashboardReleaseOut"
       },
+      "DuplicateCandidateOut": {
+        "properties": {
+          "bug": {
+            "$ref": "#/components/schemas/BugSummaryOut"
+          },
+          "score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bug",
+          "score"
+        ],
+        "title": "DuplicateCandidateOut"
+      },
+      "DuplicatesIn": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "actual_result": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Result"
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "type": "array",
+                "maxItems": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps"
+          },
+          "exclude_bug_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude Bug Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "project_id",
+          "title"
+        ],
+        "title": "DuplicatesIn"
+      },
+      "DuplicatesOut": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/DuplicateCandidateOut"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "usage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Usage Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidates",
+          "usage_id"
+        ],
+        "title": "DuplicatesOut"
+      },
       "EnvironmentIn": {
         "properties": {
           "name": {
@@ -11991,6 +12550,22 @@
           "error"
         ],
         "title": "ErrorResponse"
+      },
+      "ExplainLogIn": {
+        "properties": {
+          "log": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Log"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "log"
+        ],
+        "title": "ExplainLogIn"
       },
       "FeatureTotalsOut": {
         "properties": {
@@ -12465,6 +13040,56 @@
           "linked"
         ],
         "title": "LinkedOut"
+      },
+      "LogExplanationOut": {
+        "properties": {
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "likely_cause": {
+            "type": "string",
+            "title": "Likely Cause"
+          },
+          "key_lines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Lines"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "fallback": {
+            "type": "boolean",
+            "title": "Fallback"
+          },
+          "usage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Usage Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "summary",
+          "likely_cause",
+          "key_lines",
+          "error_type",
+          "fallback",
+          "usage_id"
+        ],
+        "title": "LogExplanationOut"
       },
       "LoginIn": {
         "properties": {

@@ -1133,6 +1133,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/ai/bug-writer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bug Writer
+         * @description Turn rough notes (and a log) into a structured bug report. A suggestion only: nothing is saved. `environment_id` and `component_id`
+         *     are ids of the project, never invented; `fallback` is true when the model could not help.
+         */
+        post: operations["bug_writer_api_v1_orgs__org_id__ai_bug_writer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/ai/explain-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Explain Log
+         * @description Explain what a log shows: the error, the likely cause and the key lines (the last 300 lines, 12,000 characters, are used).
+         */
+        post: operations["explain_log_api_v1_orgs__org_id__ai_explain_log_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{org_id}/ai/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Find Duplicates
+         * @description Open bugs of the project that look like this one (TF-IDF, up to five with a score of at least 0.25). No model is called.
+         */
+        post: operations["find_duplicates_api_v1_orgs__org_id__ai_duplicates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/ai/usage": {
         parameters: {
             query?: never;
@@ -1688,6 +1749,53 @@ export interface components {
             /** Release Id */
             release_id?: string | null;
         };
+        /** BugWriterIn */
+        BugWriterIn: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Notes */
+            notes: string;
+            /** Log */
+            log?: string | null;
+        };
+        /** BugWriterOut */
+        BugWriterOut: {
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Steps To Reproduce */
+            steps_to_reproduce: string[];
+            /** Expected Result */
+            expected_result: string;
+            /** Actual Result */
+            actual_result: string;
+            /** Environment */
+            environment: string | null;
+            /** Environment Id */
+            environment_id: string | null;
+            /** Component */
+            component: string | null;
+            /** Component Id */
+            component_id: string | null;
+            /**
+             * Suggested Severity
+             * @enum {string}
+             */
+            suggested_severity: "critical" | "high" | "medium" | "low";
+            /** Missing Information */
+            missing_information: string[];
+            /** Fallback */
+            fallback: boolean;
+            /**
+             * Usage Id
+             * Format: uuid
+             */
+            usage_id: string;
+        };
         /** BulkCasesIn */
         BulkCasesIn: {
             /** Cases */
@@ -1967,6 +2075,38 @@ export interface components {
             /** Reasons */
             reasons: string[];
         };
+        /** DuplicateCandidateOut */
+        DuplicateCandidateOut: {
+            bug: components["schemas"]["BugSummaryOut"];
+            /** Score */
+            score: number;
+        };
+        /** DuplicatesIn */
+        DuplicatesIn: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Title */
+            title: string;
+            /** Actual Result */
+            actual_result?: string | null;
+            /** Steps */
+            steps?: string[] | null;
+            /** Exclude Bug Id */
+            exclude_bug_id?: string | null;
+        };
+        /** DuplicatesOut */
+        DuplicatesOut: {
+            /** Candidates */
+            candidates: components["schemas"]["DuplicateCandidateOut"][];
+            /**
+             * Usage Id
+             * Format: uuid
+             */
+            usage_id: string;
+        };
         /** EnvironmentIn */
         EnvironmentIn: {
             /** Name */
@@ -2010,6 +2150,11 @@ export interface components {
         /** ErrorResponse */
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
+        };
+        /** ExplainLogIn */
+        ExplainLogIn: {
+            /** Log */
+            log: string;
         };
         /** FeatureTotalsOut */
         FeatureTotalsOut: {
@@ -2210,6 +2355,24 @@ export interface components {
         LinkedOut: {
             /** Linked */
             linked: number;
+        };
+        /** LogExplanationOut */
+        LogExplanationOut: {
+            /** Summary */
+            summary: string;
+            /** Likely Cause */
+            likely_cause: string;
+            /** Key Lines */
+            key_lines: string[];
+            /** Error Type */
+            error_type: string | null;
+            /** Fallback */
+            fallback: boolean;
+            /**
+             * Usage Id
+             * Format: uuid
+             */
+            usage_id: string;
         };
         /** LoginIn */
         LoginIn: {
@@ -9079,6 +9242,222 @@ export interface operations {
             };
             /** @description Validation error */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bug_writer_api_v1_orgs__org_id__ai_bug_writer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BugWriterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BugWriterOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    explain_log_api_v1_orgs__org_id__ai_explain_log_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExplainLogIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogExplanationOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    find_duplicates_api_v1_orgs__org_id__ai_duplicates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicatesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicatesOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

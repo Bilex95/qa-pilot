@@ -1,5 +1,6 @@
-"""AI usage: API-146 to API-148 (I-14). The feature endpoints (API-140 to API-145) arrive with I-15 to I-18 and go through
-`application/service.run`."""
+"""AI: the bug writer, explain this log and the duplicate detector (API-140, API-141, API-143; I-15) and the usage log (API-146 to
+API-148; I-14). Triage, the test case generator and the release summary (API-142, API-144, API-145) arrive with I-16 to I-18 and go through
+`application/service.run` too."""
 
 import uuid
 from datetime import date
@@ -10,7 +11,15 @@ from fastapi import APIRouter, Depends, Query, status
 from app.core.deps import DB, OrgContext, require
 from app.core.pagination import Page, PageParams, page_params
 from app.core.schemas import errors
-from app.modules.ai.application import integration, service
+from app.modules.ai.application import features, integration, service
+from app.modules.ai.schemas.features import (
+    BugWriterIn,
+    BugWriterOut,
+    DuplicatesIn,
+    DuplicatesOut,
+    ExplainLogIn,
+    LogExplanationOut,
+)
 from app.modules.ai.schemas.usage import Feature, FeatureTotalsOut, OutcomeIn, UsageOut, UsageSummaryOut
 from app.modules.auth.application import service as auth
 
@@ -18,6 +27,31 @@ integration.register()
 router = APIRouter(tags=["ai"])
 UsageRead = Annotated[OrgContext, Depends(require("ai.usage_read"))]
 Member = Annotated[OrgContext, Depends(require("org.read"))]
+
+
+BugWriter = Annotated[OrgContext, Depends(require("ai.bug_writer"))]
+LogReader = Annotated[OrgContext, Depends(require("ai.explain_log"))]
+Duplicates = Annotated[OrgContext, Depends(require("ai.duplicates"))]
+FEATURE_ERR = errors(401, 403, 404, 422, 429)
+
+
+@router.post("/orgs/{org_id}/ai/bug-writer", response_model=BugWriterOut, responses=FEATURE_ERR)
+def bug_writer(body: BugWriterIn, db: DB, ctx: BugWriter) -> BugWriterOut:
+    """Turn rough notes (and a log) into a structured bug report. A suggestion only: nothing is saved. `environment_id` and `component_id`
+    are ids of the project, never invented; `fallback` is true when the model could not help."""
+    return features.bug_writer(db, ctx.org, ctx.user.id, body)
+
+
+@router.post("/orgs/{org_id}/ai/explain-log", response_model=LogExplanationOut, responses=FEATURE_ERR)
+def explain_log(body: ExplainLogIn, db: DB, ctx: LogReader) -> LogExplanationOut:
+    """Explain what a log shows: the error, the likely cause and the key lines (the last 300 lines, 12,000 characters, are used)."""
+    return features.explain_log(db, ctx.org, ctx.user.id, body)
+
+
+@router.post("/orgs/{org_id}/ai/duplicates", response_model=DuplicatesOut, responses=FEATURE_ERR)
+def find_duplicates(body: DuplicatesIn, db: DB, ctx: Duplicates) -> DuplicatesOut:
+    """Open bugs of the project that look like this one (TF-IDF, up to five with a score of at least 0.25). No model is called."""
+    return features.duplicates(db, ctx.org, ctx.user.id, body)
 
 
 @router.get("/orgs/{org_id}/ai/usage", response_model=Page[UsageOut], responses=errors(401, 403, 404, 422))

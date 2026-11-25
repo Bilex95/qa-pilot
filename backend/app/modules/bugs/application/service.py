@@ -26,7 +26,7 @@ from app.modules.bugs.domain.filters import BugFilters
 from app.modules.bugs.domain.rules import DEFAULT_PRIORITY, DEFAULT_SEVERITY, sla_breached
 from app.modules.bugs.infrastructure import repository as repo
 from app.modules.bugs.infrastructure.models import Bug, Comment, SavedView
-from app.modules.bugs.schemas.bugs import BugCreateIn
+from app.modules.bugs.schemas.bugs import BugCreateIn, BugSummaryOut, LabelRef
 from app.modules.bugs.schemas.views import SavedViewFilters
 from app.modules.orgs.application import service as orgs
 from app.modules.projects.application import service as projects
@@ -98,6 +98,31 @@ def context_for(db: Session, org_id: uuid.UUID, bugs: list[Bug]) -> BugContext:
     people = {b.reporter_id for b in bugs} | {b.assignee_id for b in bugs if b.assignee_id}
     names = {uid: user.full_name for uid, user in auth.get_users_by_ids(db, list(people)).items()}
     return BugContext(labels=labels, names=names, now=utcnow())
+
+
+def summary_fields(bug: Bug, bc: BugContext) -> dict[str, object]:
+    """The fields of a bug summary (API-060 and everything that lists bugs), from the bug and the context of its page."""
+    return {
+        "id": bug.id, "key": bug.key, "number": bug.number, "project_id": bug.project_id, "title": bug.title,
+        "status": bug.status, "severity": bug.severity, "priority": bug.priority, "component_id": bug.component_id,
+        "environment_id": bug.environment_id, "reporter_id": bug.reporter_id,
+        "reporter_name": bc.names.get(bug.reporter_id, ""), "assignee_id": bug.assignee_id,
+        "assignee_name": bc.names.get(bug.assignee_id) if bug.assignee_id else None, "release_id": bug.release_id,
+        "labels": [LabelRef.model_validate(x) for x in bc.labels.get(bug.id, [])], "sla_breached": bc.sla(bug),
+        "created_at": bug.created_at, "updated_at": bug.updated_at,
+    }
+
+
+def summaries(db: Session, org_id: uuid.UUID, bugs: list[Bug]) -> list[BugSummaryOut]:
+    """Public contract (the AI duplicate detector): the summaries of these bugs, in this order."""
+    bc = context_for(db, org_id, bugs)
+    return [BugSummaryOut(**summary_fields(b, bc)) for b in bugs]  # type: ignore[arg-type]
+
+
+def open_bugs_of_project(db: Session, org_id: uuid.UUID, project_id: uuid.UUID, limit: int = 2000) -> list[Bug]:
+    """Public contract (the AI duplicate detector, D-013): the most recently created open bugs of a project, at most `limit`."""
+    stmt = repo.bugs_query(org_id, BugFilters(project_id=project_id, open=True, sort="-created_at"), utcnow()).limit(limit)
+    return list(db.scalars(stmt))
 
 
 @dataclass(frozen=True)

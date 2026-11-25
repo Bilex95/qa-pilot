@@ -42,7 +42,8 @@ def set_outcome(db: Session, org_id: uuid.UUID, usage_id: uuid.UUID, outcome: st
 def calls_since(db: Session, org_id: uuid.UUID, since: datetime) -> int:
     """Calls that count against the daily limit since `since`: the model was asked, or a fallback was served (not the refused ones)."""
     return int(db.scalar(select(func.count()).select_from(AIUsage).where(
-        AIUsage.org_id == org_id, AIUsage.created_at >= since, AIUsage.status.in_(COUNTED))) or 0)
+        AIUsage.org_id == org_id, AIUsage.created_at >= since, AIUsage.status.in_(COUNTED),
+        AIUsage.feature != "duplicates")) or 0)  # the duplicate detector costs nothing (D-070)
 
 
 def usage_query(org_id: uuid.UUID, *, feature: str | None, user_id: uuid.UUID | None, since: datetime | None,

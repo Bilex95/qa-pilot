@@ -126,6 +126,18 @@ def fallback_only[T: BaseModel](db: Session, org: Organization, user_id: uuid.UU
     return AIResult(value=value, fallback=True, usage_id=row.id, status="fallback")
 
 
+def log_local(db: Session, org: Organization, user_id: uuid.UUID, feature: str) -> uuid.UUID:
+    """The usage row of a feature that never asks a model and costs nothing (the duplicate detector, D-013, D-070): status `ok`, no tokens.
+    It is subject to the switch but not to the per minute window (the screen calls it while the person types, debounced) and does not
+    count against the daily limit of model calls."""
+    if not org.ai_enabled:
+        raise Forbidden("AI is turned off for this workspace.", code="ai_disabled", details={"action": f"ai.{feature}"})
+    row = repo.add(db, org_id=org.id, user_id=user_id, feature=feature, provider="local", model="tf-idf", status="ok", input_tokens=0,
+                   output_tokens=0, latency_ms=0)
+    db.commit()
+    return row.id
+
+
 # Usage log and outcome (API-146 to API-148) ---------------------------------------------------------------------------------------------
 
 def _range(start: date | None, end: date | None) -> tuple[datetime | None, datetime | None]:

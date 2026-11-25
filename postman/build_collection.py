@@ -1320,10 +1320,67 @@ folders = [
         req("Export of another workspace (API-133 cross tenant)", "GET", O + "/reports/bugs.csv", token="foreignToken",
             tests=[status(404), err("org_not_found")]),
         req("Delete the CSV check bug (cleanup)", "DELETE", O + "/bugs/{{csvBugId}}", token="leadToken", tests=[status(204)]),
-        req("Archive the Newman project (cleanup: it stays out of the Projects list)", "PATCH", f"{O}/projects/{{{{projectId}}}}",
-            token="adminToken", body={"archived": True}, tests=[status(200)]),
     ]},
-    {"name": "AI usage", "item": [
+    {"name": "AI", "item": [
+        # The bug writer, explain this log and the duplicate detector (I-15) on the mock provider, then their usage rows and outcomes
+        req("Bug writer (API-140)", "POST", O + "/ai/bug-writer", token="qaToken",
+            body={"project_id": "{{projectId}}", "notes": "Checkout crashes when I press Pay in prod\n1. Open the cart\n2. Press Pay"},
+            tests=[status(200), 'const b = pm.response.json(); pm.environment.set("aiUsageId", b.usage_id);',
+                   'pm.test("a draft with the severity and the steps", () => { const b = pm.response.json(); pm.expect(b.fallback).to.eql(false); '
+                   'pm.expect(b.title).to.include("Checkout crashes"); pm.expect(b.suggested_severity).to.eql("critical"); '
+                   'pm.expect(b.steps_to_reproduce).to.eql(["Open the cart", "Press Pay"]); pm.expect(b.environment).to.eql("prod"); '
+                   'pm.expect(b.environment_id).to.be.a("string"); });']),
+        req("Bug writer saved nothing (API-140)", "GET", f"{O}/bugs?project_id={{{{projectId}}}}&q=Checkout%20crashes", token="leadToken",
+            tests=[status(200), 'pm.test("no bug was created", () => pm.expect(pm.response.json().total).to.eql(0));']),
+        req("Bug writer as Viewer (API-140 forbidden)", "POST", O + "/ai/bug-writer", token="viewerToken",
+            body={"project_id": "{{projectId}}", "notes": "x"}, tests=[status(403), err("forbidden")]),
+        req("Bug writer without token (API-140 unauthorized)", "POST", O + "/ai/bug-writer", body={"project_id": "{{projectId}}", "notes": "x"},
+            tests=[status(401)]),
+        req("Bug writer in another workspace (API-140 cross tenant)", "POST", O + "/ai/bug-writer", token="foreignToken",
+            body={"project_id": "{{projectId}}", "notes": "x"}, tests=[status(404), err("org_not_found")]),
+        req("Bug writer without notes (API-140 invalid)", "POST", O + "/ai/bug-writer", token="qaToken", body={"project_id": "{{projectId}}"},
+            tests=[status(422), err("validation_error")]),
+        req("Bug writer with an unknown project (API-140 invalid)", "POST", O + "/ai/bug-writer", token="qaToken",
+            body={"project_id": "00000000-0000-4000-8000-000000000000", "notes": "x"}, tests=[status(422), err("validation_error")]),
+        req("Explain this log (API-141)", "POST", O + "/ai/explain-log", token="devToken",
+            body={"log": "INFO start\nKeyError: 'order_id'\nERROR request failed"},
+            tests=[status(200), 'pm.test("the error and its lines", () => { const b = pm.response.json(); pm.expect(b.fallback).to.eql(false); '
+                   'pm.expect(b.error_type).to.eql("KeyError"); pm.expect(b.key_lines).to.eql(["KeyError: \'order_id\'", "ERROR request failed"]); '
+                   'pm.expect(b.usage_id).to.be.a("string"); });']),
+        req("Explain this log as Viewer (API-141 forbidden)", "POST", O + "/ai/explain-log", token="viewerToken", body={"log": "x"},
+            tests=[status(403), err("forbidden")]),
+        req("Explain this log without token (API-141 unauthorized)", "POST", O + "/ai/explain-log", body={"log": "x"}, tests=[status(401)]),
+        req("Explain this log in another workspace (API-141 cross tenant)", "POST", O + "/ai/explain-log", token="foreignToken",
+            body={"log": "x"}, tests=[status(404), err("org_not_found")]),
+        req("Explain this log with an empty log (API-141 invalid)", "POST", O + "/ai/explain-log", token="qaToken", body={"log": "  "},
+            tests=[status(422), err("validation_error")]),
+        req("Duplicates finds a similar open bug (API-143)", "POST", O + "/ai/duplicates", token="qaToken",
+            body={"project_id": "{{projectId}}", "title": "Newman: checkout button is dead"},
+            tests=[status(200), 'pm.test("candidates with a bug and a score", () => { const b = pm.response.json(); pm.expect(b.candidates).to.be.an("array"); '
+                   'pm.expect(b.usage_id).to.be.a("string"); b.candidates.forEach(c => { pm.expect(c.score).to.be.within(0.25, 1); '
+                   'pm.expect(c.bug.key).to.be.a("string"); }); });']),
+        req("Duplicates as Viewer (API-143 forbidden)", "POST", O + "/ai/duplicates", token="viewerToken",
+            body={"project_id": "{{projectId}}", "title": "x"}, tests=[status(403), err("forbidden")]),
+        req("Duplicates without token (API-143 unauthorized)", "POST", O + "/ai/duplicates", body={"project_id": "{{projectId}}", "title": "x"},
+            tests=[status(401)]),
+        req("Duplicates in another workspace (API-143 cross tenant)", "POST", O + "/ai/duplicates", token="foreignToken",
+            body={"project_id": "{{projectId}}", "title": "x"}, tests=[status(404), err("org_not_found")]),
+        req("Duplicates without a title (API-143 invalid)", "POST", O + "/ai/duplicates", token="qaToken", body={"project_id": "{{projectId}}"},
+            tests=[status(422), err("validation_error")]),
+        req("Outcome of the bug writer suggestion (API-148)", "POST", O + "/ai/usage/{{aiUsageId}}/outcome", token="qaToken",
+            body={"outcome": "accepted"}, tests=[status(204)]),
+        req("Outcome a second time (API-148 conflict)", "POST", O + "/ai/usage/{{aiUsageId}}/outcome", token="qaToken",
+            body={"outcome": "discarded"}, tests=[status(409), err("outcome_set")]),
+        req("Outcome of someone else's suggestion (API-148 not found)", "POST", O + "/ai/usage/{{aiUsageId}}/outcome", token="devToken",
+            body={"outcome": "accepted"}, tests=[status(404), err("not_found")]),
+        req("The usage log shows the calls (API-146)", "GET", O + "/ai/usage?feature=bug_writer", token="leadToken",
+            tests=[status(200), 'pm.test("the call, its outcome and no text", () => { const row = pm.response.json().items.find(i => i.id === pm.environment.get("aiUsageId")); '
+                   'pm.expect(row.status).to.eql("ok"); pm.expect(row.outcome).to.eql("accepted"); pm.expect(row.user_name).to.be.a("string"); '
+                   'pm.expect(row).to.not.have.any.keys("prompt", "response", "text"); });']),
+        req("The summary counts the features (API-147)", "GET", O + "/ai/usage/summary", token="leadToken",
+            tests=[status(200), 'pm.test("bug writer, explain log and duplicates", () => { const by = {}; pm.response.json().totals_by_feature.forEach(t => by[t.feature] = t); '
+                   'pm.expect(by.bug_writer.calls).to.be.at.least(1); pm.expect(by.bug_writer.acceptance_rate).to.eql(100); '
+                   'pm.expect(by.explain_log.calls).to.be.at.least(1); pm.expect(by.duplicates.input_tokens).to.eql(0); });']),
         # No AI feature endpoint exists yet (I-15 to I-18), so the success path of the outcome is covered by pytest; here the log, the summary
         # and the refusals of the outcome endpoint
         req("List AI usage as QA Lead (API-146)", "GET", O + "/ai/usage?page_size=25", token="leadToken",
@@ -1361,6 +1418,8 @@ folders = [
             body={"outcome": "accepted"}, tests=[status(401)]),
         req("Outcome in another workspace (API-148 cross tenant)", "POST", O + "/ai/usage/00000000-0000-4000-8000-000000000000/outcome",
             token="foreignToken", body={"outcome": "accepted"}, tests=[status(404), err("org_not_found")]),
+        req("Archive the Newman project (cleanup: it stays out of the Projects list)", "PATCH", f"{O}/projects/{{{{projectId}}}}",
+            token="adminToken", body={"archived": True}, tests=[status(200)]),
     ]},
     {"name": "Sign out", "item": [
         req("Logout (API-013)", "POST", "/api/v1/auth/logout", token="adminToken", body={"refresh_token": "{{adminRefresh}}"},
