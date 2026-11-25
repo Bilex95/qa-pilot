@@ -21,7 +21,7 @@ Requirements: REQ-011, REQ-012, REQ-052, REQ-053
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-20**: [`settings-default-desktop.png`](../../design/screenshots/settings-default-desktop.png), [`settings-default-mobile.png`](../../design/screenshots/settings-default-mobile.png), [`settings-profile-desktop.png`](../../design/screenshots/settings-profile-desktop.png), [`settings-loading-desktop.png`](../../design/screenshots/settings-loading-desktop.png), [`settings-error-desktop.png`](../../design/screenshots/settings-error-desktop.png)
 

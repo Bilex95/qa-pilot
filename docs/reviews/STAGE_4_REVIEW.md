@@ -203,7 +203,7 @@ Worst p95 is 54 ms against the 300 ms limit. Search is the slowest part, about t
 
 #### D. Backend addition after review: the unassigned filter (D-051)
 
-`unassigned=true` on `GET /bugs` returns bugs nobody is assigned to (`false` the assigned ones); `assignee_id` together with `unassigned=true` is a 422, and saved view filters accept the key with the same rule. Evidence: pytest 399 passed (ruff and mypy clean), Newman 184 requests and 295 assertions, 0 failed, OpenAPI types regenerated. Commits `9668292`, `3db68b2`, `ccf7f02`.
+`unassigned=true` on `GET /bugs` returns bugs nobody is assigned to (`false` the assigned ones); `assignee_id` together with `unassigned=true` is a 422, and saved view filters accept the key with the same rule. Evidence: pytest 399 passed (ruff and mypy clean), Newman 184 requests and 295 assertions, 0 failed, OpenAPI types regenerated. Commits `465d530`, `e149a06`, `7e7e0e9`.
 
 ### I-03 Bugs, frontend part (SCR-08, SCR-11; D-051)
 
@@ -240,7 +240,7 @@ Side by side images: `e2e/parity/stage4/i03/compare/*.png` (locked on the left, 
 
 Backlog: BL-015 (create a label on the spot), BL-016 (`is_production` flag), BL-017 (rename a saved view).
 
-After the first review of the I-03 frontend (commit `b632541`): the Status filter says "All open" (approved), the Environment starts at None (approved), "Clear filters" now stays in the filter row at 1440 px and the browser's own clear button in the search box is hidden (prototype CSS first, `globals.css` regenerated; `type="search"` kept). The wrap was fixed by the shorter label alone: the widest option in the Status select is now "Ready for retest" instead of "Open (not finished)". Before and after: `e2e/parity/stage4/i03/compare/bug-list-empty-desktop-BEFORE-wrap-fix.png` and `bug-list-empty-desktop.png`. The layout check passed again (445 states) and the parity pair was recaptured.
+After the first review of the I-03 frontend (commit `cdec97c`): the Status filter says "All open" (approved), the Environment starts at None (approved), "Clear filters" now stays in the filter row at 1440 px and the browser's own clear button in the search box is hidden (prototype CSS first, `globals.css` regenerated; `type="search"` kept). The wrap was fixed by the shorter label alone: the widest option in the Status select is now "Ready for retest" instead of "Open (not finished)". Before and after: `e2e/parity/stage4/i03/compare/bug-list-empty-desktop-BEFORE-wrap-fix.png` and `bug-list-empty-desktop.png`. The layout check passed again (445 states) and the parity pair was recaptured.
 
 ### I-06 Test suites and test cases, backend part (REQ-030, REQ-031; D-052)
 
@@ -260,7 +260,7 @@ What the new tests pin down: a QA role writes a case with four steps and a Devel
 
 Notes for review: `GET /test-cases/{case_ref}` accepts a key like `TC-103` (an addition to API-097, as for bugs); `case_type` has four values in the API and the UI will offer three (D-052); `last_run_pass_rate` is `null` until I-07.
 
-After the first review (commit `c23000f`): the API, the check constraint, DOMAIN_MODEL and API_INVENTORY now agree on three case types (`other` removed); case titles are 5 to 200 characters with tests at 4, 5, 200 and 201 on create, edit and bulk; D-053 records the one CSS rule added to the locked prototype (the exact diff is in the decision), and `scripts/validate-design.ps1` passes. Retest after the change: ruff and mypy clean, pytest 574 passed, Newman 256 requests and 420 assertions, 0 failed. One finding: the first Newman run after the change failed 6 assertions in the cross tenant requests, because a body that is invalid by itself (a 4 character title) now returns 422 before the org check returns 404; those requests now carry valid bodies.
+After the first review (commit `f65e099`): the API, the check constraint, DOMAIN_MODEL and API_INVENTORY now agree on three case types (`other` removed); case titles are 5 to 200 characters with tests at 4, 5, 200 and 201 on create, edit and bulk; D-053 records the one CSS rule added to the locked prototype (the exact diff is in the decision), and `scripts/validate-design.ps1` passes. Retest after the change: ruff and mypy clean, pytest 574 passed, Newman 256 requests and 420 assertions, 0 failed. One finding: the first Newman run after the change failed 6 assertions in the cross tenant requests, because a body that is invalid by itself (a 4 character title) now returns 422 before the org check returns 404; those requests now carry valid bodies.
 
 ### I-06 Test suites and test cases, frontend part (SCR-12, SCR-13; D-054)
 
@@ -299,7 +299,7 @@ Backlog: none added in this part.
 
 ### I-23 Password reset links and secrets out of URLs (REQ-010, BL-014; D-055)
 
-Backend: migration `0010_password_resets`, invitation endpoints with the token in the body (API-030, API-031), reset link, preview and confirm (API-151 to API-153), sessions that end on a reset or a password change, and a password change that returns a fresh token pair for the device used (commits `cfb9ba1`, `1af7cee`, `adc120f`, `b236d13`, `3552994`). Frontend: invite and reset links carry the token in the fragment, the Forgot password and Reset password pages, the Reset password action on Members with its link dialog, and the secret page headers.
+Backend: migration `0010_password_resets`, invitation endpoints with the token in the body (API-030, API-031), reset link, preview and confirm (API-151 to API-153), sessions that end on a reset or a password change, and a password change that returns a fresh token pair for the device used (commits `bb4c3cf`, `9dd2621`, `bb98f7f`, `5f67fb5`, `5c85168`). Frontend: invite and reset links carry the token in the fragment, the Forgot password and Reset password pages, the Reset password action on Members with its link dialog, and the secret page headers.
 
 #### J. Checks
 
@@ -540,7 +540,7 @@ The pass found one real gap: **Projects (SCR-06) and Project overview (SCR-07) h
 | Lint, typecheck, `next build` | Clean; `/o/[org]/projects` and `/o/[org]/projects/[key]` in the route list |
 | `e2e/scripts/check-projects-flow.mjs` | **PASS** (list figures; New project validation, taken key WEB, key in capitals; overview of a new project; components added, refused, renamed, kept on Cancel, deleted; environments added and deleted; the data project's figures, bugs and run; Edit project; Archive; Developer and Viewer read only; not found and 404) |
 | `e2e/scripts/check-app-axe.mjs` (new) | **PASS**: axe, WCAG 2.0 and 2.1 A and AA, 16 screens at 1440 and 390 px, no violations (run before the project overview was added to the list; it is in the next run) |
-| CI (2026-11-25) | The run for 710a3d9 failed only in the layout step, after 50 minutes: on a fresh database the layout fixture started the failed run twice and used the untouched one (fixed, D-068). Backend, frontend, contract and Newman jobs were green on I-12. The browser checks are now parallel jobs (layout in five shards, flows in three groups, parity) |
+| CI (2026-11-25) | The run for a541e3e failed only in the layout step, after 50 minutes: on a fresh database the layout fixture started the failed run twice and used the untouched one (fixed, D-068). Backend, frontend, contract and Newman jobs were green on I-12. The browser checks are now parallel jobs (layout in five shards, flows in three groups, parity) |
 | Flows on the seeded data | All twelve other scripts passed on the seeded baseline earlier today (I-12). **Not rerun after the I-13 changes:** the run of all scripts was stopped for low memory (see below). The I-13 changes that could affect them are the project figures on API-040 and API-042 and the rename of the layout check's labels |
 | Layout (local) | **Not run for the projects states** (added to `check-app-layout.mjs`): no local layout run was started after the earlier low memory stop. CI runs it |
 | **Memory** | **The machine ran out of memory twice today** (the 390 px layout run for I-09, and the run of all flow scripts for I-13), so under the autonomy rules the work stops here for a decision: see Open decisions in PROGRESS |

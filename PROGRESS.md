@@ -22,7 +22,7 @@
 * I-16 AI Triage (D-072): API-142, the AI triage panel on the bug page (Accept is the normal PATCH with activity), layout states, parity compared. Verified: pytest 1670, Newman 600 requests and 1036 assertions, lint, typecheck, build, AI flow.
 
 ## Stage 4 plan (docs/issues/DAG.md)
-- [ ] 4A: I-01 projects, components, environments (done, 53bbea8, 82dd4f7); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
+- [ ] 4A: I-01 projects, components, environments (done, 719da8c, 3beb83b); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete
 - [ ] 4B: I-03 bugs (done, see Done); I-06 suites and cases (done, see Done); I-11 settings (done, see Done); I-23 password reset (done, see Done)
 - [ ] 4C: I-04 workflow and board (done, see Done); I-05 bug detail (done, see Done); I-07 runs (done, see Done)
 - [ ] 4D: I-08 releases (done, see Done)

@@ -330,7 +330,7 @@ CI for the updated PR: see section 10.
 | ESLint 10 upgrade | BL-007 (already logged, D-038) |
 | Standing responsive rule | D-044, `CLAUDE.md`, every UI issue's test list (`scripts/build_issues.py`) |
 
-## 10. CI after the fixes (PR #2, run 44084686414, commit 11d139a)
+## 10. CI after the fixes (PR #2, run 44084686414, commit 40f41b0)
 
 ```
 conclusion=success

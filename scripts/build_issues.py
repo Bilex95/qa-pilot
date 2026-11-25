@@ -346,7 +346,7 @@ def render(i: Issue) -> str:
              *([f"* Migration: `{i.migration}`"] if i.migration else []), ""]
     if i.screens:
         lines += ["## UI states and committed screenshots", "",
-                  "Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).", ""]
+                  "Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).", ""]
         for s in i.screens:
             files = [f for f in SHOT_FILES if f.startswith(slug_of(s) + "-")]
             lines.append(f"* **{s}**: " + ", ".join(f"[`{f}`](../../design/screenshots/{f})" for f in files))

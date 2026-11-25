@@ -25,7 +25,7 @@ Requirements: REQ-030, REQ-031
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-12**: [`test-suites-default-desktop.png`](../../design/screenshots/test-suites-default-desktop.png), [`test-suites-default-mobile.png`](../../design/screenshots/test-suites-default-mobile.png), [`test-suites-empty-desktop.png`](../../design/screenshots/test-suites-empty-desktop.png), [`test-suites-loading-desktop.png`](../../design/screenshots/test-suites-loading-desktop.png), [`test-suites-error-desktop.png`](../../design/screenshots/test-suites-error-desktop.png)
 * **SCR-13**: [`test-case-editor-default-desktop.png`](../../design/screenshots/test-case-editor-default-desktop.png), [`test-case-editor-default-mobile.png`](../../design/screenshots/test-case-editor-default-mobile.png), [`test-case-editor-ai-desktop.png`](../../design/screenshots/test-case-editor-ai-desktop.png), [`test-case-editor-loading-desktop.png`](../../design/screenshots/test-case-editor-loading-desktop.png), [`test-case-editor-error-desktop.png`](../../design/screenshots/test-case-editor-error-desktop.png)

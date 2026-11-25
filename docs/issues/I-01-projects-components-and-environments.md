@@ -25,7 +25,7 @@ Requirements: REQ-013, REQ-014, REQ-015, REQ-016
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-06**: [`projects-default-desktop.png`](../../design/screenshots/projects-default-desktop.png), [`projects-default-mobile.png`](../../design/screenshots/projects-default-mobile.png), [`projects-empty-desktop.png`](../../design/screenshots/projects-empty-desktop.png), [`projects-loading-desktop.png`](../../design/screenshots/projects-loading-desktop.png), [`projects-error-desktop.png`](../../design/screenshots/projects-error-desktop.png)
 * **SCR-07**: [`project-overview-default-desktop.png`](../../design/screenshots/project-overview-default-desktop.png), [`project-overview-default-mobile.png`](../../design/screenshots/project-overview-default-mobile.png), [`project-overview-empty-desktop.png`](../../design/screenshots/project-overview-empty-desktop.png), [`project-overview-loading-desktop.png`](../../design/screenshots/project-overview-loading-desktop.png), [`project-overview-error-desktop.png`](../../design/screenshots/project-overview-error-desktop.png)

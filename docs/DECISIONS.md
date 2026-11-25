@@ -313,7 +313,7 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 
 
 ## D-053 Approved edit to the locked prototype: no native clear button in the filter search box
-* **What changed:** one CSS rule was added to `design/reference/approved.html`, directly after `.filters .search-f` (commit `b632541`):
+* **What changed:** one CSS rule was added to `design/reference/approved.html`, directly after `.filters .search-f` (commit `cdec97c`):
   ```
   .filters .search-f::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
   ```
