@@ -231,7 +231,7 @@ jobs:
       - name: Capture
         working-directory: e2e
         run: |
-          for f in capture-bugs-parity capture-tests-parity capture-members-parity capture-settings-parity capture-board-parity capture-bug-detail-parity capture-runs-parity capture-releases-parity capture-dashboard-parity capture-projects-parity capture-ai-parity; do
+          for f in capture-bugs-parity capture-tests-parity capture-members-parity capture-settings-parity capture-board-parity capture-bug-detail-parity capture-runs-parity capture-releases-parity capture-dashboard-parity capture-projects-parity capture-ai-parity capture-triage-parity; do
             echo "== $f"; node "scripts/$f.mjs" || true
           done
         shell: bash

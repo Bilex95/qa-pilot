@@ -1030,6 +1030,30 @@ for (const vp of VIEWPORTS.filter(wanted)) {
   await page.waitForSelector('.timeline li[data-comment-id]');
   await page.getByRole('button', { name: /^Download / }).first().waitFor();
   await check('bug detail', { shot: 'bug-detail' });
+  // AI triage (I-16): thinking, the suggestion with its long reason, discarded, and a suggestion that failed
+  step = 'ask the AI for a triage';
+  const triageUrl = /\/api\/v1\/orgs\/[^/]+\/ai\/triage$/;
+  await page.route(triageUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.getByRole('button', { name: 'Suggest triage' }).click();
+  await page.waitForSelector('.ai-panel .thinking');
+  await check('bug detail: AI triage thinking', { shot: 'bug-detail-triage-thinking' });
+  await page.waitForSelector('.ai-panel .suggest');
+  await page.unroute(triageUrl);
+  await check('bug detail: AI triage suggestion', { shot: 'bug-detail-triage' });
+  await page.locator('.ai-panel').getByRole('button', { name: 'Discard' }).click();
+  await page.waitForSelector('.ai-panel :text("Discarded.")');
+  await check('bug detail: AI triage discarded', { shot: 'bug-detail-triage-discarded' });
+  step = 'show a triage that failed';
+  const triageCors = { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'POST,OPTIONS' };
+  await page.route(triageUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: triageCors })
+    : route.fulfill({ status: 200, contentType: 'application/json', headers: triageCors, body: JSON.stringify({
+      severity: null, priority: null, component: null, component_id: null, reason: 'The assistant could not suggest a triage.', confidence: null,
+      fallback: true, usage_id: '00000000-0000-4000-8000-000000000000' }) }));
+  await page.getByRole('button', { name: 'Suggest again' }).click();
+  await page.waitForSelector('.ai-panel .suggest[role="status"]');
+  await check('bug detail: AI triage failed', { shot: 'bug-detail-triage-failed' });
+  await page.unroute(triageUrl);
   step = 'open the steps editor';
   await page.getByRole('button', { name: 'Edit steps to reproduce' }).click();
   await page.waitForSelector('#e-step-1');

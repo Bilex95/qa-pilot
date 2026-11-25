@@ -30,6 +30,17 @@ export function useBugWriter() {
   });
 }
 
+export type TriageSuggestion = Schemas["TriageOut"];
+
+/** API-142: severity, priority and component for a saved bug. A suggestion only; accepting it is the normal bug update. */
+export function useTriage() {
+  const org = useOrg();
+  return useMutation({
+    mutationFn: (bugId: string) =>
+      unwrap(api.POST("/api/v1/orgs/{org_id}/ai/triage", { params: { path: { org_id: org.id } }, body: { bug_id: bugId } })),
+  });
+}
+
 /** API-141: what a log shows. */
 export function useExplainLog() {
   const org = useOrg();

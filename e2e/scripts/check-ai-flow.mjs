@@ -1,4 +1,4 @@
-// I-15 acceptance flow: the AI Bug Writer, Explain this log and the duplicate warning on the New bug screen (SCR-11): a draft fills the form
+// I-15 and I-16 acceptance flow (the last part is AI triage on the bug page): the AI Bug Writer, Explain this log and the duplicate warning on the New bug screen (SCR-11): a draft fills the form
 // and nothing is saved, Discard puts the form back, Edit keeps it and focuses the title, Accept keeps it and the saved bug is marked AI
 // assisted, every outcome reaches the usage log, a failed suggestion says so, a log is explained into the actual result, similar open bugs
 // are warned about after 600 ms and only for a title of 8 characters, a Developer cannot set severity, nothing shows with AI off.
@@ -197,6 +197,30 @@ async function main() {
     check((await page.locator('.dupes').count()) === 0, 'an unrelated title shows the warning');
     log('duplicates: the similar open bug with its score after the typing stops; none for 3 characters or an unrelated title');
 
+    // 7b. AI triage on the bug page (I-16): nothing changes until Accept; Accept is a normal update with activity and an outcome
+    const triaged = (await api(`${O()}/bugs`, { method: 'POST', token: T, body: { project_id: state.project.id, title: 'Payment error on Checkout in prod', severity: 'low', priority: 'p4' } })).json;
+    check(triaged?.id, 'could not create the bug to triage');
+    await page.goto(`${BASE}/o/lumen/bugs/${triaged.key}`);
+    await page.getByRole('heading', { name: 'AI triage' }).waitFor();
+    await page.getByRole('button', { name: 'Suggest triage' }).click();
+    await page.locator('.ai-panel .suggest', { hasText: 'AI suggestion, not saved' }).waitFor();
+    const shownText = await page.locator('.ai-panel .suggest').innerText();
+    check(/Critical/.test(shownText) && /P1/.test(shownText) && shownText.includes('Checkout') && /payment/.test(shownText), 'the suggestion is not Critical, P1, Checkout with its reason');
+    let now = (await api(`${O()}/bugs/${triaged.id}`, { token: T })).json;
+    check(now.severity === 'low' && now.priority === 'p4' && now.component_id === null, 'asking for a triage changed the bug');
+    await page.locator('.ai-panel').getByRole('button', { name: 'Accept' }).click();
+    await toast('Triage applied: Critical, P1, Checkout').waitFor();
+    await eventually(async () => (await api(`${O()}/bugs/${triaged.id}`, { token: T })).json.severity === 'critical', 'Accept did not change the bug');
+    now = (await api(`${O()}/bugs/${triaged.id}`, { token: T })).json;
+    check(now.priority === 'p1' && now.component_id !== null, 'Accept did not change priority and component');
+    const trail = (await api(`${O()}/bugs/${triaged.id}/activity`, { token: T })).json.items.map((e) => e.field);
+    check(['severity', 'priority', 'component'].every((f) => trail.includes(f)), 'Accept wrote no activity entries');
+    await eventually(async () => (await usage('triage'))[0]?.outcome === 'accepted', 'the triage outcome is not in the log');
+    await page.getByRole('button', { name: 'Suggest again' }).click();
+    await page.locator('.ai-panel').getByRole('button', { name: 'Discard' }).click();
+    await eventually(async () => (await usage('triage'))[0]?.outcome === 'discarded', 'the discarded triage is not in the log');
+    log('triage: nothing changes on ask, Accept sets Critical, P1 and Checkout with activity entries, outcomes are in the log');
+
     // 8. A Developer: severity stays Medium, the draft still fills the rest
     const dctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const d = await dctx.newPage();
@@ -209,8 +233,11 @@ async function main() {
     await d.locator('.suggest', { hasText: 'AI suggestion, not saved' }).waitFor();
     check((await d.inputValue('#n-title')).startsWith('Checkout crashes') && (await d.inputValue('#n-sev')) === 'medium', 'the Developer draft is wrong');
     check(!(await d.locator('.suggest').first().innerText()).includes('severity'), 'the suggestion offers a severity to a Developer');
+    await d.goto(`${BASE}/o/lumen/bugs/${triaged.key}`);
+    await d.getByRole('heading', { name: 'Details', exact: true }).waitFor();
+    check((await d.locator('.ai-panel').count()) === 0, 'a Developer sees the AI triage panel');
     await dctx.close();
-    log('Developer: severity stays Medium and disabled, the rest of the draft fills in');
+    log('Developer: severity stays Medium and disabled, the rest of the draft fills in, no triage panel');
 
     // 9. AI off: nothing AI anywhere on the screen
     check((await api(`/orgs/${state.orgId}`, { method: 'PATCH', token: state.adminToken, body: { ai_enabled: false } })).status === 200, 'could not turn AI off');
@@ -222,6 +249,12 @@ async function main() {
     check((await page.locator('.ai-panel').count()) === 0 && (await page.locator('.dupes').count()) === 0, 'AI controls show with AI off');
     const refused = await api(`${O()}/ai/bug-writer`, { method: 'POST', token: await login(qa.email), body: { project_id: state.project.id, notes: 'x' } });
     check(refused.status === 403 && refused.json.error.code === 'ai_disabled', `the API answered ${refused.status} with AI off`);
+    await page.goto(`${BASE}/o/lumen/bugs/${triaged.key}`);
+    await page.getByRole('heading', { name: 'Details', exact: true }).waitFor();
+    await page.waitForTimeout(1500);
+    check((await page.locator('.ai-panel').count()) === 0, 'the triage panel shows with AI off');
+    const refusedTriage = await api(`${O()}/ai/triage`, { method: 'POST', token: await login(qa.email), body: { bug_id: triaged.id } });
+    check(refusedTriage.status === 403 && refusedTriage.json.error.code === 'ai_disabled', `triage answered ${refusedTriage.status} with AI off`);
     await api(`/orgs/${state.orgId}`, { method: 'PATCH', token: state.adminToken, body: { ai_enabled: true } });
     log('AI off: no panel and no warning on the screen, the API answers 403 ai_disabled');
 

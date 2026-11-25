@@ -16,7 +16,8 @@ import { can } from "@/lib/permissions";
 import { useSession } from "@/lib/session/session-provider";
 import { TRANSITION_LABEL, allowedTargets } from "@/modules/board/workflow";
 import { useWorkflow } from "@/modules/board/hooks";
-import { useOrg } from "@/modules/shell/org-context";
+import { AiTriagePanel, useTriagePanel } from "@/modules/ai/components/ai-triage-panel";
+import { useAiEnabled, useOrg } from "@/modules/shell/org-context";
 
 import { PriorityTag, SeverityBadge, SlaBadge, StatusBadge } from "./components/bug-badges";
 import { BugDetailsPanel } from "./components/bug-details-panel";
@@ -28,7 +29,7 @@ import { STATUS_NAME, timeAgo } from "./schemas";
 
 /**
  * SCR-10 Bug detail (API-063, API-065, API-066; REQ-018 and REQ-019): the bug, its status buttons, its files, its thread and its
- * details. The AI triage panel arrives with I-16. `bugRef` is the key from the address (WEB-42).
+ * details. The AI triage panel (I-16) sits in the side column. `bugRef` is the key from the address (WEB-42).
  */
 export function BugDetailPage({ bugRef }: { bugRef: string }) {
   const org = useOrg();
@@ -90,6 +91,8 @@ function Loaded({ bug, crumbs }: { bug: BugDetail; crumbs: React.ReactNode }) {
   const refresh = useRefreshBug();
   const workflow = useWorkflow();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const triage = useTriagePanel(bug);
+  const triageOn = useAiEnabled() && can(org.role, "ai.triage");
   const who = { role: org.role, userId: me?.user.id };
   const targets = allowedTargets(workflow.data, bug, who);
   // Title, description and labels: anyone who may edit bugs; a Developer only on a bug they reported (D-006, API-063)
@@ -175,7 +178,9 @@ function Loaded({ bug, crumbs }: { bug: BugDetail; crumbs: React.ReactNode }) {
           </section>
         </div>
         <aside className="stack">
+          {triageOn && triage.open ? <AiTriagePanel panel={triage} /> : null}
           <BugDetailsPanel bug={bug} />
+          {triageOn && !triage.open ? <AiTriagePanel panel={triage} /> : null}
         </aside>
       </div>
       {confirmDelete ? (
