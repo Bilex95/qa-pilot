@@ -14,7 +14,8 @@ description: Use when running checks, gates, commits or pushes in QA Pilot: how 
 * Helper scripts live in `C:/Users/HP/qa-pilot/scripts/` only. `.claude/settings.local.json` holds this machine's allow, ask and deny lists (not committed).
 
 ## Gate runs
-* Backend ruff, mypy and pytest: `with-wsl.ps1 -Up` then `py-checks.ps1`. Contract regeneration: `api-types.ps1` the same way.
+* All local gates in one command: `& C:\Users\HP\qa-pilot\scripts\gate.ps1` (frontend lint, typecheck, build, then ruff, mypy, pytest, in one held WSL session; `-Only frontend` or `-Only python`). It prints one PASS or FAIL line per part and writes the full output to `.gate\gate-frontend.txt` and `.gate\gate-python.txt` (Grep those for failure lines).
+* Backend ruff, mypy and pytest alone: `with-wsl.ps1 -Up` then `py-checks.ps1`. Contract regeneration: `api-types.ps1` the same way.
 * Newman: `scripts/newman.ps1` (baseline seed needed). Postman collection is generated: edit `postman/build_collection.py`, run it.
 * Frontend: `npm run lint`, `npm run typecheck`, `npm run build` in `frontend`.
 * Design: `scripts/validate-design.ps1`. Seed: `scripts/seed.ps1`. Flows: `scripts/run-flows.ps1` (only the screens you changed; the full set runs in CI).
@@ -28,4 +29,4 @@ Every script that creates fixtures cleans them up in `finally`, including revoki
 Small conventional commits on `stage/<n>-<name>`. Push only with `bash scripts/safe-push.sh <branch>` (tags: `--tag <name>`). If it blocks on the commit email, stop and tell the human. Never force push, never push to main, never make the repo public. End of stage: PR into main, on APPROVED `gh pr merge --merge`, tag `stage-<n>-approved`.
 
 ## CI
-Never poll or wait for CI. Push, continue, and check each run once later: `gh run list --branch <branch> --limit 5`, then `gh run view <id> --log-failed` (job logs: `gh api repos/Bilex95/qa-pilot/actions/jobs/<id>/logs`). Read only failure lines. Fix, push, check once again. Stop only if CI stays red after two honest fixes of the same failure.
+Never poll or wait for CI in the conversation. To be told when a run ends, start `bash scripts/wait-ci.sh <commit>` as a background monitor: it prints nothing until the run finishes, then `run <id> <conclusion>` and the failed job names (exit 0 green, 1 red, 2 not found or timed out). Otherwise push, continue, and check each run once later: `gh run list --branch <branch> --limit 5`, then `gh run view <id> --log-failed` (job logs: `gh api repos/Bilex95/qa-pilot/actions/jobs/<id>/logs`). Read only failure lines. Fix, push, check once again. Stop only if CI stays red after two honest fixes of the same failure.
