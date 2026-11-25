@@ -132,10 +132,10 @@ async function main() {
     await page.fill('#rl-t', '2026-12-24');
     await page.fill('#rl-d', 'The flow release');
     await page.getByRole('button', { name: 'Plan release' }).click();
+    await toast('planned').waitFor(); // before the page loads: a cold dev server can take longer than the toast stays
     await page.waitForURL(/\/o\/lumen\/releases\/[0-9a-f-]{36}$/);
     const releaseId = page.url().split('/').pop();
     state.releases.push({ id: releaseId, name: RELEASE_NAME });
-    await toast('planned').waitFor();
     await page.getByRole('heading', { name: RELEASE_NAME }).waitFor();
     check((await badge().innerText()).trim() === 'At risk', 'a new release is not At risk');
     check((await reasons()).join('|') === 'No test runs linked', `the reasons of a new release: ${await reasons()}`);

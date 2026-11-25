@@ -122,9 +122,9 @@ async function main() {
     await page.selectOption('#nr-e', { label: env.name });
     await page.getByRole('button', { name: 'flow-i07 checkout (2 cases)' }).click();
     await page.getByRole('button', { name: 'Start run with 2 cases' }).click();
+    await page.locator('#toasts').getByText(/Run R-\d+ started/).first().waitFor(); // before the page loads: a cold dev server can take longer than the toast stays
     await page.waitForURL(/\/o\/lumen\/runs\/R-\d+$/);
     const runKey = page.url().split('/').pop();
-    await toast(`Run ${runKey} started`).waitFor();
     await page.getByRole('heading', { name: RUN_NAME }).waitFor();
     check((await page.locator('.readout .num').first().innerText()) === 'n/a', 'the pass rate of a new run is not n/a');
     check((await page.locator('.case-row').count()) === 2, 'the run does not have two cases');

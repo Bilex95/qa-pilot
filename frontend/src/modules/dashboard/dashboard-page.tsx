@@ -116,7 +116,7 @@ export function DashboardPage() {
           <div className="panel-head"><h2>Components with most open bugs</h2></div>
           <div className="panel-body">
             {d.top_components.length ? (
-              <HBars label="Components with most open bugs" rows={d.top_components.map((c) => ({ key: c.name, label: c.name, text: c.name, value: c.open }))} />
+              <HBars label="Components with most open bugs" rows={d.top_components.map((c, i) => ({ key: `${i}-${c.name}`, label: c.name, text: c.name, value: c.open }))} />
             ) : <p className="small muted">No open bugs.</p>}
           </div>
         </section>
