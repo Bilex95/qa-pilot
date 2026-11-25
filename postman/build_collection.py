@@ -1367,6 +1367,29 @@ folders = [
             body={"project_id": "{{projectId}}", "title": "x"}, tests=[status(404), err("org_not_found")]),
         req("Duplicates without a title (API-143 invalid)", "POST", O + "/ai/duplicates", token="qaToken", body={"project_id": "{{projectId}}"},
             tests=[status(422), err("validation_error")]),
+        req("Triage suggests severity and priority (API-142)", "POST", O + "/ai/triage", token="qaToken",
+            body={"project_id": "{{projectId}}", "title": "Checkout crashes on Pay", "actual_result": "The page goes blank"},
+            tests=[status(200), 'pm.test("a suggestion with a reason", () => { const b = pm.response.json(); pm.expect(b.fallback).to.eql(false); '
+                   'pm.expect(b.severity).to.eql("critical"); pm.expect(b.priority).to.eql("p1"); pm.expect(b.reason).to.be.a("string"); '
+                   'pm.expect(b.confidence).to.be.oneOf(["low", "medium", "high"]); pm.expect(b.usage_id).to.be.a("string"); });']),
+        req("Create a bug to triage (setup)", "POST", O + "/bugs", token="qaToken",
+            body={"project_id": "{{projectId}}", "title": "Newman: payment error on the checkout page", "severity": "low", "priority": "p4"},
+            tests=[status(201), 'pm.environment.set("aiBugId", pm.response.json().id);']),
+        req("Triage of a bug by id (API-142)", "POST", O + "/ai/triage", token="leadToken", body={"bug_id": "{{aiBugId}}"},
+            tests=[status(200), 'pm.test("a suggestion and nothing changed", () => { const b = pm.response.json(); pm.expect(b.severity).to.be.a("string"); '
+                   'pm.expect(b.priority).to.match(/^p[1-4]$/); pm.expect(b.severity).to.eql("critical"); });']),
+        req("Triage as Developer (API-142 forbidden)", "POST", O + "/ai/triage", token="devToken", body={"bug_id": "{{aiBugId}}"},
+            tests=[status(403), err("forbidden")]),
+        req("Triage without token (API-142 unauthorized)", "POST", O + "/ai/triage", body={"bug_id": "{{aiBugId}}"}, tests=[status(401)]),
+        req("Triage in another workspace (API-142 cross tenant)", "POST", O + "/ai/triage", token="foreignToken", body={"bug_id": "{{aiBugId}}"},
+            tests=[status(404), err("org_not_found")]),
+        req("Triage of the bug through the other org path (API-142 cross tenant)", "POST", F + "/ai/triage", token="foreignToken",
+            body={"bug_id": "{{aiBugId}}"}, tests=[status(404), err("not_found")]),
+        req("Delete the bug that was triaged (cleanup)", "DELETE", O + "/bugs/{{aiBugId}}", token="leadToken", tests=[status(204)]),
+        req("Triage of an unknown bug (API-142 not found)", "POST", O + "/ai/triage", token="qaToken",
+            body={"bug_id": "00000000-0000-4000-8000-000000000000"}, tests=[status(404), err("not_found")]),
+        req("Triage without a bug or a title (API-142 invalid)", "POST", O + "/ai/triage", token="qaToken", body={"project_id": "{{projectId}}"},
+            tests=[status(422), err("validation_error")]),
         req("Outcome of the bug writer suggestion (API-148)", "POST", O + "/ai/usage/{{aiUsageId}}/outcome", token="qaToken",
             body={"outcome": "accepted"}, tests=[status(204)]),
         req("Outcome a second time (API-148 conflict)", "POST", O + "/ai/usage/{{aiUsageId}}/outcome", token="qaToken",
@@ -1380,7 +1403,7 @@ folders = [
         req("The summary counts the features (API-147)", "GET", O + "/ai/usage/summary", token="leadToken",
             tests=[status(200), 'pm.test("bug writer, explain log and duplicates", () => { const by = {}; pm.response.json().totals_by_feature.forEach(t => by[t.feature] = t); '
                    'pm.expect(by.bug_writer.calls).to.be.at.least(1); pm.expect(by.bug_writer.acceptance_rate).to.eql(100); '
-                   'pm.expect(by.explain_log.calls).to.be.at.least(1); pm.expect(by.duplicates.input_tokens).to.eql(0); });']),
+                   'pm.expect(by.triage.calls).to.be.at.least(2); pm.expect(by.explain_log.calls).to.be.at.least(1);pm.expect(by.duplicates.input_tokens).to.eql(0); });']),
         # No AI feature endpoint exists yet (I-15 to I-18), so the success path of the outcome is covered by pytest; here the log, the summary
         # and the refusals of the outcome endpoint
         req("List AI usage as QA Lead (API-146)", "GET", O + "/ai/usage?page_size=25", token="leadToken",

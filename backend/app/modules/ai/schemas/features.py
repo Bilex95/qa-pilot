@@ -4,7 +4,7 @@
 import uuid
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 
 from app.core.schemas import ApiModel
 from app.modules.bugs.schemas.bugs import BugSummaryOut
@@ -78,6 +78,52 @@ class LogExplanationOut(ApiModel):
     likely_cause: str
     key_lines: list[str]
     error_type: str | None
+    fallback: bool
+    usage_id: uuid.UUID
+
+
+# Triage (AI_SPEC 3.3) ---------------------------------------------------------------------------------------------------------------------
+
+Priority = Literal["p1", "p2", "p3", "p4"]
+
+
+class TriageAnswer(BaseModel):
+    severity: Severity
+    priority: Priority
+    component: str | None = None  # a name the server maps to a component of the project, or drops
+    reason: Annotated[str, StringConstraints(min_length=10, max_length=600)]
+    confidence: Literal["low", "medium", "high"]
+
+
+class TriageIn(ApiModel):
+    """Either an existing bug (`bug_id`, nothing else) or the fields of a bug that is not saved yet (`project_id` and `title` at least)."""
+
+    bug_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)] | None = None
+    description: Annotated[str, StringConstraints(max_length=4000)] | None = None
+    steps: Annotated[list[Step], Field(max_length=50)] | None = None
+    actual_result: Annotated[str, StringConstraints(max_length=2000)] | None = None
+    environment_id: uuid.UUID | None = None
+
+    @model_validator(mode="after")
+    def _one_or_the_other(self) -> "TriageIn":
+        if self.bug_id is not None:
+            others = (self.project_id, self.title, self.description, self.steps, self.actual_result, self.environment_id)
+            if any(v is not None for v in others):
+                raise ValueError("Send either bug_id or the fields of a new bug, not both.")
+        elif self.project_id is None or self.title is None:
+            raise ValueError("Send bug_id, or project_id and title.")
+        return self
+
+
+class TriageOut(ApiModel):
+    severity: Severity | None  # all four are empty when `fallback` is true: no suggestion
+    priority: Priority | None
+    component: str | None
+    component_id: uuid.UUID | None  # a component of the project, never an invented id
+    reason: str
+    confidence: Literal["low", "medium", "high"] | None
     fallback: bool
     usage_id: uuid.UUID
 

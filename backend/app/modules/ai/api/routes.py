@@ -19,6 +19,8 @@ from app.modules.ai.schemas.features import (
     DuplicatesOut,
     ExplainLogIn,
     LogExplanationOut,
+    TriageIn,
+    TriageOut,
 )
 from app.modules.ai.schemas.usage import Feature, FeatureTotalsOut, OutcomeIn, UsageOut, UsageSummaryOut
 from app.modules.auth.application import service as auth
@@ -31,6 +33,7 @@ Member = Annotated[OrgContext, Depends(require("org.read"))]
 
 BugWriter = Annotated[OrgContext, Depends(require("ai.bug_writer"))]
 LogReader = Annotated[OrgContext, Depends(require("ai.explain_log"))]
+Triager = Annotated[OrgContext, Depends(require("ai.triage"))]
 Duplicates = Annotated[OrgContext, Depends(require("ai.duplicates"))]
 FEATURE_ERR = errors(401, 403, 404, 422, 429)
 
@@ -40,6 +43,13 @@ def bug_writer(body: BugWriterIn, db: DB, ctx: BugWriter) -> BugWriterOut:
     """Turn rough notes (and a log) into a structured bug report. A suggestion only: nothing is saved. `environment_id` and `component_id`
     are ids of the project, never invented; `fallback` is true when the model could not help."""
     return features.bug_writer(db, ctx.org, ctx.user.id, body)
+
+
+@router.post("/orgs/{org_id}/ai/triage", response_model=TriageOut, responses=FEATURE_ERR)
+def triage(body: TriageIn, db: DB, ctx: Triager) -> TriageOut:
+    """Suggest severity, priority and component for a bug (`bug_id`) or for the fields of a bug not saved yet, with a reason. A suggestion
+    only: accepting it is the normal bug update. `fallback` is true (and the suggestion empty) when the model could not help."""
+    return features.triage(db, ctx.org, ctx.user.id, body)
 
 
 @router.post("/orgs/{org_id}/ai/explain-log", response_model=LogExplanationOut, responses=FEATURE_ERR)

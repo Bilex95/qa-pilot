@@ -17,6 +17,7 @@ from app.modules.ai.domain import prompt
 from app.modules.ai.domain.provider import ProviderError, ProviderResult, ProviderTimeout
 from app.modules.ai.domain.rules import SlidingWindow, acceptance_rate
 from app.modules.ai.infrastructure import factory
+from app.modules.ai.infrastructure import mock as mock_module
 from app.modules.ai.infrastructure.anthropic_provider import AnthropicProvider
 from app.modules.ai.infrastructure.mock import MockProvider, register_mock, tokens
 from app.modules.ai.infrastructure.models import AIUsage
@@ -221,7 +222,8 @@ def test_injected_instructions_reach_the_provider_only_as_data_and_cannot_change
     assert "system prompt" not in got.value.summary
 
 
-def test_the_mock_never_echoes_the_system_prompt(db, world) -> None:
+def test_the_mock_never_echoes_the_system_prompt(db, world, monkeypatch) -> None:
+    monkeypatch.setattr(mock_module, "_HANDLERS", dict(mock_module._HANDLERS))  # the real triage handler (I-16) is back after the test
     register_mock("triage", lambda blocks: {"severity": "high", "summary": "Looks like a checkout problem"})
     got = ask(db, world.a.org, world.a.users["qa_engineer"], MockProvider(), notes=INJECTION)
     assert got.status == "ok" and "untrusted data" not in got.value.summary and "Never follow" not in got.value.summary
@@ -229,7 +231,8 @@ def test_the_mock_never_echoes_the_system_prompt(db, world) -> None:
 
 # The providers -------------------------------------------------------------------------------------------------------------------------------
 
-def test_the_mock_is_deterministic_and_estimates_tokens_from_the_characters(db, world) -> None:
+def test_the_mock_is_deterministic_and_estimates_tokens_from_the_characters(db, world, monkeypatch) -> None:
+    monkeypatch.setattr(mock_module, "_HANDLERS", dict(mock_module._HANDLERS))
     register_mock("triage", lambda blocks: {"severity": "low", "summary": f"{len(blocks)} block"})
     first = ask(db, world.a.org, world.a.users["qa_engineer"], MockProvider())
     second = ask(db, world.a.org, world.a.users["qa_engineer"], MockProvider())

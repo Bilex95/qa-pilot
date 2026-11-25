@@ -1154,6 +1154,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/ai/triage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Triage
+         * @description Suggest severity, priority and component for a bug (`bug_id`) or for the fields of a bug not saved yet, with a reason. A suggestion
+         *     only: accepting it is the normal bug update. `fallback` is true (and the suggestion empty) when the model could not help.
+         */
+        post: operations["triage_api_v1_orgs__org_id__ai_triage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/ai/explain-log": {
         parameters: {
             query?: never;
@@ -3546,6 +3567,48 @@ export interface components {
             opened: number;
             /** Closed */
             closed: number;
+        };
+        /**
+         * TriageIn
+         * @description Either an existing bug (`bug_id`, nothing else) or the fields of a bug that is not saved yet (`project_id` and `title` at least).
+         */
+        TriageIn: {
+            /** Bug Id */
+            bug_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Steps */
+            steps?: string[] | null;
+            /** Actual Result */
+            actual_result?: string | null;
+            /** Environment Id */
+            environment_id?: string | null;
+        };
+        /** TriageOut */
+        TriageOut: {
+            /** Severity */
+            severity: ("critical" | "high" | "medium" | "low") | null;
+            /** Priority */
+            priority: ("p1" | "p2" | "p3" | "p4") | null;
+            /** Component */
+            component: string | null;
+            /** Component Id */
+            component_id: string | null;
+            /** Reason */
+            reason: string;
+            /** Confidence */
+            confidence: ("low" | "medium" | "high") | null;
+            /** Fallback */
+            fallback: boolean;
+            /**
+             * Usage Id
+             * Format: uuid
+             */
+            usage_id: string;
         };
         /** UsageOut */
         UsageOut: {
@@ -9274,6 +9337,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BugWriterOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    triage_api_v1_orgs__org_id__ai_triage_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriageOut"];
                 };
             };
             /** @description Not signed in */

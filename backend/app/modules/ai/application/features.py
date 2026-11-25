@@ -20,6 +20,9 @@ from app.modules.ai.schemas.features import (
     ExplainLogIn,
     LogExplanationAnswer,
     LogExplanationOut,
+    TriageAnswer,
+    TriageIn,
+    TriageOut,
 )
 from app.modules.bugs.application import service as bugs
 from app.modules.projects.application import service as projects
@@ -82,6 +85,53 @@ def bug_writer(db: Session, org: service.Organization, user_id: uuid.UUID, body:
         actual_result=v.actual_result, environment=environment, environment_id=environment_id, component=component,
         component_id=component_id, suggested_severity=v.suggested_severity, missing_information=list(v.missing_information),
         fallback=got.fallback, usage_id=got.usage_id)
+
+
+TRIAGE_TASK = (
+    "Suggest severity, priority and component for this bug. Severity is user impact: critical means data loss, a crash, a security or "
+    "payment problem or no workaround; high means a main function is broken; medium means a function is impaired with a workaround; low "
+    "means cosmetic. Priority is fixing urgency: p1 urgent, p2 high, p3 normal, p4 low. Pick the component only from the list given, or "
+    "leave it empty. Give a short reason a person can check."
+)
+
+
+def triage(db: Session, org: service.Organization, user_id: uuid.UUID, body: TriageIn) -> TriageOut:
+    """Severity, priority and component for a bug that exists (`bug_id`, another workspace's is a 404) or for the fields of one that does
+    not yet. Nothing is changed: the screen applies an accepted suggestion with the normal bug update (so its permission checks and its
+    activity entries apply)."""
+    if body.bug_id is not None:
+        bug = bugs.get_bug(db, org.id, body.bug_id)
+        project = projects.get_project(db, org.id, bug.project_id)
+        title, description, steps, actual = bug.title, bug.description, list(bug.steps_to_reproduce or []), bug.actual_result
+        environment_id = bug.environment_id
+    else:
+        project = _project(db, org.id, body.project_id)  # type: ignore[arg-type]  # the schema guarantees project_id and title
+        title, description, steps, actual = body.title or "", body.description or "", body.steps or [], body.actual_result or ""
+        environment_id = body.environment_id
+    components = {c.name: c.id for c in projects.list_components(db, org.id, project.id)}
+    notes = {c.name: c.description for c in projects.list_components(db, org.id, project.id) if c.description}
+    environments = {e.id: e.name for e in projects.list_environments(db, org.id, project.id)}
+    if environment_id is not None and environment_id not in environments:
+        if body.bug_id is None:
+            raise Unprocessable("Some fields are not valid.", details=[{"loc": ["body", "environment_id"],
+                                                                         "msg": "This environment does not exist in this project."}])
+        environment_id = None
+    blocks = [block("bug_title", title), block("bug_description", description), block("bug_steps", "\n".join(steps)),
+              block("bug_actual_result", actual), block("bug_environment", environments.get(environment_id, "") if environment_id else ""),
+              block("project_components", "\n".join(components)),
+              block("component_descriptions", "\n".join(f"{n}: {d}" for n, d in notes.items()))]
+    fallback = TriageAnswer.model_construct(severity="medium", priority="p3", component=None,
+                                            reason="No suggestion is available right now.", confidence="low")
+    got = service.run(db, org, user_id, feature="triage", task=TRIAGE_TASK, blocks=blocks, output_model=TriageAnswer, fallback=fallback,
+                      max_tokens=400)
+    if got.fallback:
+        reason = "The assistant could not suggest a triage. Set severity, priority and component yourself."
+        return TriageOut(severity=None, priority=None, component=None, component_id=None, reason=reason, confidence=None, fallback=True,
+                         usage_id=got.usage_id)
+    v = got.value
+    component, component_id = _named(v.component, components)
+    return TriageOut(severity=v.severity, priority=v.priority, component=component, component_id=component_id, reason=v.reason,
+                     confidence=v.confidence, fallback=False, usage_id=got.usage_id)
 
 
 def explain_log(db: Session, org: service.Organization, user_id: uuid.UUID, body: ExplainLogIn) -> LogExplanationOut:

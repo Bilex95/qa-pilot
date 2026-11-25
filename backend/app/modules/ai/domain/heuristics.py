@@ -24,6 +24,27 @@ def severity_for(text: str) -> str:
     return "medium"
 
 
+PRIORITY_FOR = {"critical": "p1", "high": "p2", "medium": "p3", "low": "p4"}
+PRIORITY_ORDER = ("p1", "p2", "p3", "p4")
+
+
+def severity_keywords(text: str) -> list[str]:
+    """The words of the severity rule that decided `severity_for` (the rule of the highest level that matched), lower case, no repeats."""
+    for pattern in (CRITICAL, HIGH, LOW):
+        found = [m.group(0).lower() for m in pattern.finditer(text)]
+        if found:
+            return list(dict.fromkeys(found))
+    return []
+
+
+def priority_for(severity: str, environment: str | None) -> str:
+    """The priority that goes with a severity (critical p1, high p2, medium p3, low p4), one level more urgent on prod."""
+    level = PRIORITY_FOR.get(severity, "p3")
+    if environment and environment.strip().lower() in ("prod", "production"):
+        level = PRIORITY_ORDER[max(PRIORITY_ORDER.index(level) - 1, 0)]
+    return level
+
+
 def first_sentence(text: str, limit: int = 200) -> str:
     """The first sentence of the first non empty line, cut to `limit` characters."""
     line = next((ln.strip() for ln in text.splitlines() if ln.strip()), "")

@@ -59,5 +59,25 @@ def explain_log(blocks: Sequence[Block]) -> dict[str, Any]:
     }
 
 
+def triage(blocks: Sequence[Block]) -> dict[str, Any]:
+    """AI_SPEC 3.3: the keyword severity, the priority that goes with it (one level up on prod), the first component named in the text."""
+    tags = _by_tag(blocks)
+    text = "\n".join(tags.get(t, "") for t in ("bug_title", "bug_description", "bug_steps", "bug_actual_result"))
+    environment = tags.get("bug_environment", "").strip() or heuristics.environment_hint(text)
+    severity = heuristics.severity_for(text)
+    keywords = heuristics.severity_keywords(text)
+    lowered = text.lower()
+    component = next((c for c in _names(tags.get("project_components", "")) if c.lower() in lowered), None)
+    reason = (f"Matched {', '.join(repr(k) for k in keywords)}, so the impact looks {severity}." if keywords
+              else "No severity keyword was found, so it is rated medium.")
+    if environment and environment.lower() in ("prod", "production"):
+        reason += " It happens in production, so the fix is more urgent."
+    if component:
+        reason += f" The text names the {component} component."
+    return {"severity": severity, "priority": heuristics.priority_for(severity, environment), "component": component, "reason": reason,
+            "confidence": "medium" if keywords else "low"}
+
+
 register_mock("bug_writer", bug_writer)
+register_mock("triage", triage)
 register_mock("explain_log", explain_log)
