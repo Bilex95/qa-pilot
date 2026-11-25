@@ -20,6 +20,7 @@ const MATRIX = {
   "audit.read": ADMIN,
   "label.manage": LEADS,
   "project.create": LEADS,
+  "project.manage": LEADS, // edit and archive a project, manage its components and environments
   "bug.create": NOT_VIEWER,
   "bug.update_fields": NOT_VIEWER, // a Developer only on a bug they reported (record rule, checked by the screen and the API)
   "bug.assign": NOT_VIEWER, // a Developer only takes an unassigned bug (D-006)
