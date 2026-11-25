@@ -1,0 +1,12 @@
+title = "QA Pilot gitleaks config"
+
+[extend]
+useDefault = true
+
+# Test fixtures only: throwaway passwords and a test JWT secret used by pytest, never real credentials.
+[[allowlists]]
+description = "pytest fixtures"
+paths = [
+  '''backend/conftest\.py''',
+  '''backend/app/modules/.*/tests/.*\.py''',
+]
