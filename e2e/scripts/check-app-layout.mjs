@@ -1378,7 +1378,7 @@ for (const vp of VIEWPORTS.filter(wanted)) {
   await page.unroute(usageUrl);
   await page.route(usageUrl, usageRoute('slow'));
   await page.goto(`${BASE}/o/lumen/ai-usage`, { waitUntil: 'commit' });
-  await page.waitForSelector('.crumbs');
+  await page.waitForSelector('h1:has-text("AI usage")');
   await page.waitForSelector('.sk');
   await check('ai usage: loading', { shot: 'ai-usage-loading' });
   await page.waitForSelector('text=By feature');
