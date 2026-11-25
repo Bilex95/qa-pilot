@@ -123,7 +123,7 @@ flowchart LR
 | I-16 | Done | 18f10f2, f782b7e |
 | I-17 | Done | 6cd798d |
 | I-18 | Done | b3c8911 |
-| I-19 | Planned |  |
+| I-19 | Done | ef55723 |
 | I-20 | Planned |  |
 | I-21 | Planned |  |
 | I-22 | Planned |  |

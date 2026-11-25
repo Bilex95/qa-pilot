@@ -1,6 +1,6 @@
 # I-19 AI usage screen
 
-**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
