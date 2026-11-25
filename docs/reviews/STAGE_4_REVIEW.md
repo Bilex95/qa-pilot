@@ -650,3 +650,21 @@ Rule in this codebase: a write on an archived project is a **422 `validation_err
 `e2e/parity/stage5/i17/compare/` (test case editor default desktop, with the AI pick list desktop, default mobile). The panel sits beside the form with the story field, the count, the dashed suggestion box, type tags, step counts and Add N to the suite, Edit first and Discard. Differences: the form is empty in the app (the prototype shows a filled sample), Generate again stays visible above the pick list, the mock model's titles and step counts differ from the sample, and the subtitle reads "Write the case with its steps and expected results." (kept from I-06). The panel also states that the story is sent as data only.
 
 Backlog: BL-030.
+
+### I-18 AI Release Readiness Summary (SCR-17; REQ-048; D-075)
+
+API-145 (`POST {O}/ai/release-summary`, Org Admin and QA Lead) and the accepting half of API-113 (`ai_summary` with `ai_usage_id`), with the Release Readiness Summary panel on the release page.
+
+#### L. Checks
+
+| Check | Result |
+|---|---|
+| Backend | ruff and mypy clean, **pytest 1756 passed** (49 new), **Newman 620 requests and 1073 assertions, 0 failed** (after `seed --reset --yes --scenario baseline`); OpenAPI and `schema.d.ts` regenerated |
+| Frontend (local) | lint, typecheck, build clean; `check-ai-flow.mjs` passes with the new release summary part (draft saves nothing, edit and publish, outcome "edited", a Viewer reads it, no panel for a Developer) |
+| New layout states | summary panel, thinking, suggestion, edit field, discarded, template notice (in `check-app-layout.mjs`). The full local layout run was not repeated because it hung twice for I-17; the states run in the CI shards |
+
+#### M. Parity with the locked screenshots (1440 x 900 and 390 x 844)
+
+`e2e/parity/stage5/i18/compare/` (release detail default desktop, with the AI suggestion desktop, default mobile). The panel sits in the side column with the dashed suggestion box, tag, bold headline, summary, Top risks list, recommendation and Accept and publish, Edit, Discard like the prototype. Differences: the headline is not highlighted, the mock text is the template built from the facts (so the numbers and bug keys are those of the capture release), the Discard button sits on its own line at 1440 because of the column width, and the panel is above the published summary panel when both show.
+
+Backlog: BL-031.

@@ -1,6 +1,6 @@
 # I-18 AI Release Readiness Summary
 
-**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
