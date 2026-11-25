@@ -6,9 +6,11 @@
 
 ## Resume here (updated 2026-11-25, token rules in CLAUDE.md)
 
-**State:** Stage 5, I-16 (AI triage) is built and documented (D-072, review section, DAG). The CI run of I-15 (45618277192) failed only on `smoke-login` (a 90 s login wait on a cold runner, other flows passed); no code fix was made. The CI run of the I-16 push is not checked yet.
+**State:** Stage 5. I-16 (AI triage) is done (D-072). I-17 (test case generator) is a `wip(I-17)` commit: backend API-144 written, tests not yet run; frontend, layout states, parity, D-074 (D-073 is taken by the repository hardening), review section still to do.
 
-**CI (check each run once, no polling):** `gh run list --branch stage/4-core-features --limit 3`, then `gh run view <id> --log-failed`. The new layout states "bug detail: AI triage ..." run in the layout shards.
+**Repository (D-073, 2026-11-25):** history rewritten to the noreply address and published to a NEW private repo `Bilex95/qa-pilot` (the old one is `Bilex95/qa-pilot-archive`, private, kept). **GitHub Actions are DISABLED on the new repo** (private minutes): CI does not run until the owner makes it public and says so, then re-enable with `gh api -X PUT repos/Bilex95/qa-pilot/actions/permissions -F enabled=true` and confirm a run. Until then check CI results from the archive runs only for the earlier commits. Backups: `C:\Users\HP\Documents\qa-pilot-backup\`. After the owner flips visibility: relax `safe-push.sh` (public allowed, keep every other check) and the CLAUDE.md "never make it public" line. The production frontend build for CI (`docker-compose.ci.yml`, a0db301) has not been seen in CI yet; its first-request timings are in the browser-stack step log.
+
+**CI of the earlier pushes (unchecked):** runs for I-16 (45630850580) and the CI production frontend are on the archive repo: `gh run list --repo Bilex95/qa-pilot-archive --branch stage/4-core-features --limit 3`.
 
 **Then:** I-17 (test case generator), I-18 (release summary), I-19 (AI usage screen), Stage 6 (I-20 to I-22), one final review. Each issue goes to the `issue-builder` subagent (CLAUDE.md "Token rules"). No full browser suites locally; stop only if CI stays red after two honest fixes of the same failure.
 
