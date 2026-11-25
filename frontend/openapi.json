@@ -9422,6 +9422,107 @@
         }
       }
     },
+    "/api/v1/orgs/{org_id}/ai/release-summary": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Release Summary",
+        "description": "A plain English risk summary of a release, written from numbers the server builds (readiness, open bugs, runs). Nothing is saved:\nthe person accepts it with the release update, sending `usage_id` as `ai_usage_id`. A release of another workspace is a 404.",
+        "operationId": "release_summary_api_v1_orgs__org_id__ai_release_summary_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Organization id",
+              "title": "Org Id"
+            },
+            "description": "Organization id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseSummaryIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseSummarySuggestion"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{org_id}/ai/explain-log": {
       "post": {
         "tags": [
@@ -14978,6 +15079,21 @@
         ],
         "title": "ReleaseOut"
       },
+      "ReleaseSummaryIn": {
+        "properties": {
+          "release_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Release Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "release_id"
+        ],
+        "title": "ReleaseSummaryIn"
+      },
       "ReleaseSummaryOut": {
         "properties": {
           "id": {
@@ -15096,6 +15212,64 @@
         ],
         "title": "ReleaseSummaryOut"
       },
+      "ReleaseSummarySuggestion": {
+        "properties": {
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "top_risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Risks"
+          },
+          "recommendation": {
+            "type": "string",
+            "enum": [
+              "ship",
+              "ship_with_caution",
+              "do_not_ship"
+            ],
+            "title": "Recommendation"
+          },
+          "readiness": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "at_risk",
+              "blocked"
+            ],
+            "title": "Readiness"
+          },
+          "fallback": {
+            "type": "boolean",
+            "title": "Fallback"
+          },
+          "usage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Usage Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "headline",
+          "summary",
+          "top_risks",
+          "recommendation",
+          "readiness",
+          "fallback",
+          "usage_id"
+        ],
+        "title": "ReleaseSummarySuggestion"
+      },
       "ReleaseUpdateIn": {
         "properties": {
           "name": {
@@ -15154,7 +15328,9 @@
           "ai_summary": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 4000,
+                "minLength": 1
               },
               {
                 "type": "null"
@@ -15178,7 +15354,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ReleaseUpdateIn",
-        "description": "Only the fields that are sent change. `target_date: null` clears the date. `status` only moves forward (planned, in progress,\nreleased). The AI summary fields arrive with I-18; until then sending them is a 422."
+        "description": "Only the fields that are sent change. `target_date: null` clears the date. `status` only moves forward (planned, in progress,\nreleased). `ai_summary` (the accepted AI text, 1 to 4000 characters) is sent together with `ai_usage_id` (the AI call it came from);\none without the other is a 422 (I-18)."
       },
       "ResetConfirmIn": {
         "properties": {

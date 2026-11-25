@@ -182,6 +182,34 @@ class GenerateCasesOut(ApiModel):
     usage_id: uuid.UUID
 
 
+# Release readiness summary (AI_SPEC 3.6) -------------------------------------------------------------------------------------------------
+
+Risk = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
+
+
+class ReleaseSummaryAnswer(BaseModel):
+    """What the model must answer. That a blocked release is not recommended for shipping is checked by the feature."""
+
+    headline: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=160)]
+    summary: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1500)]
+    top_risks: Annotated[list[Risk], Field(max_length=5)] = []
+    recommendation: Literal["ship", "ship_with_caution", "do_not_ship"]
+
+
+class ReleaseSummaryIn(ApiModel):
+    release_id: uuid.UUID
+
+
+class ReleaseSummarySuggestion(ApiModel):
+    headline: str
+    summary: str
+    top_risks: list[str]
+    recommendation: Literal["ship", "ship_with_caution", "do_not_ship"]
+    readiness: Literal["ready", "at_risk", "blocked"]  # the readiness the summary was written for
+    fallback: bool  # true when the text is the template, not the model's
+    usage_id: uuid.UUID
+
+
 # Duplicate detector (AI_SPEC 3.4) --------------------------------------------------------------------------------------------------------
 
 class DuplicatesIn(ApiModel):

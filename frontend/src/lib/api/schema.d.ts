@@ -1197,6 +1197,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orgs/{org_id}/ai/release-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release Summary
+         * @description A plain English risk summary of a release, written from numbers the server builds (readiness, open bugs, runs). Nothing is saved:
+         *     the person accepts it with the release update, sending `usage_id` as `ai_usage_id`. A release of another workspace is a 404.
+         */
+        post: operations["release_summary_api_v1_orgs__org_id__ai_release_summary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orgs/{org_id}/ai/explain-log": {
         parameters: {
             query?: never;
@@ -3071,6 +3092,14 @@ export interface components {
             /** Ai Summary By Name */
             ai_summary_by_name: string | null;
         };
+        /** ReleaseSummaryIn */
+        ReleaseSummaryIn: {
+            /**
+             * Release Id
+             * Format: uuid
+             */
+            release_id: string;
+        };
         /** ReleaseSummaryOut */
         ReleaseSummaryOut: {
             /**
@@ -3117,10 +3146,37 @@ export interface components {
              */
             created_at: string;
         };
+        /** ReleaseSummarySuggestion */
+        ReleaseSummarySuggestion: {
+            /** Headline */
+            headline: string;
+            /** Summary */
+            summary: string;
+            /** Top Risks */
+            top_risks: string[];
+            /**
+             * Recommendation
+             * @enum {string}
+             */
+            recommendation: "ship" | "ship_with_caution" | "do_not_ship";
+            /**
+             * Readiness
+             * @enum {string}
+             */
+            readiness: "ready" | "at_risk" | "blocked";
+            /** Fallback */
+            fallback: boolean;
+            /**
+             * Usage Id
+             * Format: uuid
+             */
+            usage_id: string;
+        };
         /**
          * ReleaseUpdateIn
          * @description Only the fields that are sent change. `target_date: null` clears the date. `status` only moves forward (planned, in progress,
-         *     released). The AI summary fields arrive with I-18; until then sending them is a 422.
+         *     released). `ai_summary` (the accepted AI text, 1 to 4000 characters) is sent together with `ai_usage_id` (the AI call it came from);
+         *     one without the other is a 422 (I-18).
          */
         ReleaseUpdateIn: {
             /** Name */
@@ -9560,6 +9616,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GenerateCasesOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found, or not a member of the org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    release_summary_api_v1_orgs__org_id__ai_release_summary_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization id */
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReleaseSummaryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseSummarySuggestion"];
                 };
             };
             /** @description Not signed in */

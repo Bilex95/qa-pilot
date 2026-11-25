@@ -19,6 +19,7 @@ from app.modules.bugs.application import service as bugs
 from app.modules.bugs.infrastructure.models import Bug
 from app.modules.projects.application import hooks as projects_hooks
 from app.modules.projects.application import service as projects
+from app.modules.releases.application import hooks
 from app.modules.releases.domain.readiness import Inputs, Verdict, evaluate
 from app.modules.releases.domain.rules import can_move
 from app.modules.releases.infrastructure import repository as repo
@@ -155,8 +156,10 @@ def update_release(db: Session, org_id: uuid.UUID, actor_id: uuid.UUID, release_
     if release is None:
         raise NotFound("Release not found.")
     sent = body.model_dump(exclude_unset=True)
-    if sent.get("ai_summary") is not None or sent.get("ai_usage_id") is not None:
-        raise _invalid("ai_summary", "The AI release summary arrives with a later release of QA Pilot.")
+    if ("ai_summary" in sent) != ("ai_usage_id" in sent):
+        raise _invalid("ai_usage_id" if "ai_summary" in sent else "ai_summary", "Send the AI summary with the AI call it came from.")
+    if "ai_usage_id" in sent and not hooks.ai_summary_usage_accepted(db, org_id, sent["ai_usage_id"]):
+        raise _invalid("ai_usage_id", "This AI usage record does not exist.")
     diff: dict[str, Any] = {}
     if "name" in sent and sent["name"] != release.name:
         if sent["name"].lower() != release.name.lower() and repo.name_taken(db, release.project_id, sent["name"], except_id=release.id):
@@ -179,8 +182,16 @@ def update_release(db: Session, org_id: uuid.UUID, actor_id: uuid.UUID, release_
         release.status = sent["status"]
         if sent["status"] == "released":
             release.released_at = utcnow()
-    if diff or moved:
+    summarised = "ai_summary" in sent
+    if summarised:
+        release.ai_summary = sent["ai_summary"]
+        release.ai_summary_at = utcnow()
+        release.ai_summary_by_id = actor_id
+    if diff or moved or summarised:
         release.updated_at = utcnow()
+    if summarised:
+        audit.record(db, "release.summary_accepted", actor_id=actor_id, org_id=org_id, entity_type="release", entity_id=release.id,
+                     data={"name": release.name, "ai_usage_id": str(sent["ai_usage_id"]), "characters": len(sent["ai_summary"])})
     if diff:
         audit.record(db, "release.updated", actor_id=actor_id, org_id=org_id, entity_type="release", entity_id=release.id,
                      data={"name": release.name, "changes": diff})

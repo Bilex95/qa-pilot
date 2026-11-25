@@ -25,16 +25,17 @@ class ReleaseIn(ApiModel):
 
 class ReleaseUpdateIn(ApiModel):
     """Only the fields that are sent change. `target_date: null` clears the date. `status` only moves forward (planned, in progress,
-    released). The AI summary fields arrive with I-18; until then sending them is a 422."""
+    released). `ai_summary` (the accepted AI text, 1 to 4000 characters) is sent together with `ai_usage_id` (the AI call it came from);
+    one without the other is a 422 (I-18)."""
 
     name: ReleaseName | None = None
     description: ReleaseDescription | None = None
     target_date: date | None = None
     status: ReleaseStatus | None = None
-    ai_summary: str | None = None
+    ai_summary: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)] | None = None
     ai_usage_id: uuid.UUID | None = None
 
-    @field_validator("name", "description", "status", mode="before")
+    @field_validator("name", "description", "status", "ai_summary", "ai_usage_id", mode="before")
     @classmethod
     def _not_null(cls, value: object) -> object:
         if value is None:

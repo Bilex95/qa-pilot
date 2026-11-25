@@ -6,6 +6,8 @@ from typing import Any
 
 from app.modules.ai.domain import heuristics
 from app.modules.ai.domain.prompt import Block
+from app.modules.ai.domain.release_summary import from_blocks as release_from_blocks
+from app.modules.ai.domain.release_summary import template as release_template
 from app.modules.ai.infrastructure.mock import register_mock
 
 
@@ -112,6 +114,12 @@ def test_cases(blocks: Sequence[Block]) -> dict[str, Any]:
     return {"cases": ordered[:count], "coverage_notes": notes}
 
 
+def release_summary(blocks: Sequence[Block]) -> dict[str, Any]:
+    """AI_SPEC 3.6: the template built from the facts in the blocks, so the offline demo is meaningful."""
+    return release_template(release_from_blocks(list(blocks)))
+
+
+register_mock("release_summary", release_summary)
 register_mock("test_cases", test_cases)
 register_mock("bug_writer", bug_writer)
 register_mock("triage", triage)

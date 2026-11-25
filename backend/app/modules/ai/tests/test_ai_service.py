@@ -243,7 +243,7 @@ def test_the_mock_is_deterministic_and_estimates_tokens_from_the_characters(db, 
 
 
 def test_the_mock_returns_an_empty_object_for_a_feature_without_a_handler() -> None:
-    result = MockProvider().complete_json(feature="release_summary", system="s", blocks=[], output_model=Answer, max_tokens=10)
+    result = MockProvider().complete_json(feature="no_such_feature", system="s", blocks=[], output_model=Answer, max_tokens=10)
     assert result.raw_text == "{}" and result.model == "mock-1"
 
 

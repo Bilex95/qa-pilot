@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import NotFound, Unprocessable
 from app.modules.ai.application import service
-from app.modules.ai.domain import heuristics, similarity
+from app.modules.ai.domain import heuristics, release_summary, similarity
 from app.modules.ai.domain.prompt import block
 from app.modules.ai.infrastructure import mock_features  # noqa: F401  (registers the mock answers)
 from app.modules.ai.schemas.features import (
@@ -27,13 +27,20 @@ from app.modules.ai.schemas.features import (
     GeneratedTestCases,
     LogExplanationAnswer,
     LogExplanationOut,
+    ReleaseSummaryAnswer,
+    ReleaseSummaryIn,
+    ReleaseSummarySuggestion,
     TriageAnswer,
     TriageIn,
     TriageOut,
 )
 from app.modules.bugs.application import service as bugs
+from app.modules.bugs.domain import rules as bug_rules
 from app.modules.projects.application import service as projects
 from app.modules.projects.infrastructure.models import Project
+from app.modules.releases.application import service as releases
+from app.modules.releases.infrastructure.models import Release
+from app.modules.testing.application import runs as testing
 
 BUG_WRITER_TASK = (
     "You are a senior QA engineer. Turn the notes into a clear, reproducible bug report. Be factual and do not invent details that are not "
@@ -183,6 +190,51 @@ def generate_test_cases(db: Session, org: service.Organization, user_id: uuid.UU
     out = [GeneratedCaseOut(title=c.title, case_type=c.case_type, preconditions=c.preconditions, priority=c.priority, tags=list(c.tags),
                             steps=[GeneratedStepOut(action=s.action, expected=s.expected) for s in c.steps]) for c in picked]
     return GenerateCasesOut(cases=out, coverage_notes=got.value.coverage_notes, fallback=False, usage_id=got.usage_id)
+
+
+RELEASE_SUMMARY_TASK = (
+    "Write a short, plain English release risk summary for non technical stakeholders. Use only the numbers provided. Do not speculate "
+    "beyond them. The headline states the verdict in one line; the summary is a few sentences; top_risks lists up to five concrete risks "
+    "taken from the open bugs and the readiness reasons; recommendation is ship, ship_with_caution or do_not_ship and must agree with the "
+    "readiness: a blocked release is never ship."
+)
+
+
+def _facts(db: Session, org_id: uuid.UUID, release: Release) -> release_summary.Facts:
+    """Everything the summary may say, built on the server from the release, its bugs and its runs (nothing from the requester)."""
+    ev = releases.evaluate_many(db, org_id, [release])[release.id]
+    rows, _ = releases.linked_bugs(db, org_id, release.id)
+    urgent = [b for b in rows if bug_rules.is_open(b.status) and b.severity in ("critical", "high")]
+    urgent.sort(key=lambda b: (b.severity != "critical", b.key))
+    runs = testing.summaries(db, org_id, releases.linked_runs(db, org_id, release.id))
+    return release_summary.Facts(
+        name=release.name, target_date=release.target_date.isoformat() if release.target_date else None, status=release.status,
+        readiness=ev.verdict.status, reasons=list(ev.verdict.reasons), linked_bugs=ev.linked_bugs, open_total=ev.open_total,
+        open_by_severity=dict(ev.open_by_severity), pass_rate=ev.pass_rate, linked_runs=ev.linked_runs,
+        runs_in_progress=ev.runs_in_progress,
+        bugs=[release_summary.BugFact(b.key, b.title, b.severity, b.status) for b in urgent[:release_summary.LISTED_BUGS]],
+        runs=[release_summary.RunFact(r.name, r.status, r.pass_rate) for r in runs])
+
+
+def release_readiness_summary(db: Session, org: service.Organization, user_id: uuid.UUID,
+                              body: ReleaseSummaryIn) -> ReleaseSummarySuggestion:
+    """A plain English risk summary of one release (AI_SPEC 3.6). Nothing is saved: accepting it is the release update (API-113), which
+    stores the text and the usage id. A release of another workspace or an unknown one is a 404; a release of an archived project can
+    still be summarised (it is read only data)."""
+    release = releases.get_release(db, org.id, body.release_id)
+    facts = _facts(db, org.id, release)
+    fallback = ReleaseSummaryAnswer.model_validate(release_summary.template(facts))
+
+    def agrees(answer: ReleaseSummaryAnswer) -> str | None:
+        if release_summary.contradicts(facts.readiness, answer.recommendation):
+            return f"recommendation: a {facts.readiness} release cannot be recommended as {answer.recommendation}"
+        return None
+
+    got = service.run(db, org, user_id, feature="release_summary", task=RELEASE_SUMMARY_TASK, blocks=release_summary.to_blocks(facts),
+                      output_model=ReleaseSummaryAnswer, fallback=fallback, max_tokens=800, check=agrees)
+    v = got.value
+    return ReleaseSummarySuggestion(headline=v.headline, summary=v.summary, top_risks=list(v.top_risks), recommendation=v.recommendation,
+                                    readiness=facts.readiness, fallback=got.fallback, usage_id=got.usage_id)  # type: ignore[arg-type]
 
 
 def explain_log(db: Session, org: service.Organization, user_id: uuid.UUID, body: ExplainLogIn) -> LogExplanationOut:

@@ -32,6 +32,12 @@ def exists(db: Session, org_id: uuid.UUID, usage_id: uuid.UUID) -> bool:
     return row is not None and row.status != "rate_limited"
 
 
+def release_summary_exists(db: Session, org_id: uuid.UUID, usage_id: uuid.UUID) -> bool:
+    """Public contract for the releases module: the usage row is a release summary call of this workspace that asked the model."""
+    row = get(db, org_id, usage_id)
+    return row is not None and row.status != "rate_limited" and row.feature == "release_summary"
+
+
 def set_outcome(db: Session, org_id: uuid.UUID, usage_id: uuid.UUID, outcome: str) -> bool:
     """Set the outcome once: False when it was already set (the UPDATE only touches a row without an outcome, so races are safe)."""
     result = db.execute(update(AIUsage).where(AIUsage.org_id == org_id, AIUsage.id == usage_id, AIUsage.outcome.is_(None))

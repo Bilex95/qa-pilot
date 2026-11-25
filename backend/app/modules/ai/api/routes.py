@@ -1,6 +1,6 @@
-"""AI: the bug writer, explain this log and the duplicate detector (API-140, API-141, API-143; I-15) and the usage log (API-146 to
-API-148; I-14). Triage, the test case generator and the release summary (API-142, API-144, API-145) arrive with I-16 to I-18 and go through
-`application/service.run` too."""
+"""AI: the bug writer, explain this log and the duplicate detector (API-140, API-141, API-143; I-15), triage (API-142; I-16), the test case
+generator (API-144; I-17), the release summary (API-145; I-18) and the usage log (API-146 to API-148; I-14). All but the duplicate
+detector go through `application/service.run`."""
 
 import uuid
 from datetime import date
@@ -21,6 +21,8 @@ from app.modules.ai.schemas.features import (
     GenerateCasesIn,
     GenerateCasesOut,
     LogExplanationOut,
+    ReleaseSummaryIn,
+    ReleaseSummarySuggestion,
     TriageIn,
     TriageOut,
 )
@@ -37,6 +39,7 @@ BugWriter = Annotated[OrgContext, Depends(require("ai.bug_writer"))]
 LogReader = Annotated[OrgContext, Depends(require("ai.explain_log"))]
 Triager = Annotated[OrgContext, Depends(require("ai.triage"))]
 CaseWriter = Annotated[OrgContext, Depends(require("ai.test_cases"))]
+SummaryWriter = Annotated[OrgContext, Depends(require("ai.release_summary"))]
 Duplicates = Annotated[OrgContext, Depends(require("ai.duplicates"))]
 FEATURE_ERR = errors(401, 403, 404, 422, 429)
 
@@ -61,6 +64,13 @@ def generate_test_cases(body: GenerateCasesIn, db: DB, ctx: CaseWriter) -> Gener
     picks cases and saves them with the bulk endpoint, sending `usage_id` as `ai_usage_id`. `fallback` is true (no cases) when the model
     could not help."""
     return features.generate_test_cases(db, ctx.org, ctx.user.id, body)
+
+
+@router.post("/orgs/{org_id}/ai/release-summary", response_model=ReleaseSummarySuggestion, responses=FEATURE_ERR)
+def release_summary(body: ReleaseSummaryIn, db: DB, ctx: SummaryWriter) -> ReleaseSummarySuggestion:
+    """A plain English risk summary of a release, written from numbers the server builds (readiness, open bugs, runs). Nothing is saved:
+    the person accepts it with the release update, sending `usage_id` as `ai_usage_id`. A release of another workspace is a 404."""
+    return features.release_readiness_summary(db, ctx.org, ctx.user.id, body)
 
 
 @router.post("/orgs/{org_id}/ai/explain-log", response_model=LogExplanationOut, responses=FEATURE_ERR)
