@@ -1,7 +1,7 @@
 // Removes what a layout check run leaves behind when it is killed before its own cleanup (for example out of memory).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 clean-layout-fixtures.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 clean-layout-fixtures.mjs
 // It only touches the fixtures the layout check creates, by their fixed names, in the Lumen workspace: the reset fixture person
 // (membership removed and every live reset link revoked first), the invitation layout-i10@qapilot.test, the fixture labels, the
 // suites, bugs and saved views of the LAYT project (which is archived again). The long names workspace stays: the layout check

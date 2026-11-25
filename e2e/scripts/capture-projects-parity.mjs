@@ -2,7 +2,7 @@
 // project-overview-*).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 capture-projects-parity.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 capture-projects-parity.mjs
 // Writes e2e/parity/stage4/i13/app/*.png and e2e/parity/stage4/i13/compare/*.png (locked on the left, app on the right).
 // Test data: a project "parity-i13 data" (key Q + 4 letters) with bugs, a run and a release, and an empty project "parity-i13 empty".
 // Cleanup in `finally`: bugs, release and suite are deleted and both projects archived (the run stays, BL-027).

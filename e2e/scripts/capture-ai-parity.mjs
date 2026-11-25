@@ -2,7 +2,7 @@
 // and bug-new-loading-desktop.png). The default, error and mobile states of the same screen are captured by capture-bugs-parity.mjs.
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 capture-ai-parity.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 capture-ai-parity.mjs
 // Writes e2e/parity/stage5/i15/app/*.png and e2e/parity/stage5/i15/compare/*.png (locked on the left, app on the right).
 // Test data: a project "parity-i15" with a Checkout component and three open bugs that read like the title being typed. Cleanup in `finally`:
 // the bugs are deleted and the project archived.

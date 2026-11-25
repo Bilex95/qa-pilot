@@ -1,7 +1,7 @@
 // I-04 parity capture: the real Board next to the locked screenshots (design/screenshots/board-*).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 capture-board-parity.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 capture-board-parity.mjs
 // Writes e2e/parity/stage4/i04/app/*.png and e2e/parity/stage4/i04/compare/*.png (locked on the left, app on the right).
 // Test data: a project "parity-i04" with 14 bugs spread over the nine columns, created through the API and removed in `finally`
 // (bugs soft deleted, project archived). Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it.

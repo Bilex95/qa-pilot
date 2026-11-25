@@ -1,6 +1,6 @@
 # Runs the login smoke, the sign out check and every screen flow of the CI job one after the other, and prints one line per script.
 # A failing script does not stop the others. Use it inside with-wsl.ps1 with the baseline seeded:
-#   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\run-flows.ps1 > C:\Users\HP\qa-pilot\.gate\flows-all.txt
+#   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\run-flows.ps1 > <repo>\.gate\flows-all.txt
 # Pass script names (without .mjs) to run only those.
 param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Only)
 

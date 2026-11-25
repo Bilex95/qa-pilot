@@ -2,7 +2,7 @@
 // screenshots (design/screenshots/bug-detail-default-*.png and bug-detail-ai-desktop.png).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 capture-triage-parity.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 capture-triage-parity.mjs
 // Writes e2e/parity/stage5/i16/app/*.png and e2e/parity/stage5/i16/compare/*.png (locked on the left, app on the right).
 // Test data: a project "parity-i16" with a Checkout component and one bug. Cleanup in `finally`: the bug is deleted and the project archived.
 import { chromium } from 'playwright';

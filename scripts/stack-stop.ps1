@@ -1,5 +1,5 @@
 # Stops the containers and keeps their data (docker compose stop, never down -v).
-#   & C:\Users\HP\qa-pilot\scripts\stack-stop.ps1
+#   & <repo>\scripts\stack-stop.ps1
 $root = Split-Path -Parent $PSScriptRoot
 $distro = if ($env:QAP_WSL_DISTRO) { $env:QAP_WSL_DISTRO } else { 'Ubuntu' }
 $drive = $root.Substring(0, 1).ToLower()

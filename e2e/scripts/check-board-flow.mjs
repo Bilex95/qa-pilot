@@ -1,7 +1,7 @@
 // I-04 acceptance flow: the Board (SCR-09), moves by drag and by the keyboard, the role rules, and the rollback when the server refuses.
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 check-board-flow.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 check-board-flow.mjs
 // Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it.
 //
 // Test data: one project (key Z + 4 letters, name "flow-i04-<timestamp>") with three bugs titled "flow-i04-...". Everything is removed

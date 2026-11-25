@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Frontend gate in one off containers: lint, typecheck, next build, then a clean .next volume and a /login check.
 # Run in WSL from any folder. Windows side (output to a file, exit code from the tool result):
-#   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\frontend-gate.ps1 > C:\Users\HP\qa-pilot\.gate\frontend-gate.txt 2>&1
+#   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\frontend-gate.ps1 > <repo>\.gate\frontend-gate.txt 2>&1
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p .gate
 docker compose stop frontend 2>&1 | tail -2

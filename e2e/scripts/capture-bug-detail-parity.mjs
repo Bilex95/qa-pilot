@@ -1,7 +1,7 @@
 // I-05 parity capture: the real Bug detail next to the locked screenshots (design/screenshots/bug-detail-*).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 capture-bug-detail-parity.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 capture-bug-detail-parity.mjs
 // Writes e2e/parity/stage4/i05/app/*.png and e2e/parity/stage4/i05/compare/*.png (locked on the left, app on the right).
 // Test data: a project "parity-i05" with one bug that has steps, two files, two comments and a few changes, created through the API and
 // removed in `finally` (files deleted, bug soft deleted, project archived). Reads SEED_USER_PASSWORD from ../.env and never prints it.

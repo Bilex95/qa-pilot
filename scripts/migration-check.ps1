@@ -1,6 +1,6 @@
 # Migration round trip on the development database: downgrade one step, upgrade to head, then `alembic check` (no drift).
 # Use it inside with-wsl.ps1 so Docker stays up:
-#   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\migration-check.ps1 0010
+#   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\migration-check.ps1 0010
 param([Parameter(Mandatory = $true)][string]$Previous)
 $root = Split-Path -Parent $PSScriptRoot
 $distro = if ($env:QAP_WSL_DISTRO) { $env:QAP_WSL_DISTRO } else { 'Ubuntu' }

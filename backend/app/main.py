@@ -28,8 +28,9 @@ def create_app() -> FastAPI:
         title="QA Pilot API",
         version=settings.version,
         description="AI powered bug tracking and QA management. All tenant routes live under /api/v1/orgs/{org_id}.",
-        openapi_url=f"{API_PREFIX}/openapi.json",
-        docs_url=f"{API_PREFIX}/docs",
+        # The interactive docs and the schema are for development only (public repo hardening, D-073)
+        openapi_url=None if settings.is_production else f"{API_PREFIX}/openapi.json",
+        docs_url=None if settings.is_production else f"{API_PREFIX}/docs",
         redoc_url=None,
     )
     install_error_handlers(app)

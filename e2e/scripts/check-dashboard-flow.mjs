@@ -2,7 +2,7 @@
 // empty state of a project without bugs, the Developer's own bugs, the range checks and the CSV export with its formula escaping.
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 check-dashboard-flow.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 check-dashboard-flow.mjs
 // Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it.
 //
 // Test data: two projects (keys S and R + 4 letters, "flow-i09-<timestamp>"), four bugs in the first, a release and a run. Cleanup in

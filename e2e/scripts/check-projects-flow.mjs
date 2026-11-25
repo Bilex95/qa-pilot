@@ -3,7 +3,7 @@
 // Edit project, Archive, the read only views and the not found states.
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 check-projects-flow.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 check-projects-flow.mjs
 // Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it.
 //
 // Test data: a project made through the API (key V + 4 letters, "flow-i13-<timestamp> data") with two bugs, a suite of three cases, a run

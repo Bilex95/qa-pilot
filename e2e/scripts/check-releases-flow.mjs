@@ -2,7 +2,7 @@
 // (Blocked with two reasons), remove a link, mark it released, the release select on the bug page, delete, and the read only views.
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 check-releases-flow.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 check-releases-flow.mjs
 // Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it.
 //
 // Test data: one project (key U + 4 letters, name "flow-i08-<timestamp>") with a suite of three cases, three bugs, one run and releases

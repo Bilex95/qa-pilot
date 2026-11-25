@@ -1,7 +1,7 @@
 // Measures the response time of the dashboard, the reports and the bug list on the seeded baseline (NFR-PERF-02: dashboard p95 under 500 ms).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 measure-api-latency.mjs [--n 50]
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 measure-api-latency.mjs [--n 50]
 // Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it. Read only: it changes no data.
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';

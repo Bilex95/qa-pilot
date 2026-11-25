@@ -4,7 +4,7 @@
 // are warned about after 600 ms and only for a title of 8 characters, a Developer cannot set severity, nothing shows with AI off.
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 check-ai-flow.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 check-ai-flow.mjs
 // Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it.
 //
 // Test data: a project (key Y + 4 letters, "flow-i15-<timestamp>") with a component and one open bug. Cleanup in `finally`: every bug of the

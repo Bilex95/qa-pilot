@@ -1,7 +1,7 @@
 // I-07 parity capture: the real Test runs and Test run screens next to the locked screenshots (design/screenshots/test-run*).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 capture-runs-parity.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 capture-runs-parity.mjs
 // Writes e2e/parity/stage4/i07/app/*.png and e2e/parity/stage4/i07/compare/*.png (locked on the left, app on the right).
 // Test data: a project "parity-i07" with one suite of nine cases and one run of them (like the prototype's R-31: 5 pass, 2 fail, 1 blocked,
 // 1 not run). Cleanup in `finally`: the suite and its cases are deleted and the project archived. The run itself cannot be deleted (BL-027).

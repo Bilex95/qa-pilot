@@ -1,7 +1,7 @@
 // I-13 accessibility scan: axe (WCAG 2.0 and 2.1, levels A and AA) on every Stage 4 screen with real content, at 1440 and 390 px.
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 check-app-axe.mjs [--shots]
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 check-app-axe.mjs [--shots]
 // Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it. Read only: it changes no data.
 // Fails when any screen has a violation (the Next.js development overlay is excluded: it is not part of the product).
 import { chromium } from 'playwright';

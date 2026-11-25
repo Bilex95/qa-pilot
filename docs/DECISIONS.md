@@ -5,7 +5,7 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 ## D-001 How to run Docker on this machine
 * **Question:** Docker is not on the Windows PATH and Docker Desktop is not installed. How do we run Compose?
 * **Options:** (a) install Docker Desktop; (b) use the Docker Engine already running inside WSL 2 Ubuntu; (c) skip Docker.
-* **Decision:** (b). Call `wsl -d Ubuntu --cd /mnt/c/Users/HP/qa-pilot -- docker compose ...`. Wrap this in `scripts/*.ps1`.
+* **Decision:** (b). Call `wsl -d Ubuntu --cd /mnt/c/Users/<you>/qa-pilot -- docker compose ...`. Wrap this in `scripts/*.ps1`.
 * **Reason:** It is installed, running and current (Engine 29.4, Compose v5.1). Nothing outside the project has to be installed. Plain `docker compose` commands stay valid on other machines.
 
 ## D-002 How the API knows which organization a request is for
@@ -410,6 +410,13 @@ Format: `D-###`, question, options considered, decision, reason. Each decision w
 * **Screens:** SCR-14 list (page in the address, 25 per page) and SCR-15 run (first failed case open; each result button saves at once with an optimistic update and a rollback; clicking the pressed button sets the case back to not run; the failed step and the actual result save together). Differences by decision: the New test run dialog has a Project field (the prototype dialog had none) and no release field; the suites are toggle buttons, not checkboxes (a bare checkbox is a 13 px target on touch screens); Complete run asks for a confirmation (the prototype only showed a toast); the step numbers use `font-size: 1em` so they stay 12 px or more at 390.
 * **No delete for runs in v1 (BL-027):** test scripts that start runs (Newman, the run flow, the parity capture) leave the runs behind; they carry flow-i07, Newman or parity names and a reseed removes them. The layout check creates its two runs once and finds them again by name.
 * **Test stack:** `scripts/with-wsl.ps1 -Up` now also waits until the API reports the database ok three times in a row, because `up --wait` could return while the previous run's idle shutdown was still restarting the database (several scripts failed with 500 right after each other). The test that replaced the bug hooks restores the registered ones instead of clearing the lists.
+
+## D-073 Public repository hardening (product owner, 2026-11-25)
+
+* **Scan:** gitleaks over all branches found only test passwords and the test JWT secret (allowlisted in `.gitleaks.toml`). No real secret was ever committed.
+* **Changes:** actions pinned to commit SHAs; CodeQL (manual and weekly) and Dependabot added; MIT license, SECURITY.md, README; ignore rules for local-only files; production refuses the development database URL; the interactive docs and `openapi.json` are off when `APP_ENV=production` (kept in development); local machine paths replaced by placeholders in docs and script comments.
+* **History rewrite:** author name and email replaced by the GitHub noreply address with `git filter-repo`; one force push per rewritten branch approved by the product owner for this rewrite only; the no force push rule applies again afterwards.
+* **Left as is:** `CLAUDE.md` and `.claude/` keep absolute paths because the agents' command rules require them. `safe-push.sh` keeps its private check until the product owner makes the repository public.
 
 ## D-072 AI triage (I-16)
 * **Endpoint (API-142):** `POST {O}/ai/triage` for Org Admin, QA Lead and QA Engineer, through `service.run` of D-069. The body is either `{bug_id}` (nothing else) or `{project_id, title}` plus optional `description`, `steps`, `actual_result`, `environment_id` for a bug that is not saved yet; a body that is neither, or both, is a 422. A bug of another workspace or an unknown bug is a 404; a foreign, unknown or archived project or an environment that is not the project's is a 422 on that field (same rule as D-070). A bug in an archived project can still be triaged.

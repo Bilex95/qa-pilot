@@ -1,7 +1,7 @@
 // I-08 parity capture: the real Releases and Release screens next to the locked screenshots (design/screenshots/release*).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 capture-releases-parity.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 capture-releases-parity.mjs
 // Writes e2e/parity/stage4/i08/app/*.png and e2e/parity/stage4/i08/compare/*.png (locked on the left, app on the right).
 // Test data: a project "parity-i08" with a release "WEB 2.4.0" holding 4 bugs (2 Critical, 1 High, 1 Medium) and a run of 9 cases at 63%.
 // Cleanup in `finally`: bugs, the release, the suite are deleted and the project archived (the run stays, BL-027).

@@ -18,8 +18,8 @@ Checked on 2026-11-16 during Stage 0.
 Docker is not on the Windows PATH. Run it through WSL from the project folder:
 
 ```powershell
-wsl -d Ubuntu --cd /mnt/c/Users/HP/qa-pilot -- docker compose up -d
-wsl -d Ubuntu --cd /mnt/c/Users/HP/qa-pilot -- docker compose ps
+wsl -d Ubuntu --cd /mnt/c/Users/<you>/qa-pilot -- docker compose up -d
+wsl -d Ubuntu --cd /mnt/c/Users/<you>/qa-pilot -- docker compose ps
 ```
 
 Helper scripts in `scripts/*.ps1` (added in Stage 3) wrap this. On a machine with Docker Desktop the plain `docker compose ...` commands in `CLAUDE.md` work unchanged. See D-001.
@@ -52,7 +52,7 @@ The frontend container runs `next dev --webpack` with polling. Turbopack, the Ne
 
 ## Memory limits and working rules (set before Stage 4 work, 2026-11-18)
 
-The laptop has 16 GB of RAM (2 x 8 GB; Windows reports 15.7 GB). With Docker, the Next.js dev server and Playwright running together, Windows ran critically low on memory and Claude Code stopped a background process. WSL is now limited by `C:\Users\HP\.wslconfig` (created on 2026-11-18; no earlier file existed):
+The laptop has 16 GB of RAM (2 x 8 GB; Windows reports 15.7 GB). With Docker, the Next.js dev server and Playwright running together, Windows ran critically low on memory and Claude Code stopped a background process. WSL is now limited by `%USERPROFILE%\.wslconfig` (created on 2026-11-18; no earlier file existed):
 
 ```
 [wsl2]

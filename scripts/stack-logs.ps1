@@ -1,5 +1,5 @@
 # Prints the last lines of a service log of the running stack (default: backend). Use it inside with-wsl.ps1 so Docker stays up:
-#   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\stack-logs.ps1 backend 60
+#   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\stack-logs.ps1 backend 60
 param([string]$Service = 'backend', [int]$Lines = 60)
 $root = Split-Path -Parent $PSScriptRoot
 $distro = if ($env:QAP_WSL_DISTRO) { $env:QAP_WSL_DISTRO } else { 'Ubuntu' }

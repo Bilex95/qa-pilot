@@ -2,7 +2,7 @@
 // QA Lead, the Developer, the Viewer and the Org Admin.
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 check-bug-detail-flow.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 check-bug-detail-flow.mjs
 // Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it.
 //
 // Test data: one project (key Y + 4 letters, name "flow-i05-<timestamp>") with three bugs titled "flow-i05 ...". Everything is removed in

@@ -1,7 +1,7 @@
 // I-09 parity capture: the real Dashboard and Reports next to the locked screenshots (design/screenshots/dashboard-* and reports-*).
 //
 // Usage (stack up, baseline seeded):
-//   & C:\Users\HP\qa-pilot\scripts\with-wsl.ps1 -Up C:\Users\HP\qa-pilot\scripts\e2e.ps1 capture-dashboard-parity.mjs
+//   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 capture-dashboard-parity.mjs
 // Writes e2e/parity/stage4/i09/app/*.png and e2e/parity/stage4/i09/compare/*.png (locked on the left, app on the right).
 // Test data: a project "parity-i09" with bugs of every severity, one finished, a run at 67% and a Blocked release; the screens show the
 // whole workspace, so other data in it shows too (the numbers are not meant to match the prototype's).
