@@ -8,9 +8,9 @@ description: Use when running checks, gates, commits or pushes in QA Pilot: how 
 ## No prompt commands
 * Read and search only with Read, Grep and Glob, absolute paths under `C:/Users/HP/qa-pilot`. No cat, sed, head, tail, cut, wc, ls or grep in Bash.
 * Write code only with Edit and Write. No `cat >>`, heredocs or echo redirects.
-* Bash and PowerShell: one plain command per call. No cd (use absolute paths or `git -C C:/Users/HP/qa-pilot`), no pipes, parentheses, `;` or `&&` chains, loops, `$(...)` or variables in paths.
+* Bash and PowerShell: one plain command per call. No cd (use absolute paths or `git -C C:/Users/HP/qa-pilot`), no pipes, parentheses, `&&` chains, loops, `$(...)` or variables in paths.
 * Gate output goes to `C:/Users/HP/qa-pilot/.gate/<name>.txt` by redirect. Take the exit code from the tool result, then Grep the file for the summary and failure lines. Do not Read whole output files.
-* PowerShell scripts run as `& C:\Users\HP\qa-pilot\scripts\<name>.ps1` (never a nested `powershell`). `with-wsl.ps1` runs its target directly, so `& ...\with-wsl.ps1 -Up & ...\py-checks.ps1` works.
+* PowerShell scripts run as `& C:\Users\HP\qa-pilot\scripts\<name>.ps1` (never a nested `powershell`). Never join commands with `&`. Run `with-wsl.ps1` with its target as an argument in one call (`& ...\with-wsl.ps1 -Up ...\py-checks.ps1 > ...\.gate\x.txt`, one held WSL session), or run commands in sequence with a semicolon (`& ...\with-wsl.ps1 -Up; & ...\py-checks.ps1 > ...\.gate\x.txt`) or as separate calls. A bare `with-wsl.ps1 -Up` closes its session on exit and Docker can stop seconds later (D-048), so use the held form for long runs.
 * Helper scripts live in `C:/Users/HP/qa-pilot/scripts/` only. `.claude/settings.local.json` holds this machine's allow, ask and deny lists (not committed).
 
 ## Gate runs
