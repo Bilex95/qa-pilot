@@ -114,6 +114,16 @@ def test_the_summary_totals_by_feature_with_the_acceptance_rate_and_today_agains
     assert by["bug_writer"]["acceptance_rate"] == 100
 
 
+def test_the_summary_of_another_workspace_never_counts(client, db, world) -> None:
+    usage(db, world.b)
+    usage(db, world.b, feature="explain_log")
+    assert get(client, world.a, "usage/summary").json()["totals_by_feature"] == []
+    assert get(client, world.a, "usage/summary").json()["used_today"] == 0
+    usage(db, world.a)
+    body = get(client, world.a, "usage/summary").json()
+    assert [t["calls"] for t in body["totals_by_feature"]] == [1] and body["used_today"] == 1
+
+
 def test_the_summary_range_leaves_out_older_calls_but_today_is_always_today(client, db, world) -> None:
     usage(db, world.a, days_ago=20)
     usage(db, world.a)
