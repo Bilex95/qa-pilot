@@ -6,7 +6,6 @@ from typing import Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 DEV_DATABASE_URL = "postgresql+psycopg://qapilot:qapilot@localhost:5433/qapilot"
 
 
