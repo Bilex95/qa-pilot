@@ -770,7 +770,47 @@ for (const vp of VIEWPORTS.filter(wanted)) {
   await page.fill('#n-exp', UNBROKEN_TITLE);
   await page.fill('#n-act', LONG_TITLE.repeat(4));
   for (const b of await page.locator('#n-lab button').all()) await b.click();
-  await check('new bug: long text, every label chosen', { shot: 'bug-new-long' });
+  await page.waitForSelector('.dupes'); // the long title matches the fixture bug of the same title: a 200 character row in the warning (I-15)
+  await check('new bug: long text, every label chosen, duplicate warning', { shot: 'bug-new-long' });
+
+  // AI Bug Writer and Explain this log (I-15): drafting, the draft, the explained log and a suggestion that failed
+  step = 'open the New bug form for the AI panel';
+  await go(page, '/o/lumen/bugs/new');
+  await page.waitForSelector('#n-title');
+  await page.selectOption('#n-proj', { label: BUG_PROJECT.name });
+  await page.waitForSelector('#n-env option:has-text("prod")', { state: 'attached' });
+  await check('new bug: AI panel', { shot: 'bug-new-ai-idle' });
+  await fillStable(page, '#w-notes', 'Checkout crashes when I press Pay in prod\n1. Open the cart\n2. Press Pay');
+  await fillStable(page, '#w-log', `PricingError: discount context lost on cart rebuild ${'and the carrier reference was dropped '.repeat(6)}\n  at rebuildCart (pricing.ts:214)`);
+  step = 'draft with the AI Bug Writer';
+  const writerUrl = /\/api\/v1\/orgs\/[^/]+\/ai\/bug-writer$/;
+  await page.route(writerUrl, async (route) => { await new Promise((r) => setTimeout(r, 3000)); await route.continue(); });
+  await page.click('button:has-text("Write the report")');
+  await page.waitForSelector('.thinking');
+  await check('new bug: AI drafting', { shot: 'bug-new-ai-thinking' });
+  await page.waitForSelector('.ai-panel .suggest');
+  await page.unroute(writerUrl);
+  await check('new bug: AI draft in the form', { shot: 'bug-new-ai' });
+  step = 'explain the log';
+  await page.click('details summary');
+  await page.click('details button:has-text("Explain this log")');
+  await page.waitForSelector('details .suggest');
+  await check('new bug: AI draft and an explained log', { shot: 'bug-new-ai-explained' });
+  step = 'show a suggestion that failed';
+  await go(page, '/o/lumen/bugs/new');
+  await page.waitForSelector('#n-title');
+  await page.selectOption('#n-proj', { label: BUG_PROJECT.name });
+  const aiCors = { ...cors, 'access-control-allow-headers': 'authorization,content-type,x-request-id', 'access-control-allow-methods': 'POST,OPTIONS' };
+  await page.route(writerUrl, (route) => route.request().method() === 'OPTIONS'
+    ? route.fulfill({ status: 204, headers: aiCors })
+    : route.fulfill({ status: 200, contentType: 'application/json', headers: aiCors, body: JSON.stringify({
+      title: 'x', description: '', steps_to_reproduce: [], expected_result: '', actual_result: '', environment: null, environment_id: null, component: null,
+      component_id: null, suggested_severity: 'medium', missing_information: [], fallback: true, usage_id: '00000000-0000-4000-8000-000000000000' }) }));
+  await fillStable(page, '#w-notes', 'Something odd happens');
+  await page.click('button:has-text("Write the report")');
+  await page.waitForSelector('text=AI could not produce a suggestion');
+  await check('new bug: AI could not produce a suggestion', { shot: 'bug-new-ai-failed' });
+  await page.unroute(writerUrl);
 
   // Test suites (SCR-12) and the case editor (SCR-13), I-06: default with the long fixtures, the pager, dialogs, every state
   const suitesUrl = /\/api\/v1\/orgs\/[^/]+\/test-suites\?/;

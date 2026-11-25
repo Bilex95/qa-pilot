@@ -4,6 +4,23 @@
 **Branch:** stage/4-core-features
 **Remote:** origin = github.com/Bilex95/qa-pilot (private). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
+## Resume here (paused 2026-11-25, product owner usage limit)
+
+**Where I stopped:** Stage 5, **I-15** (AI Bug Writer, Explain this log, duplicate detector). Backend done and pushed (`34ece25`, D-070). Frontend built and passing locally but **not yet pushed or reviewed** (committed in the two commits after this note: `feat(ai)` for the screen and flow, `wip(I-15)` for the layout states and parity capture that have not been run).
+
+**CI on the latest finished-enough run (45596069987, commit 1d74866, the breadcrumb fix):**
+* Green: Backend (ruff, mypy, pytest), OpenAPI contract, Frontend (lint, typecheck, build), Secret scan, Newman, Parity capture, Screen flows (sign in, bugs, tests, board; this group had failed before on a sign out socket error, fixed by a retry), Screen flows (dashboard, settings, members, reset, axe), Layout 1280 and 1440, Layout 200% zoom.
+* Still running when I stopped: Layout 360 and 390, 768 and 1024, 1920 and 2560 (the earlier run failed all five shards on one finding: the project key in the breadcrumb was under 12 px, fixed in 1d74866).
+* **Failed: Screen flows (bug detail, projects, runs, releases), in `check-projects-flow`** at the Archive step ("waiting for button Archive project"). Cause: my own parity fix made the project overview show its head, with an Edit project button that did nothing, while the detail was still loading; the flow clicked it too early. **Fixed** in the working tree (`ProjectHead` takes `onEdit` as optional and the loading state passes none, so the button only appears once it works); not yet pushed or seen green in CI. The newer run 45598296658 (I-15 backend commit) is queued behind it.
+* The run for the I-14 commit was cancelled on purpose (it predated the breadcrumb fix).
+
+**I-15 frontend, what exists:** `frontend/src/modules/ai/` (hooks, AI Bug Writer panel, duplicate warning), New bug page with the split layout, `check-ai-flow.mjs` (PASSES locally: draft, discard, edit, accept and save as AI assisted, failed suggestion, explain log, duplicates, Developer, AI off), `capture-ai-parity.mjs` (two pairs reviewed: the AI draft and the drafting state match the locked screenshots; fixed: values bold in the suggestion, "Explain this log" hidden while drafting).
+**Not done for I-15:** (1) look at `e2e/parity/stage4/i03/compare/bug-new-default-desktop.png`, `bug-new-error-desktop.png` and `bug-new-default-mobile.png` (just recaptured, now with the AI panel; the mobile stacking is unchecked); (2) the new layout states in `check-app-layout.mjs` (AI panel idle, drafting, draft, explained log, failed suggestion, duplicate warning with a 200 character row) have never run: CI will run them, fix what it reports; (3) D-071 (the frontend decisions: description of a draft is not shown because the locked form has no description field, "Add to actual result" instead of the prototype's "Insert into description", saved bugs are marked `ai_assisted`, the AI controls render nothing when AI is off), the I-15 review section in `docs/reviews/STAGE_4_REVIEW.md` (backend numbers: pytest 1633, Newman 590 requests and 1019 assertions), PROGRESS Done entry and the DAG entry (`scripts/build_issues.py` DONE map).
+
+**Counts at the pause:** ruff and mypy clean (160 source files), pytest 1633 passed, Newman 590 requests and 1019 assertions, lint, typecheck and `next build` clean, AI flow PASS locally.
+
+**Next step:** push these commits with `bash scripts/safe-push.sh stage/4-core-features`; read the CI run (`gh run list --branch stage/4-core-features`, then `gh api repos/Bilex95/qa-pilot/actions/jobs/<id>/logs` for a failed job) and fix what it reports; finish the three open points above; then I-16 (AI triage), I-17 (test case generator), I-18 (release summary), I-19 (AI usage screen), Stage 6 (I-20 to I-22), one final review. Rule from the product owner: do not run the full browser suites locally; stop only if CI stays red after two honest fixes of the same failure.
+
 ## Decision taken (2026-11-25, product owner): CI is the judge
 
 After the second low memory stop the product owner chose: fix what CI reports, split the browser checks into parallel jobs (done, D-068), review all ten Projects parity comparisons (done, two fixed), then Stage 5. **From now on the full browser suites are not run locally**; only the screens that changed, at 390 and 1440. Stop only if CI stays red after two honest fixes of the same failure. Current: Stage 5, I-14 done (backend); next I-15.
