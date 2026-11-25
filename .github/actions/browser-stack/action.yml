@@ -15,9 +15,11 @@ runs:
         echo "::add-mask::${PW}"
         sed -i "s|^SEED_USER_PASSWORD=.*|SEED_USER_PASSWORD=${PW}|" .env
         echo "SEED_USER_PASSWORD=${PW}" >> "$GITHUB_ENV"
-    - name: Start the full stack
+    - name: Start the full stack (frontend as the production build, not next dev)
       shell: bash
-      run: docker compose up -d --build --wait
+      run: |
+        echo "COMPOSE_FILE=docker-compose.yml:docker-compose.ci.yml" >> "$GITHUB_ENV"
+        COMPOSE_FILE=docker-compose.yml:docker-compose.ci.yml docker compose up -d --build --wait
     - name: Seed baseline
       shell: bash
       run: docker compose exec -T backend python -m app.seed --scenario baseline
@@ -30,9 +32,9 @@ runs:
       shell: bash
       working-directory: e2e
       run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
-    - name: Warm up the dev server (the first compile of a route can take minutes on a cold runner)
+    - name: Time of the first request per route (production build, no warm up; measured, not waited for)
       shell: bash
       run: |
-        for p in /login /register /o/lumen/dashboard /o/lumen/projects /o/lumen/projects/WEB /o/lumen/bugs /o/lumen/bugs/new /o/lumen/bugs/WEB-1 /o/lumen/board /o/lumen/tests /o/lumen/runs /o/lumen/runs/R-1 /o/lumen/releases /o/lumen/releases/00000000-0000-4000-8000-000000000000 /o/lumen/reports /o/lumen/tests/cases/new /o/lumen/settings /o/lumen/members; do
-          curl -s -o /dev/null --max-time 300 "http://localhost:3000$p" || echo "warm up of $p did not finish"
+        for p in /login /o/lumen/dashboard /o/lumen/projects /o/lumen/bugs; do
+          curl -s -o /dev/null --max-time 120 -w "first request $p: %{time_total}s (HTTP %{http_code})\n" "http://localhost:3000$p" || echo "first request of $p did not finish"
         done

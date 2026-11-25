@@ -46,12 +46,14 @@ check((await page.textContent('.banner.error')).includes('Email or password is i
 await page.screenshot({ path: resolve(out, 'stage3-login-error-desktop.png') });
 
 // QA Engineer signs in and lands on the first workspace
+const signInStart = Date.now();
 await login('priya@lumenfreight.test');
 await page.waitForURL('**/o/harbor/dashboard', { timeout: 90_000 }).catch(() => {});
 await page.waitForURL(/\/o\/(lumen|harbor)\/dashboard/);
 check(/\/o\/(harbor|lumen)\/dashboard$/.test(page.url()), `QA Engineer lands on a dashboard (${new URL(page.url()).pathname})`);
 await page.goto(`${base}/o/lumen/dashboard`);
 await page.waitForSelector('h1:has-text("Dashboard")');
+console.log(`time from first sign in to the dashboard heading: ${((Date.now() - signInStart) / 1000).toFixed(1)} s`);
 await page.waitForSelector(':text("Nothing to measure yet"), :text("Open bugs")', { timeout: 30_000 }).catch(() => {});
 check(await page.isVisible('text=Nothing to measure yet') || await page.isVisible('text=Open bugs'), 'dashboard shows its figures or the empty state');
 check(await page.locator('nav a:has-text("Members")').count() === 0, 'QA Engineer does not see Members');
