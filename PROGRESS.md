@@ -4,9 +4,13 @@
 **Branch:** stage/4-core-features
 **Remote:** origin = github.com/Bilex95/qa-pilot (PUBLIC since 2026-11-25, keep it free of secrets and personal data). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
-## Resume here (updated 2026-11-25, token rules in CLAUDE.md)
+## Resume here (updated 2026-11-26, token rules in CLAUDE.md)
 
-**State:** Stage 5 is complete (I-14 to I-19; I-19 AI usage screen, D-076). Next is Stage 6: I-20 to I-22.
+**State:** Stage 5 is complete (I-14 to I-19; I-19 AI usage screen, D-076) and green in CI (run 45699676339 on 59ec77d). Last python gate: ruff and mypy PASS (162 files), pytest 1757 passed. Next is Stage 6: I-20 to I-22.
+
+**Scripts:** `scripts/gate.ps1` runs all local gates in one command (`-Only frontend|python`, output in `.gate\gate-*.txt`). `bash scripts/wait-ci.sh <commit>` reports a CI run once it finishes (no polling). The read block outside the working directory is off in Claude Code settings (backup: `C:\Users\HP\.claude\settings.json.bak`).
+
+**Brief rules for issue-builder:** 44 px targets, prototype first; reseed before Newman; no `&` joining in PowerShell; repo is public (no secrets or personal data); use gate.ps1 and wait-ci.sh.
 
 **CodeQL:** appears and can be run manually only after stage 4 is merged to main; run it once then.
 
