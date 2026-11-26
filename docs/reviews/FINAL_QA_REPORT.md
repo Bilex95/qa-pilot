@@ -2,9 +2,9 @@
 
 Branch `stage/4-core-features`. Last CI run seen green: run 45796890360 (commit f8352f9), all jobs success. Status values: **Verified** (built and checked by an automated test or a recorded manual check), **Partial** (built, with a stated gap), **Not done**.
 
-## Recommendation: GO, with two conditions
+## Recommendation: GO, with one condition
 
-1. Run the large seed latency check (BL-035) and confirm the bug list p95 stays under 300 ms. Until then REQ-062 is Partial.
+1. The large seed latency check (BL-035) is done: bug list p95 45 ms and dashboard p95 316 ms at 20,068 bugs (D-080).
 2. Add a general API rate limit (BL-034) before exposing the API to the public internet. Sign in, password reset and AI calls are already limited.
 
 No critical or high defect is open. No cross tenant leak was found (I-21). Nothing needs a product decision.
@@ -21,6 +21,7 @@ No critical or high defect is open. No cross tenant leak was found (I-21). Nothi
 | axe | 17 screens at 1440 and 390 px, zero violations |
 | Security | `npm audit` 0, `pip-audit` none, secret scan found only test values |
 | Performance (baseline seed, 68 bugs) | bug list p95 69 ms (target 300), dashboard 115 ms (target 500) |
+| Performance (D-080, p95 ms at 68, 5,068 and 20,068 bugs) | bug list 23, 22, 45; dashboard 30, 52, 316; trend 16, 36, 195; summary 40, 26, 172; releases 21, 19, 53 |
 
 ## Requirement traceability
 
@@ -89,14 +90,14 @@ Evidence key: UT = backend pytest, NM = Newman collection, FL = browser flow scr
 | REQ-059 compose healthy from a clean clone | Verified | CI stack start on every run, REV (I-24) |
 | REQ-060 seed CLI | Verified | UT (idempotent, refuses production), five scenarios |
 | REQ-061 Postman and CI | Verified | CI runs ruff, mypy, pytest, lint, tsc, build and Newman |
-| REQ-062 bug list speed | Partial | p95 69 ms on 68 bugs; not measured at a large volume (BL-035) |
+| REQ-062 bug list speed | Verified | `measure-api-latency.mjs`: p95 23 ms on 68 bugs, 22 ms on 5,068, 45 ms on 20,068 (target 300); dashboard 316 ms at 20,068 (target 500) (D-080) |
 | REQ-063 secure defaults | Verified | UT (headers, CORS), non root images, secret scan, REV (I-21) |
 
-Totals: 61 Verified, 2 Partial (REQ-057, REQ-062), 0 Not done. REQ-042 is Verified for the mock provider only.
+Totals: 62 Verified, 1 Partial (REQ-057), 0 Not done. REQ-042 is Verified for the mock provider only.
 
 ## Known gaps and backlog
 
-* BL-035: latency on a large seed (do before release).
+* BL-035 is done (D-080). The dashboard is the endpoint to watch beyond 20,000 bugs (316 ms p95 against a 500 ms target).
 * BL-034: general API rate limit (before public exposure).
 * No live call to the Anthropic provider was run (no key); validation, retry and fallback are tested against a fake provider.
 * No manual screen reader pass.
