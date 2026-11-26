@@ -5,7 +5,37 @@ AI assisted bug tracking and QA management. Next.js and TypeScript on the front,
 * Requirements: `docs/requirements/`
 * Build plan and decisions: `docs/BUILD_PLAN.md`, `docs/DECISIONS.md`
 * Locked design: `design/reference/approved.html` and `design/screenshots/`
+* User guide: `docs/USER_GUIDE.md`; changes: `CHANGELOG.md`
+* Parity report and final QA report: `docs/reviews/PARITY.md`, `docs/reviews/FINAL_QA_REPORT.md`
 * Everything in the demo data is fictional.
+
+## Quick start on Windows (5 commands)
+
+You need Docker Desktop (Compose v2) and Git. Run these in PowerShell:
+
+```
+git clone https://github.com/Bilex95/qa-pilot.git
+cd qa-pilot
+copy .env.example .env
+docker compose up -d --wait
+docker compose exec backend python -m app.seed --scenario baseline
+```
+
+Before the fourth command, open `.env` and fill the empty values: `POSTGRES_PASSWORD`, `JWT_SECRET` (at least 32 random characters) and `SEED_USER_PASSWORD` (the password every demo account shares). Then open http://localhost:3000.
+
+### Seeded logins
+
+All accounts use your `SEED_USER_PASSWORD`. Workspace "Lumen Freight":
+
+| Email | Role |
+|---|---|
+| `amara@lumenfreight.test` | Org Admin |
+| `lukas@lumenfreight.test`, `arjun@lumenfreight.test` | QA Lead |
+| `priya@lumenfreight.test`, `tomas@lumenfreight.test` | QA Engineer |
+| `diego@lumenfreight.test`, `mei@lumenfreight.test`, `kwame@lumenfreight.test` | Developer |
+| `hana@lumenfreight.test`, `sofia@lumenfreight.test` | Viewer |
+
+Priya also belongs to a second workspace ("Harbor Clinics") as a Viewer, to show the workspace switcher. Other scenarios (`empty`, `sla-breach`, `release-blocked`, `multi-tenant`) are loaded with `--scenario <name>`; the seed CLI prints each scenario's logins and expected counts.
 
 ## Running locally
 
