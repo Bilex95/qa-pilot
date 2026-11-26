@@ -27,8 +27,12 @@ if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 // Widths from the standing rule; 200% zoom is emulated as half the CSS width at device scale 2.
 const VIEWPORTS = [
+  { label: '320', width: 320, height: 640, scale: 1 },
   { label: '360', width: 360, height: 780, scale: 1 },
+  { label: '375', width: 375, height: 812, scale: 1 },
   { label: '390', width: 390, height: 844, scale: 1 },
+  { label: '412', width: 412, height: 915, scale: 1 },
+  { label: '430', width: 430, height: 932, scale: 1 },
   { label: '768', width: 768, height: 1024, scale: 1 },
   { label: '1024', width: 1024, height: 768, scale: 1 },
   { label: '1280', width: 1280, height: 800, scale: 1 },

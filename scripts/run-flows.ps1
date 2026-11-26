@@ -7,7 +7,7 @@ param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Only)
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location (Join-Path $root 'e2e')
 $all = @('smoke-login', 'check-signout', 'check-bugs-flow', 'check-tests-flow', 'check-board-flow', 'check-bug-detail-flow',
-  'check-projects-flow', 'check-ai-flow', 'check-runs-flow', 'check-releases-flow', 'check-dashboard-flow', 'check-settings-flow', 'check-members-flow', 'check-reset-flow', 'check-app-axe')
+  'check-projects-flow', 'check-ai-flow', 'check-runs-flow', 'check-releases-flow', 'check-dashboard-flow', 'check-settings-flow', 'check-members-flow', 'check-reset-flow', 'check-app-axe', 'check-journeys', 'check-keyboard')
 $names = if ($Only -and $Only.Count) { $Only } else { $all }
 $failed = @()
 # The dev server compiles a route on its first visit (minutes when the cache was cleared): visit each route once before the checks
