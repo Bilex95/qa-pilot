@@ -200,7 +200,7 @@ async function main() {
     await row(caseOne.key).getByRole('button', { name: 'Fail', exact: true }).click();
     await row(caseOne.key).locator('.res-fail').waitFor();
     if (!(await row(caseOne.key).locator('.case-detail').count())) await row(caseOne.key).locator('.expander').click();
-    await page.selectOption(`#fs-${caseOne.key}`, '2'); // Step 3
+    await page.selectOption(`#fs-${caseOne.key}`, '1'); // Step 2 (the API counts from 0; the draft title says step index + 1)
     await row(caseOne.key).locator('tr.failed').waitFor();
     await page.fill(`#fa-${caseOne.key}`, 'Total went up by 4.20');
     await page.locator(`#fa-${caseOne.key}`).blur();
@@ -208,13 +208,13 @@ async function main() {
     await row(caseOne.key).getByRole('link', { name: 'Create bug from failed step' }).click();
     await page.waitForURL(/\/bugs\/new\?from_run=/);
     await page.getByText('Prefilled from a failed step of').waitFor();
-    check((await page.inputValue('#n-title')) === 'journey apply a discount code fails at step 3', `the bug title is "${await page.inputValue('#n-title')}", not drawn from the failed step`);
+    check((await page.inputValue('#n-title')) === 'journey apply a discount code fails at step 2', `the bug title is "${await page.inputValue('#n-title')}", not drawn from the failed step`);
     await page.getByRole('button', { name: 'Save bug' }).click();
     await page.waitForURL(/\/o\/lumen\/bugs\/[A-Z]+-\d+$/);
     const fromRun = (await api(`${O()}/bugs/${page.url().split('/').pop()}`, { token: T })).json;
     state.bugs.push(fromRun);
     check(fromRun.project_id === state.project.id, 'the bug from the failed step is in another project');
-    log(`run: case failed at step 3, bug ${fromRun.key} created from it`);
+    log(`run: case failed at step 2, bug ${fromRun.key} created from it`);
 
     // 5. Release summary
     state.release = (await api(`${O()}/releases`, { method: 'POST', token: T, body: { project_id: state.project.id, name: `${NAME} release` } })).json;

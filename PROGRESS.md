@@ -6,7 +6,7 @@
 
 ## Resume here (updated 2026-11-26, token rules in CLAUDE.md)
 
-**State:** Stage 5 is complete (I-14 to I-19, D-076) and green in CI (run 45699676339 on 59ec77d). I-20 (journeys, keyboard pass, nine widths, D-077) is built and pushed; its first CI run is the evidence (new flows job and layout shard). Next is I-21, then I-22.
+**State:** Stage 5 is complete (I-14 to I-19, D-076) and green in CI (run 45699676339 on 59ec77d). I-20 (journeys, keyboard pass, nine widths, D-077) is done and green in CI: run 45790781486 on 1b91943, all 16 jobs success, including the new "critical journeys and keyboard" job and the 320, 375, 412 and 430 px layout shard (no layout findings). The run journey's original expectation (failed step 2, title "fails at step 2") passed there, so the app was right; the earlier local failure was timing on the slow dev server, and the check is restored to step 2 with a wait for the prefill notice. Pending: the npm cache race in the frontend Docker build (flaky `npm ci` ENOENT in the cache, seen on 9f8164b); propose a fix after I-20 (compare a retry with a separate npm cache per build). Archive repo Actions are disabled. Next is I-21, then I-22.
 
 **Scripts:** `scripts/gate.ps1` runs all local gates in one command (`-Only frontend|python`, output in `.gate\gate-*.txt`). `bash scripts/wait-ci.sh <commit>` reports a CI run once it finishes (no polling). The read block outside the working directory is off in Claude Code settings (backup: `C:\Users\HP\.claude\settings.json.bak`).
 
