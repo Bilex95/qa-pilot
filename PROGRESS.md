@@ -6,7 +6,7 @@
 
 ## Resume here (updated 2026-11-26, token rules in CLAUDE.md)
 
-**State:** Stage 5 is complete (I-14 to I-19; I-19 AI usage screen, D-076) and green in CI (run 45699676339 on 59ec77d). Last python gate: ruff and mypy PASS (162 files), pytest 1757 passed. Next is Stage 6: I-20 to I-22.
+**State:** Stage 5 is complete (I-14 to I-19, D-076) and green in CI (run 45699676339 on 59ec77d). I-20 (journeys, keyboard pass, nine widths, D-077) is built and pushed; its first CI run is the evidence (new flows job and layout shard). Next is I-21, then I-22.
 
 **Scripts:** `scripts/gate.ps1` runs all local gates in one command (`-Only frontend|python`, output in `.gate\gate-*.txt`). `bash scripts/wait-ci.sh <commit>` reports a CI run once it finishes (no polling). The read block outside the working directory is off in Claude Code settings (backup: `C:\Users\HP\.claude\settings.json.bak`).
 
@@ -29,6 +29,7 @@
 * I-17 AI Test Case Generator (D-074): API-144, the generator panel on the case editor (pick list, bulk add through API-100), layout states, parity compared. The CI failure of run 45652162933 was a wrong test (it archived through a route that does not exist), fixed; the code's 422 matches the other creators. Verified: ruff, mypy, pytest 1707, Newman 607 requests and 1049 assertions, lint, typecheck, build, OpenAPI regenerated.
 * I-18 AI Release Readiness Summary (D-075): API-145, accepting through API-113 (`ai_summary` with `ai_usage_id`, audit `release.summary_accepted`), the summary panel on the release page, layout states, flow part, parity compared. Verified: ruff, mypy, pytest 1756, Newman 620 requests and 1073 assertions, lint, typecheck, build, AI flow, parity at 1440 and 390. The full local layout run was not repeated (it hung twice for I-17); the new states run in CI.
 * I-19 AI usage screen (D-076): the screen on API-146 and API-147 (built in I-14), range select, readout, provider banner, By feature, request log with pager, four states, layout states, flow part, parity compared. Verified: lint, typecheck, build, AI flow, parity at 1440 and 390; backend unchanged. The new states run in CI. CI fix: model name under 12 px (banner `.mono`) and the loading step waiting for a missing `.crumbs`; summary cross tenant test added.
+* I-20 End to end, accessibility and widths (D-077): `check-journeys.mjs` (seven journeys) and `check-keyboard.mjs` added to the flows and a fourth CI flows job; 320, 375, 412 and 430 px added to the layout check and a CI shard; axe unchanged (zero violations). No product code changed. Local frontend and backend gates were not affected (scripts and CI only); CI is the judge.
 
 ## Stage 4 plan (docs/issues/DAG.md)
 - [ ] 4A: I-01 projects, components, environments (done, 719da8c, 3beb83b); I-02 labels (done, see Done); I-10 members screen (done, see Done); I-24 Docker preflight (done, see Done). Batch 4A is complete

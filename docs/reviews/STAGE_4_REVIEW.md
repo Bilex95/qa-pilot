@@ -669,6 +669,17 @@ API-145 (`POST {O}/ai/release-summary`, Org Admin and QA Lead) and the accepting
 
 Backlog: BL-031.
 
+### I-20 End to end tests, accessibility and responsive checks (REQ-055 to REQ-058; D-077)
+
+No product code changed; this issue adds checks.
+
+* **Journeys** (`e2e/scripts/check-journeys.mjs`): sign in per role, report a bug with the AI Bug Writer, AI triage then a keyboard move on the board, run a test with a failed step and create the bug from it, release summary, a Viewer cannot edit, workspace A and B cannot see each other.
+* **Keyboard** (`e2e/scripts/check-keyboard.mjs`): sign in by keyboard, Tab through the New bug form with a visible focus indicator, the New test run dialog traps Tab, closes on Escape and returns focus, no serious axe finding in the open dialog.
+* **Axe:** `check-app-axe.mjs` (17 screens at 1440 and 390, zero violations) is unchanged and still in the CI flows.
+* **Widths:** 320, 375, 412 and 430 px added to `check-app-layout.mjs` and to a new CI shard, next to 360, 390, 768, 1024 and 1440 (and 1280, 1920, 2560, 200% zoom).
+* **CI:** a fourth flows job "critical journeys and keyboard". The first run of the two new scripts and the new width shard is the evidence. Local runs against the dev server were slow (the journeys took over 15 minutes), so CI is the judge (D-060).
+* **Local runs found and fixed:** the keyboard check measured the focus ring before it settled (wait added); the role check assumed every role holder lands on the Lumen dashboard, but a person in two workspaces lands on the other one.
+
 ### I-19 AI usage screen (SCR-21; REQ-051; D-076)
 
 The AI usage screen on API-146 and API-147 (both built in I-14, so no backend change in this issue).

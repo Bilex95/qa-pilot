@@ -1,6 +1,6 @@
 # I-20 End to end tests, accessibility and responsive checks
 
-**Stage:** 6 | **Batch:** 6A (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 6 | **Batch:** 6A (see [DAG](DAG.md)) | **Status:** Done (D-077, review in STAGE_4_REVIEW.md)
 
 ## Goal / requirement IDs
 

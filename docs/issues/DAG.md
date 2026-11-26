@@ -124,7 +124,7 @@ flowchart LR
 | I-17 | Done | 6cd798d |
 | I-18 | Done | b3c8911 |
 | I-19 | Done | ef55723 |
-| I-20 | Planned |  |
+| I-20 | Done | see PROGRESS |
 | I-21 | Planned |  |
 | I-22 | Planned |  |
 
