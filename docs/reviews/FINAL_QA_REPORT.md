@@ -98,6 +98,7 @@ Totals: 62 Verified, 1 Partial (REQ-057, pending the product owner's manual NVDA
 ## Known gaps and backlog
 
 * BL-035 is done (D-080). The dashboard is the endpoint to watch beyond 20,000 bugs (316 ms p95 against a 500 ms target).
+* BL-037: the live AI smoke test (`e2e/scripts/smoke-live-ai.mjs`) has not been run, because there is no API key yet. It must pass before any real user touches the AI features. REQ-042 stays Verified for the mock provider only.
 * BL-034: general API rate limit (before public exposure).
 * BL-036: the dashboard grows faster than the data (52 ms at 5,000 bugs, 316 ms at 20,000). Not blocking; before a larger customer arrives, run EXPLAIN ANALYZE on the dashboard, trend and summary queries at 20,000 bugs and propose an index or pre-aggregation.
 * No live call to the Anthropic provider was run (no key); validation, retry and fallback are tested against a fake provider.
