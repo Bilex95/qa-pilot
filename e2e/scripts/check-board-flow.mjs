@@ -148,6 +148,8 @@ async function main() {
     // 4. The server refuses a move the screen thought was fine: the card returns with a message and the board is refreshed
     await page.reload();
     await page.waitForSelector('section.col');
+    await card(bugC).waitFor();
+    await page.waitForLoadState('networkidle');
     await api(`${O()}/bugs/${bugC.id}/transitions`, { method: 'POST', token: state.leadToken, body: { to_status: 'wont_fix' } }); // C is now Won't fix on the server
     await card(bugC).dragTo(column('triaged')); // the screen still shows C in New
     await toast('cannot move to Triaged any more').waitFor();
@@ -160,6 +162,8 @@ async function main() {
     // 5. A server error rolls the card back (the request is answered 500)
     await page.reload();
     await page.waitForSelector('section.col');
+    await card(bugC).waitFor();
+    await page.waitForLoadState('networkidle'); // every board, project and workflow request has settled before the drag
     await page.route(/\/transitions$/, (route) => route.fulfill({ status: 500, contentType: 'application/json',
       headers: { 'access-control-allow-origin': BASE, 'access-control-allow-credentials': 'true' },
       body: JSON.stringify({ error: { code: 'internal_error', message: 'Something went wrong on our side.', details: {} } }) }));

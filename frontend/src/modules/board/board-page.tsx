@@ -47,6 +47,9 @@ export function BoardPage() {
   const board = useQuery({
     queryKey: key,
     placeholderData: keepPreviousData,
+    // With ?project= in the address wait for the project list: otherwise the all projects board shows first and is
+    // swapped for the project board a moment later, in the middle of a drag.
+    enabled: !asked || !projects.isPending,
     queryFn: () =>
       unwrap(api.GET("/api/v1/orgs/{org_id}/bugs/board", {
         params: { path: { org_id: org.id }, query: { project_id: project || undefined } },
