@@ -125,7 +125,7 @@ flowchart LR
 | I-18 | Done | b3c8911 |
 | I-19 | Done | ef55723 |
 | I-20 | Done | see PROGRESS |
-| I-21 | Planned |  |
+| I-21 | Done | see PROGRESS |
 | I-22 | Planned |  |
 
 ## Requirement coverage

@@ -669,6 +669,14 @@ API-145 (`POST {O}/ai/release-summary`, Org Admin and QA Lead) and the accepting
 
 Backlog: BL-031.
 
+### I-21 Security, tenancy review and performance (REQ-008, REQ-062, REQ-063; D-078)
+
+* **Tenancy:** all query functions in the infrastructure modules reviewed; the 23 without `org_id` are global by design or only get ids loaded through an org scoped query. A new test (`test_tenancy_review.py`) lists them and fails on any new unreviewed one. No leak found.
+* **Headers, CORS, uploads, rate limits, non root images:** present and tested already; the only gap is a general rate limit (BL-034).
+* **Dependencies:** `npm audit` frontend 0, e2e 0; `pip-audit` none (new `scripts/pip-audit.ps1`).
+* **Performance:** bug list p95 69 ms against the 300 ms target, dashboard 115 ms against 500 ms (baseline seed). The latency script now fails above 300 ms for the bug list. No index needed.
+* **Checks:** see the progress entry; no screen changed, so no layout or parity run.
+
 ### I-20 End to end tests, accessibility and responsive checks (REQ-055 to REQ-058; D-077)
 
 No product code changed; this issue adds checks.
