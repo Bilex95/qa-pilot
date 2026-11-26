@@ -8,7 +8,8 @@ RUN apk add --no-cache libc6-compat
 
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# one retry after clearing the cache: npm can collide with itself writing the same package into its cache (ENOENT rename in _cacache, seen in CI)
+RUN npm ci --no-audit --no-fund || (npm cache clean --force && npm ci --no-audit --no-fund)
 
 FROM base AS dev
 ENV WATCHPACK_POLLING=true
