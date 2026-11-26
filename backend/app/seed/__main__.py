@@ -26,11 +26,13 @@ from app.seed.domain import counts as domain_counts
 from app.seed.domain import seed_domain
 from app.seed.scenarios import (
     ALL_ORGS,
+    LARGE_SCENARIOS,
     SCENARIO_NOTES,
     SCENARIOS,
     USERS,
     SeedOrg,
     expected_counts,
+    orgs_for,
     sid,
     users_for,
 )
@@ -66,7 +68,7 @@ def reset(db: Session) -> None:
 
 def seed(db: Session, scenario: str, password: str, *, domain: bool = True) -> None:
     """People, workspaces and (unless `domain` is false, which tests that only need people use) the scenario's projects and bugs."""
-    orgs: list[SeedOrg] = SCENARIOS[scenario]
+    orgs: list[SeedOrg] = orgs_for(scenario)
     pw_hash: str | None = None
     for su in users_for(orgs):
         user = db.get(User, su.id)
@@ -118,7 +120,7 @@ def seed(db: Session, scenario: str, password: str, *, domain: bool = True) -> N
 
 def counts(db: Session, scenario: str) -> dict[str, int]:
     """Counts of the scenario's seeded rows actually present in the database."""
-    orgs = SCENARIOS[scenario]
+    orgs = orgs_for(scenario)
     org_ids = [o.id for o in orgs]
     user_ids = [u.id for u in users_for(orgs)]
     membership_ids = [sid("membership", f"{o.key}:{k}") for o in orgs for k, _ in o.members]
@@ -185,7 +187,7 @@ def manifest() -> str:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m app.seed", description="Seed local or test data (never production).")
-    p.add_argument("--scenario", choices=sorted(SCENARIOS))
+    p.add_argument("--scenario", choices=sorted([*SCENARIOS, *LARGE_SCENARIOS]))
     p.add_argument("--reset", action="store_true", help="remove every seeded record before seeding")
     p.add_argument("--yes", action="store_true", help="confirm --reset")
     p.add_argument("--manifest", action="store_true", help="print docs/SEED_MANIFEST.md and exit")

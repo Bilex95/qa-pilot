@@ -28,7 +28,7 @@ from app.modules.testing.application import service as test_service
 from app.modules.testing.infrastructure.models import TestCase, TestRun, TestRunResult, TestSuite
 from app.modules.testing.schemas.runs import ResultUpdateIn, RunCreateIn, RunUpdateIn
 from app.modules.testing.schemas.testing import CaseIn, StepIn, SuiteIn
-from app.seed.domain_data import DATA, BugSpec, OrgData, ProjectSpec, ReleaseSpec, RunSpec, SuiteSpec, Totals
+from app.seed.domain_data import BugSpec, OrgData, ProjectSpec, ReleaseSpec, RunSpec, SuiteSpec, Totals, data_for
 from app.seed.scenarios import USERS, SeedOrg
 
 # The moves that take a new bug to each status (every one is a move of the workflow table, D-058)
@@ -204,7 +204,7 @@ def _seed_project(db: Session, people: _People, spec: ProjectSpec, labels: dict[
 
 def seed_domain(db: Session, scenario: str, org: SeedOrg, now: datetime | None = None) -> None:
     """Add the scenario's projects, bugs, suites, cases, runs and releases to one seeded organization."""
-    data: OrgData | None = DATA[scenario].get(org.key)
+    data: OrgData | None = data_for(scenario).get(org.key)
     if data is None:
         return
     from app import main as _routes  # noqa: F401  (importing the routes registers the cross module hooks the services use)
@@ -223,8 +223,9 @@ def seed_domain(db: Session, scenario: str, org: SeedOrg, now: datetime | None =
 def counts(db: Session, scenario: str, orgs: list[SeedOrg]) -> Totals:
     """What is in the database for the scenario's projects (found by organization and key)."""
     total = Totals()
+    scenario_data = data_for(scenario)
     for org in orgs:
-        data = DATA[scenario].get(org.key)
+        data = scenario_data.get(org.key)
         if data is None:
             continue
         ids = list(db.scalars(select(Project.id).where(Project.org_id == org.id, Project.key.in_([p.key for p in data.projects]))))

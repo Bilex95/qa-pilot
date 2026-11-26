@@ -99,7 +99,17 @@ SCENARIOS: dict[str, list[SeedOrg]] = {
     "release-blocked": [LUMEN, HARBOR],  # plus a blocked release (D-014) from Stage 4
     "multi-tenant": [TENANT_A, TENANT_B],
 }
+# Local latency check only (BL-035, D-080): not in SCENARIOS, so the parametrized seed tests and CI never load them.
+LARGE_SCENARIOS: dict[str, list[SeedOrg]] = {"large-5k": [LUMEN, HARBOR], "large-20k": [LUMEN, HARBOR]}
+
+
+def orgs_for(scenario: str) -> list[SeedOrg]:
+    return SCENARIOS[scenario] if scenario in SCENARIOS else LARGE_SCENARIOS[scenario]
+
+
 SCENARIO_NOTES = {
+    "large-5k": "Local only. Baseline plus one generated project with 5,000 bugs, for the latency check (BL-035).",
+    "large-20k": "Local only. Baseline plus one generated project with 20,000 bugs, for the latency check (BL-035).",
     "baseline": ("Two organizations with every role; Priya Raman belongs to both. Lumen Freight has 3 projects, 60 bugs in every "
                  "status, 4 suites with 40 cases, 5 runs and 3 releases (Blocked, At risk, Ready); Harbor Clinics has a small set."),
     "empty": "One organization with only its Org Admin; every screen shows its empty state.",
@@ -117,7 +127,7 @@ def users_for(orgs: list[SeedOrg]) -> list[SeedUser]:
 
 
 def expected_counts(scenario: str) -> dict[str, int]:
-    orgs = SCENARIOS[scenario]
+    orgs = orgs_for(scenario)
     return {
         "organizations": len(orgs),
         "users": len(users_for(orgs)),

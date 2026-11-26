@@ -5,6 +5,7 @@ the last 7 days, readiness) are the same on any day the seed runs. The rows are 
 timeline, the audit trail and the counters are the real ones.
 """
 
+import random
 from dataclasses import dataclass
 
 
@@ -265,6 +266,40 @@ DATA: dict[str, dict[str, OrgData]] = {
 }
 
 
+# Large volume scenarios for the local latency check (BL-035, D-080). NOT part of DATA or SCENARIOS, so no default test or CI job loads
+# them. The baseline Lumen Freight data plus one generated project "LRG" with N bugs in every status, severity and component.
+
+def _large_bugs(n: int) -> tuple[BugSpec, ...]:
+    rng = random.Random(2026)  # fixed seed: the same bugs every time
+    statuses = ("new", "triaged", "in_progress", "fixed", "ready_for_retest", "verified", "closed", "reopened", "wont_fix")
+    severities = ("critical", "high", "medium", "medium", "low", "low")
+    comps = ("Checkout", "Accounts", "Navigation", "Search")
+    assignees = (None, "dev", "diego", "mei", "kwame")
+    labels = tuple(name for name, _ in LABELS)
+    return tuple(
+        b(rng.choice(comps), f"Generated problem {i + 1}: {rng.choice(('crash', 'slow', 'wrong total', 'missing label', 'timeout'))} "
+          f"on the {rng.choice(('cart', 'profile', 'menu', 'search', 'invoice'))} screen",
+          rng.choice(severities), rng.choice(statuses), rng.choice(assignees), rng.uniform(0.05, 120),
+          *rng.sample(labels, rng.choice((0, 0, 1, 2))))
+        for i in range(n)
+    )
+
+
+def large_org(n: int) -> OrgData:
+    project = ProjectSpec("LRG", "Large volume", "Generated bugs for the latency check.", ("Checkout", "Accounts", "Navigation", "Search"),
+                          _large_bugs(n))
+    return OrgData(projects=(*LUMEN.projects, project), labels=LABELS)
+
+
+LARGE_SIZES = {"large-5k": 5000, "large-20k": 20000}  # scenario -> generated bugs (built on use, not at import)
+
+
+def data_for(scenario: str) -> dict[str, OrgData]:
+    if scenario in DATA:
+        return DATA[scenario]
+    return {"lumen": large_org(LARGE_SIZES[scenario]), "harbor": HARBOR}
+
+
 @dataclass(frozen=True)
 class Totals:
     projects: int = 0
@@ -291,7 +326,7 @@ def totals_of(project: ProjectSpec) -> Totals:
 
 def totals_for(scenario: str) -> Totals:
     total = Totals()
-    for data in DATA[scenario].values():
+    for data in data_for(scenario).values():
         for project in data.projects:
             total = total + totals_of(project)
     return total
