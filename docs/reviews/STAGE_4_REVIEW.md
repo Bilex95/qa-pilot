@@ -669,6 +669,13 @@ API-145 (`POST {O}/ai/release-summary`, Org Admin and QA Lead) and the accepting
 
 Backlog: BL-031.
 
+### I-22 Docs, parity report and final QA report (REQ-059, REQ-060, REQ-061; D-079)
+
+* README quick start (5 commands for Windows) with the seeded logins and roles; `docs/USER_GUIDE.md`; `CHANGELOG.md`.
+* `docs/reviews/PARITY.md`: every screen against its locked screenshots, accepted differences and gaps.
+* `docs/reviews/FINAL_QA_REPORT.md`: all 63 requirements traced to evidence (61 Verified, 2 Partial, 0 Not done), check totals, known gaps and the go recommendation with two conditions (BL-035, BL-034).
+* Docs only; no code changed. CI is the check.
+
 ### I-21 Security, tenancy review and performance (REQ-008, REQ-062, REQ-063; D-078)
 
 * **Tenancy:** all query functions in the infrastructure modules reviewed; the 23 without `org_id` are global by design or only get ids loaded through an org scoped query. A new test (`test_tenancy_review.py`) lists them and fails on any new unreviewed one. No leak found.
