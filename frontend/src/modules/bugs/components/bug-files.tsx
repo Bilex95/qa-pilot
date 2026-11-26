@@ -104,7 +104,7 @@ export function BugFiles({ bug }: { bug: BugDetail }) {
 
   return (
     <>
-      <h3>Attachments</h3>
+      <h2 style={{ fontSize: "var(--fs-lg)" }}>Attachments</h2>
       <div className="files" aria-busy={files.isPending || upload.isPending}>
         {files.isError ? <span className="small muted">Could not load the attachments.</span> : null}
         {list.map((f) => (

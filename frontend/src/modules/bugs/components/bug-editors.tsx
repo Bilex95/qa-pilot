@@ -109,7 +109,7 @@ export function BugDescription({ bug, canEdit }: { bug: BugDetail; canEdit: bool
   return (
     <>
       <div className="row" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
-        <h3 style={{ margin: 0 }}>Description</h3>
+        <h2 style={{ margin: 0, fontSize: "var(--fs-lg)" }}>Description</h2>
         {canEdit && !editing ? (
           <Button variant="ghost" size="sm" aria-label="Edit description" onClick={() => { setValue(bug.description); setEditing(true); }}>Edit</Button>
         ) : null}
@@ -162,7 +162,7 @@ export function BugSteps({ bug, canEdit }: { bug: BugDetail; canEdit: boolean })
   return (
     <>
       <div className="row" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
-        <h3 style={{ margin: 0 }}>Steps to reproduce</h3>
+        <h2 style={{ margin: 0, fontSize: "var(--fs-lg)" }}>Steps to reproduce</h2>
         {canEdit && !editing ? <Button variant="ghost" size="sm" aria-label="Edit steps to reproduce" onClick={open}>Edit</Button> : null}
       </div>
       {editing ? (
@@ -225,7 +225,7 @@ export function BugResults({ bug, canEdit }: { bug: BugDetail; canEdit: boolean 
   return (
     <>
       <div className="row" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
-        <h3 style={{ margin: 0 }}>Expected and actual</h3>
+        <h2 style={{ margin: 0, fontSize: "var(--fs-lg)" }}>Expected and actual</h2>
         {canEdit && !editing ? (
           <Button variant="ghost" size="sm" aria-label="Edit expected and actual result"
             onClick={() => { setExpected(bug.expected_result); setActual(bug.actual_result); setEditing(true); }}>Edit</Button>

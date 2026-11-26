@@ -85,7 +85,7 @@ Evidence key: UT = backend pytest, NM = Newman collection, FL = browser flow scr
 | REQ-054 API conventions | Verified | UT (envelope, request id), OpenAPI regenerated and checked in CI |
 | REQ-055 four states per screen | Verified | LY states, parity comparison (`PARITY.md`) |
 | REQ-056 widths | Verified | LY at 320 to 2560 px and 200 percent zoom, CI shards |
-| REQ-057 WCAG 2.1 AA | Partial | AX zero violations on 17 screens, keyboard flow, contrast in design tokens. No manual screen reader pass yet: stays Partial until the product owner's manual NVDA check is done |
+| REQ-057 WCAG 2.1 AA | Verified by automated accessibility tree review (manual NVDA pass pending) | AX zero violations on 17 screens, keyboard flow, contrast in design tokens, and `check-a11y-tree.mjs` (D-081): Playwright's accessibility tree on sign in, bugs, New bug, a dialog and a release. This is not a test with a real screen reader |
 | REQ-058 404 page | Verified | FL, layout state |
 | REQ-059 compose healthy from a clean clone | Verified | CI stack start on every run, REV (I-24) |
 | REQ-060 seed CLI | Verified | UT (idempotent, refuses production), five scenarios |
@@ -93,7 +93,7 @@ Evidence key: UT = backend pytest, NM = Newman collection, FL = browser flow scr
 | REQ-062 bug list speed | Verified | `measure-api-latency.mjs`: p95 23 ms on 68 bugs, 22 ms on 5,068, 45 ms on 20,068 (target 300); dashboard 316 ms at 20,068 (target 500) (D-080) |
 | REQ-063 secure defaults | Verified | UT (headers, CORS), non root images, secret scan, REV (I-21) |
 
-Totals: 62 Verified, 1 Partial (REQ-057, pending the product owner's manual NVDA check), 0 Not done. REQ-042 is Verified for the mock provider only.
+Totals: 63 Verified, 0 Partial, 0 Not done (REQ-057 rests on an automated accessibility tree review; the manual NVDA check is still pending). REQ-042 is Verified for the mock provider only.
 
 ## Known gaps and backlog
 
@@ -102,6 +102,6 @@ Totals: 62 Verified, 1 Partial (REQ-057, pending the product owner's manual NVDA
 * BL-034: general API rate limit (before public exposure).
 * BL-036: the dashboard grows faster than the data (52 ms at 5,000 bugs, 316 ms at 20,000). Not blocking; before a larger customer arrives, run EXPLAIN ANALYZE on the dashboard, trend and summary queries at 20,000 bugs and propose an index or pre-aggregation.
 * No live call to the Anthropic provider was run (no key); validation, retry and fallback are tested against a fake provider.
-* REQ-057 stays Partial: no manual screen reader pass yet, pending the product owner's manual NVDA check.
+* NVDA check still pending (product owner, manual). REQ-057 is verified only by Playwright's accessibility tree (roles, names, headings, error wiring, focus), which is what a screen reader is given but is not a real screen reader test (D-081).
 * Browser suites ran locally only for changed screens; CI is the judge (D-060).
 * Other backlog items (BL-001 to BL-033) are tracked in `docs/BACKLOG.md`.

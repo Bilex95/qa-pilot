@@ -83,7 +83,7 @@ export function BugDetailsPanel({ bug }: { bug: BugDetail }) {
 
   return (
     <section className="panel">
-      <div className="panel-head"><h3>Details</h3></div>
+      <div className="panel-head"><h2>Details</h2></div>
       <div className="panel-body">
         <dl className="dl" aria-busy={busy}>
           <dt>Status</dt>

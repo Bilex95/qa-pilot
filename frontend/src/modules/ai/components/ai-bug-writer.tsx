@@ -130,7 +130,7 @@ export function AiBugWriter({ projectId, values, setsSeverity, onFill, onRestore
 
   return (
     <section className="ai-panel" aria-label="AI Bug Writer">
-      <div className="panel-head"><IconSpark /><h3>AI Bug Writer</h3></div>
+      <div className="panel-head"><IconSpark /><h2>AI Bug Writer</h2></div>
       <div className="panel-body stack">
         <Field id="w-notes" label="Rough notes">
           {(aria) => (

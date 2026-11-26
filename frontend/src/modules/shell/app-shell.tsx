@@ -37,6 +37,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => document.body.classList.remove("nav-open");
   }, [navOpen]);
   useEffect(() => {
+    // A page change must not leave focus lost on the body (the control that was clicked may be gone): put it on the content area
+    const a = document.activeElement;
+    if (!a || a === document.body || !document.body.contains(a)) document.getElementById("main")?.focus({ preventScroll: true });
+  }, [pathname]);
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setNavOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

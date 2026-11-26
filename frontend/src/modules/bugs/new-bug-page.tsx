@@ -209,6 +209,7 @@ export function NewBugPage() {
                   <div key={i} className="row" style={{ flexWrap: "nowrap" }}>
                     <span className="mono muted" style={{ width: 20, textAlign: "right" }}>{i + 1}</span>
                     <Input id={`n-step-${i + 1}`} aria-label={`Step ${i + 1}`} value={s} autoComplete="off"
+                      aria-invalid={errors.steps && i === 0 ? true : undefined} aria-describedby={errors.steps && i === 0 ? "n-steps-e" : undefined}
                       onChange={(e) => set({ steps: values.steps.map((x, j) => (j === i ? e.target.value : x)) })} />
                   </div>
                 ))}
@@ -219,7 +220,7 @@ export function NewBugPage() {
                   </Button>
                 </div>
               </div>
-              {errors.steps ? <div className="err">{errors.steps}</div> : null}
+              {errors.steps ? <div className="err" id="n-steps-e" role="alert">{errors.steps}</div> : null}
             </div>
             <div className="grid g2">
               <Field id="n-exp" label="Expected result" error={errors.expected_result}>

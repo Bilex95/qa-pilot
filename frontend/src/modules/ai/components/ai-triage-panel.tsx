@@ -92,7 +92,7 @@ export function AiTriagePanel({ panel }: { panel: ReturnType<typeof useTriagePan
   const s = shown?.suggestion;
   return (
     <section className="ai-panel" aria-label="AI triage">
-      <div className="panel-head"><IconSpark /><h3>AI triage</h3></div>
+      <div className="panel-head"><IconSpark /><h2>AI triage</h2></div>
       <div className="panel-body">
         {thinking ? (
           <div className="thinking" role="status">
