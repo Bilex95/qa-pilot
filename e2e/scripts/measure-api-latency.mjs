@@ -39,6 +39,7 @@ const cases = [
 ];
 const pct = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1)];
 let worst = 0;
+let bugListP95 = 0;
 for (const [name, path] of cases) {
   await get(path, token); // warm up
   const times = [];
@@ -49,7 +50,9 @@ for (const [name, path] of cases) {
   }
   times.sort((a, b) => a - b);
   if (name === 'dashboard') worst = pct(times, 95);
+  if (name.startsWith('bug list')) bugListP95 = pct(times, 95);
   console.log(`${name.padEnd(28)} n=${N}  p50 ${pct(times, 50).toFixed(0)} ms  p95 ${pct(times, 95).toFixed(0)} ms  max ${times.at(-1).toFixed(0)} ms`);
 }
 console.log(worst < 500 ? `PASS: dashboard p95 ${worst.toFixed(0)} ms is under 500 ms` : `FAIL: dashboard p95 ${worst.toFixed(0)} ms is not under 500 ms`);
-process.exit(worst < 500 ? 0 : 1);
+console.log(bugListP95 < 300 ? `PASS: bug list p95 ${bugListP95.toFixed(0)} ms is under 300 ms (REQ-062)` : `FAIL: bug list p95 ${bugListP95.toFixed(0)} ms is not under 300 ms (REQ-062)`);
+process.exit(worst < 500 && bugListP95 < 300 ? 0 : 1);
