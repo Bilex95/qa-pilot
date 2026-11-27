@@ -1,12 +1,12 @@
 # Runtime dependencies, exact pins (D-038)
 fastapi==0.163.1
 uvicorn[standard]==0.54.0
-sqlalchemy==2.1.8
+sqlalchemy==2.1.9
 alembic==1.20.1
 psycopg[binary]==3.3.9
-pydantic==2.14.3
+pydantic==2.14.4
 pydantic-settings==2.16.3
 argon2-cffi==25.1.0
 pyjwt==2.15.1
 python-multipart==0.0.34
-anthropic==2.8.0
+anthropic==2.13.0
