@@ -207,7 +207,7 @@ jobs:
           - name: dashboard, settings, members, reset, axe
             scripts: check-dashboard-flow check-settings-flow check-members-flow check-reset-flow check-app-axe
           - name: critical journeys and keyboard
-            scripts: check-journeys check-keyboard check-a11y-tree
+            scripts: check-journeys check-keyboard check-a11y-tree check-link-encoding
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/browser-stack
