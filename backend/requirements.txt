@@ -9,4 +9,4 @@ pydantic-settings==2.16.3
 argon2-cffi==25.1.0
 pyjwt==2.15.1
 python-multipart==0.0.34
-anthropic==2.8.0
+anthropic==2.13.0
