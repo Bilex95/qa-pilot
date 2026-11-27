@@ -2,14 +2,25 @@
 new value, assignments, status moves, comments and files, newest first, with the actor.
 Unauthorized and the generic cross tenant org check are covered by app/core/tests/test_contract.py."""
 
+import re
 import uuid
+from datetime import datetime, timedelta
 
 import pytest
+from sqlalchemy import update
 
+from app.core.db import utcnow
+from app.modules.bugs.infrastructure.models import BugActivity
 from app.modules.bugs.tests.test_bugs_api import ALL_ROLES, code, make_bug, make_project
 from app.modules.bugs.tests.test_workflow_api import move
 
 O = "/api/v1/orgs"
+WIRE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$")
+
+
+def when(text: str) -> datetime:
+    """A timestamp from the API as a moment: compare moments, never the strings (BL-041)."""
+    return datetime.fromisoformat(text)
 
 
 @pytest.fixture()
@@ -205,10 +216,25 @@ def test_the_timeline_is_newest_first_and_paged(client, world, bug) -> None:
     assert [e["new_value"] for e in page["items"]] == ["medium", "critical"]
     last = trail(client, world.a, bug, page=3, page_size=2)
     assert [e["kind"] for e in last["items"]] == ["created"]
-    stamps = [e["created_at"] for e in trail(client, world.a, bug)["items"]]
+    stamps = [when(e["created_at"]) for e in trail(client, world.a, bug)["items"]]
     assert stamps == sorted(stamps, reverse=True)
     assert client.get(f"{O}/{world.a.org.id}/bugs/{bug['id']}/activity", params={"page": 0},
                       headers=world.a.h("viewer")).status_code == 422
+
+
+def test_every_timestamp_has_one_fixed_width_format_even_on_a_whole_second(client, db, world, bug) -> None:
+    """BL-041: an entry on an exact second used to come out as `...:01Z` next to `...:01.123456Z`, which sorts wrongly as text."""
+    patch(client, world.a, bug, severity="high")
+    whole = utcnow().replace(microsecond=0) - timedelta(seconds=30)
+    created = BugActivity.bug_id == uuid.UUID(bug["id"]), BugActivity.kind == "created"
+    db.execute(update(BugActivity).where(*created).values(created_at=whole))
+    items = trail(client, world.a, bug)["items"]
+    assert [e["kind"] for e in items][-1] == "created"
+    stamps = [e["created_at"] for e in items]
+    assert all(WIRE.match(s) for s in stamps), stamps
+    assert stamps[-1] == whole.strftime("%Y-%m-%dT%H:%M:%S.000000Z")
+    assert stamps == sorted(stamps, reverse=True)  # fixed width text sorts like time; the moments are checked as well
+    assert [when(s) for s in stamps] == sorted((when(s) for s in stamps), reverse=True)
 
 
 def test_the_timeline_of_a_foreign_missing_or_deleted_bug_is_a_404(client, world, bug) -> None:

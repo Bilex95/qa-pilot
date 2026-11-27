@@ -3,6 +3,8 @@ for every endpoint, plus the rules on top (side effects, the Developer record ru
 Unauthorized and the generic cross tenant org check are covered for every route by app/core/tests/test_contract.py.
 The table itself is tested in test_workflow_rules.py."""
 
+from datetime import datetime
+
 import pytest
 from sqlalchemy import select
 
@@ -255,7 +257,7 @@ def test_a_column_shows_the_newest_fifty_and_counts_all(client, db, world) -> No
     by_status, _ = board(client, world.a)
     new = by_status["new"]
     assert new["total"] == 53 and len(new["items"]) == 50
-    updated = [b["updated_at"] for b in new["items"]]
+    updated = [datetime.fromisoformat(b["updated_at"]) for b in new["items"]]  # moments, not strings (BL-041)
     assert updated == sorted(updated, reverse=True)  # most recently updated first
     assert new["items"][0]["key"] == "WEB-53"
 

@@ -1,6 +1,7 @@
 """Shared Pydantic types."""
 
 import re
+from datetime import UTC, datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, StringConstraints
@@ -21,8 +22,19 @@ Email = Annotated[str, StringConstraints(min_length=3, max_length=254), AfterVal
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
 
 
+def iso_utc(value: datetime) -> str:
+    """One wire format for every timestamp: UTC, always six fractional digits, `Z` (BL-041).
+
+    Pydantic's own output drops the fraction when the microsecond is exactly 0 (`...:01Z`) and keeps six digits
+    otherwise (`...:01.500000Z`). Mixed lengths do not sort as text (`Z` is after `.`), so a client that compares
+    the strings would see an earlier whole second timestamp as later. A fixed width makes text order equal time order.
+    A value without a zone is taken as UTC (the database stores UTC)."""
+    moment = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
 class ApiModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True, extra="forbid")
+    model_config = ConfigDict(from_attributes=True, extra="forbid", json_encoders={datetime: iso_utc})
 
 
 class ErrorBody(BaseModel):

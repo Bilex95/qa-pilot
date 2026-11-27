@@ -741,8 +741,12 @@ folders = [
             tests=[status(200), 'const page = pm.response.json();',
                    'pm.test("every kind this bug went through", () => { const kinds = page.items.map(e => e.kind); '
                    '["created", "status_changed", "commented", "attachment_added", "attachment_removed"].forEach(k => pm.expect(kinds).to.include(k)); });',
+                   'pm.test("every timestamp has the one fixed format", () => { const t = page.items.map(e => e.created_at); '
+                   'pm.expect(t.every(x => /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{6}Z$/.test(x)), "created_at values: " + JSON.stringify(t)).to.eql(true); });',
                    'pm.test("newest first, with the actor and the old and new status", () => { const t = page.items.map(e => e.created_at); '
-                   'pm.expect(t).to.eql([...t].sort().reverse()); const s = page.items.find(e => e.kind === "status_changed"); '
+                   'const ms = t.map(x => Date.parse(x)); pm.expect(ms.every(Number.isFinite), "created_at values that do not parse: " + JSON.stringify(t)).to.eql(true); '
+                   'pm.expect(ms.every((v, i) => i === 0 || ms[i - 1] >= v), "not newest first (equal moments are allowed): " + JSON.stringify(t)).to.eql(true); '
+                   'const s = page.items.find(e => e.kind === "status_changed"); '
                    'pm.expect(s.field).to.eql("status"); pm.expect(s.old_value).to.be.a("string"); pm.expect(s.new_value).to.be.a("string"); '
                    'pm.expect(s.actor_name).to.be.a("string"); });',
                    'pm.test("the first entry of all is the creation", () => pm.expect(page.items[page.items.length - 1].kind).to.eql("created"));']),
