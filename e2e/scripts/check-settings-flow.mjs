@@ -221,7 +221,7 @@ async function main() {
     const ctxPerson = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const person = await ctxPerson.newPage();
     await signIn(person, EMAIL, PASS_A);
-    await person.click('button[aria-label^="Account menu"]');
+    await person.click('button.user-btn');
     await person.click('a:has-text("My profile")');
     await person.waitForURL('**/settings?tab=profile');
     await person.waitForSelector('#p-name');

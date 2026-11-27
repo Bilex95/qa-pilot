@@ -88,8 +88,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <IconMenu />
           </Button>
           <DropdownMenu>
-            <DropdownMenuTrigger className="org-switch" aria-label={`Switch organization, current ${org.name}`}>
-              <span className="org-badge">{initials(org.name)}</span>
+            {/* WCAG 2.5.3 Label in Name (BL-042): the accessible name starts with the visible text (the initials, then the name).
+                The space node keeps the two spans apart as text, the way the name reads. */}
+            <DropdownMenuTrigger className="org-switch" aria-label={`${initials(org.name)} ${org.name}, switch organization`}>
+              <span className="org-badge">{initials(org.name)}</span>{" "}
               <span className="hide-sm org-name" title={org.name}>{org.name}</span>
               <IconChevron width={14} height={14} />
             </DropdownMenuTrigger>
@@ -125,7 +127,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           ) : null}
           {user ? (
             <DropdownMenu>
-              <DropdownMenuTrigger className="user-btn" aria-label={`Account menu for ${user.full_name}`}>
+              {/* Label in Name (BL-042): the visible text is the avatar initials, so the name starts with them */}
+              <DropdownMenuTrigger className="user-btn" aria-label={`${initials(user.full_name)}, account menu for ${user.full_name}`}>
                 <Avatar id={user.id} name={user.full_name} />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
