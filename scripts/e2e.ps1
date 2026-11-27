@@ -7,7 +7,16 @@ $root = Split-Path -Parent $PSScriptRoot
 Set-Location (Join-Path $root 'e2e')
 $file = Join-Path $root (Join-Path 'e2e\scripts' $Script)
 if (-not (Test-Path $file)) { [Console]::Error.WriteLine("e2e.ps1: no such script: $file"); exit 2 }
-& node $file @Rest
-$code = $LASTEXITCODE
-if ($null -eq $code) { $code = 0 }
+# The backend runs on the mock AI provider for the run and is restored afterwards, .env untouched (D-086).
+. (Join-Path $PSScriptRoot 'ai-mock.ps1')
+$held = [bool]$env:QAP_AI_MOCK_HELD
+if (-not $held) { Enter-AiMock }
+try {
+    & node $file @Rest
+    $code = $LASTEXITCODE
+    if ($null -eq $code) { $code = 0 }
+}
+finally {
+    if (-not $held) { Exit-AiMock }
+}
 exit $code

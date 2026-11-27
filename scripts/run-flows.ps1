@@ -6,7 +6,11 @@ param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Only)
 
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location (Join-Path $root 'e2e')
-$all = @('smoke-login', 'check-signout', 'check-bugs-flow', 'check-tests-flow', 'check-board-flow', 'check-bug-detail-flow',
+# The backend runs on the mock AI provider for the whole run and is restored afterwards, .env untouched (D-086).
+. (Join-Path $PSScriptRoot 'ai-mock.ps1')
+Enter-AiMock
+try {
+$all =@('smoke-login', 'check-signout', 'check-bugs-flow', 'check-tests-flow', 'check-board-flow', 'check-bug-detail-flow',
   'check-projects-flow', 'check-ai-flow', 'check-runs-flow', 'check-releases-flow', 'check-dashboard-flow', 'check-settings-flow', 'check-members-flow', 'check-reset-flow', 'check-app-axe', 'check-journeys', 'check-keyboard', 'check-a11y-tree', 'check-link-encoding')
 $names = if ($Only -and $Only.Count) { $Only } else { $all }
 $failed = @()
@@ -24,4 +28,6 @@ foreach ($name in $names) {
   if ($code -ne 0) { $failed += $name; Write-Output "== $name FAILED ($code)" } else { Write-Output "== $name ok" }
 }
 Write-Output ('SUMMARY: ' + $(if ($failed.Count) { 'failed: ' + ($failed -join ', ') } else { 'all passed' }))
+}
+finally { Exit-AiMock }
 exit $failed.Count
