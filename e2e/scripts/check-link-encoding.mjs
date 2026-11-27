@@ -1,5 +1,5 @@
 // Link encoding check (CodeQL alert 2): a project id with URL special characters must not leak into the "See breaching bugs" link as
-// extra query parameters or a hash. The projects API and the dashboard API are mocked with page.route: the project list gets one more
+// extra query parameters or a hash; and a signed out visit to a deep page (a bug) returns to it after sign in, with the path encoded once. The projects API and the dashboard API are mocked with page.route: the project list gets one more
 // project whose id is `abc&x=1#frag`, and any request that filters by that id is answered with the unfiltered real answer.
 //
 // Usage (stack up, baseline seeded):
@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i > -1 ? process.argv[i + 1] : fallback; };
 const BASE = arg('--base', 'http://localhost:3000');
+const API = arg('--api', 'http://localhost:8000');
 const envFile = resolve(root, '.env');
 const PW = process.env.SEED_USER_PASSWORD
   || (existsSync(envFile) ? (readFileSync(envFile, 'utf8').match(/^SEED_USER_PASSWORD=(.*)$/m)?.[1] ?? '').trim() : '');
@@ -81,6 +82,34 @@ async function main() {
     check(u.hash === '', `a hash appeared: ${u.hash}`);
     log('following the link adds no extra parameter and no hash');
     await ctx.close();
+
+    // Deep link round trip: a signed out visit to a bug page goes to /login?next=<path encoded once>, and signing in lands on that bug
+    // (no double encoding, nothing lost). The bug key comes from the API for the same person.
+    const login = await fetch(`${API}/api/v1/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'amara@lumenfreight.test', password: PW }) });
+    check(login.status === 200, `API sign in failed: ${login.status}`);
+    const auth = { Authorization: `Bearer ${(await login.json()).access_token}` };
+    const orgs = await (await fetch(`${API}/api/v1/orgs`, { headers: auth })).json();
+    const orgId = orgs.find((o) => o.org.slug === 'lumen').org.id;
+    const bugKey = (await (await fetch(`${API}/api/v1/orgs/${orgId}/bugs?page_size=1`, { headers: auth })).json()).items[0].key;
+    const deepPath = `/o/lumen/bugs/${bugKey}`;
+    const ctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page2 = await ctx2.newPage();
+    page2.setDefaultTimeout(30_000);
+    await page2.goto(`${BASE}${deepPath}`);
+    await page2.waitForURL('**/login?next=*');
+    const loginUrl = page2.url();
+    check(loginUrl.includes(`next=${encodeURIComponent(deepPath)}`), `the sign in link does not carry the path encoded once: ${loginUrl}`);
+    check(!loginUrl.includes('%252F'), `the next parameter is encoded twice: ${loginUrl}`);
+    await page2.waitForSelector('#l-email');
+    await page2.waitForLoadState('networkidle');
+    await fillStable(page2, '#l-email', 'amara@lumenfreight.test');
+    await fillStable(page2, '#l-pass', PW);
+    await page2.click('button[type=submit]');
+    await page2.waitForURL(`**${deepPath}`);
+    await page2.getByText(bugKey.toUpperCase(), { exact: false }).first().waitFor();
+    log(`signed out visit to ${deepPath} returned to it after sign in`);
+    await ctx2.close();
   } finally {
     await browser.close();
   }
