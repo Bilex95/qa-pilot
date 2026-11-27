@@ -1,5 +1,5 @@
 # Runtime dependencies, exact pins (D-038)
-fastapi==0.163.1
+fastapi==0.165.0
 uvicorn[standard]==0.54.0
 sqlalchemy==2.1.9
 alembic==1.20.1
