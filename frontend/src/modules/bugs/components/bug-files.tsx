@@ -109,12 +109,13 @@ export function BugFiles({ bug }: { bug: BugDetail }) {
         {files.isError ? <span className="small muted">Could not load the attachments.</span> : null}
         {list.map((f) => (
           <span key={f.id} className="file" style={{ maxWidth: "100%", minWidth: 0, padding: 0, gap: 0 }}>
-            <Button variant="ghost" size="sm" disabled={downloading === f.id} aria-label={`Download ${f.filename}`}
+            {/* Label in Name (BL-042): the visible text is the file name and the size, so the name has both, in the same order */}
+            <Button variant="ghost" size="sm" disabled={downloading === f.id} aria-label={`Download ${f.filename} ${fileSize(f.size_bytes)}`}
               title={`${f.filename}, uploaded by ${f.uploaded_by_name}`}
               style={{ minWidth: 0, maxWidth: "100%", height: "auto", whiteSpace: "normal", textAlign: "left", padding: "6px 10px" }}
               onClick={() => void download(f)}>
               {downloading === f.id ? <Spinner /> : null}
-              <span style={{ overflowWrap: "anywhere", textAlign: "left" }}>{f.filename}</span>
+              <span style={{ overflowWrap: "anywhere", textAlign: "left" }}>{f.filename}</span>{" "}
               <span className="muted xs">{fileSize(f.size_bytes)}</span>
             </Button>
             {mayRemove(f) ? (
