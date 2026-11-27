@@ -44,7 +44,7 @@ Every AI result is a suggestion. Nothing is saved until you click Accept (or edi
 * **Test case generator** (case editor): from a user story, creates positive, negative and edge cases; pick the ones to add.
 * **Release summary** (release page): a plain English risk summary you can save on the release.
 
-By default the **mock** provider is used, so everything works offline with fixed output. Set `AI_PROVIDER=anthropic`, an API key and `ANTHROPIC_MODEL` for real output. An Org Admin can turn AI off per workspace.
+By default the **mock** provider is used, so everything works offline with fixed output. Set `AI_PROVIDER=anthropic`, an API key and `ANTHROPIC_MODEL` for real output, or use a free tier with `AI_PROVIDER=gemini` (`GEMINI_API_KEY`) or `AI_PROVIDER=openai_compatible` (`OPENAI_COMPAT_BASE_URL`, `OPENAI_COMPAT_API_KEY`, `OPENAI_COMPAT_MODEL`, for example Groq or OpenRouter). An Org Admin can turn AI off per workspace.
 
 ## Keyboard and small screens
 

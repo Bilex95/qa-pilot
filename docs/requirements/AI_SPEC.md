@@ -15,7 +15,8 @@ API router (thin)  ->  AIService (permission, ai_enabled, rate limit, usage log,
 * `AIProvider` protocol: `async complete_json(feature, system, user_blocks, output_model, max_tokens) -> ProviderResult(raw_text, input_tokens, output_tokens, model)`.
 * `AnthropicProvider`: official `anthropic` Python SDK, model from `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`), key from `ANTHROPIC_API_KEY`, timeout 30 s, temperature 0.2. Uses a JSON only instruction plus a tool definition shaped like the output schema so the reply is structured.
 * `MockProvider`: deterministic, no network. Output is derived from the input with simple rules (keyword matching, hashing for stable choices) so tests are repeatable and the offline demo looks realistic. Token counts are estimated as `ceil(chars / 4)`.
-* Selection: `AI_PROVIDER=mock|anthropic`. If `AI_PROVIDER=anthropic` but the key is empty, the app logs a warning at startup and uses mock (REQ-042).
+* `GeminiProvider` (D-083): Google AI Studio REST generateContent, model from `GEMINI_MODEL` (default `gemini-2.5-flash`), key from `GEMINI_API_KEY` in the `x-goog-api-key` header, optional `GEMINI_BASE_URL`. `OpenAICompatibleProvider` (D-083): chat completions with `json_object`, from `OPENAI_COMPAT_BASE_URL`, `OPENAI_COMPAT_API_KEY`, `OPENAI_COMPAT_MODEL` (Groq, OpenRouter). Both put the output schema in the prompt text and return the raw text for the same validation, retry and fallback.
+* Selection: `AI_PROVIDER=mock|anthropic|gemini|openai_compatible`. If the selected provider's key is empty, the app logs a warning once and uses mock (REQ-042).
 * Duplicate detection does not call the model (D-013); it is still exposed through the AI module and logged as feature `duplicates` with zero tokens.
 
 ## 2. Guardrails common to every feature (REQ-050)
