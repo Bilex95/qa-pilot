@@ -16,7 +16,7 @@ from app.modules.testing.tests.test_cases_api import setup as case_setup
 O = "/api/v1/orgs"
 LEADS = ["org_admin", "qa_lead"]
 OTHERS = ["qa_engineer", "developer", "viewer"]
-KEYS = {"id", "user_id", "user_name", "feature", "provider", "model", "status", "input_tokens", "output_tokens", "latency_ms", "outcome", "created_at"}
+KEYS = {"id", "user_id", "user_name", "feature", "provider", "model", "status", "input_tokens", "output_tokens", "latency_ms", "outcome", "attempts", "fallback_reason", "created_at"}
 
 
 def code(r) -> str:  # type: ignore[no-untyped-def]
@@ -52,6 +52,18 @@ def test_leads_read_the_log_newest_first_with_who_asked_and_never_any_text(clien
     assert (first["id"], second["id"]) == (str(new.id), str(old.id)) and set(first) == KEYS
     assert first["user_name"] == "developer a" and first["feature"] == "explain_log" and first["outcome"] == "discarded"
     assert (first["status"], first["provider"], first["model"], first["input_tokens"], first["latency_ms"]) == ("error", "mock", "mock-1", 5, 9000)
+
+
+def test_the_log_returns_attempts_and_the_fallback_reason(client, db, world) -> None:
+    plain = usage(db, world.a, days_ago=2)
+    plain.created_at = utcnow() - timedelta(days=2)
+    row = repo.add(db, org_id=world.a.org.id, user_id=world.a.users[Role("qa_engineer")].id, feature="triage", provider="gemini",
+                   model="g-1", status="ok", input_tokens=1, output_tokens=1, latency_ms=5, attempts=3, fallback_reason="http_503")
+    db.flush()
+    items = get(client, world.a, "usage").json()["items"]
+    by_id = {i["id"]: i for i in items}
+    assert (by_id[str(row.id)]["attempts"], by_id[str(row.id)]["fallback_reason"]) == (3, "http_503")
+    assert (by_id[str(plain.id)]["attempts"], by_id[str(plain.id)]["fallback_reason"]) == (1, None)
 
 
 @pytest.mark.parametrize("role", OTHERS)

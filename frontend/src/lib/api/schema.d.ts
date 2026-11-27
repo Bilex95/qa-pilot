@@ -3779,6 +3779,13 @@ export interface components {
             /** Outcome */
             outcome: ("accepted" | "edited" | "discarded") | null;
             /**
+             * Attempts
+             * @default 1
+             */
+            attempts: number;
+            /** Fallback Reason */
+            fallback_reason?: string | null;
+            /**
              * Created At
              * Format: date-time
              */

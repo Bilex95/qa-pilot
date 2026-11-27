@@ -9,10 +9,16 @@ from typing import Any
 from pydantic import BaseModel
 
 from app.modules.ai.domain.prompt import Block, render
-from app.modules.ai.domain.provider import ProviderError, ProviderResult, ProviderTimeout
+from app.modules.ai.domain.provider import ProviderError, ProviderResult, ProviderTimeout, ProviderUnavailable
 from app.modules.ai.domain.rules import PROVIDER_TIMEOUT_SECONDS, TEMPERATURE
 
 TOOL_NAME = "answer"
+# SDK error class names (matched by name so the SDK is only imported when used) to a short reason (D-085)
+_TRANSIENT = {"RateLimitError": "http_429", "OverloadedError": "overloaded", "InternalServerError": "http_500",
+              "ServiceUnavailableError": "http_503"}
+_CONNECTION = {"APIConnectionError"}
+_PERMANENT = {"AuthenticationError": "http_401", "PermissionDeniedError": "http_403", "NotFoundError": "http_404",
+              "BadRequestError": "http_400", "UnprocessableEntityError": "http_422"}
 
 
 class AnthropicProvider:
@@ -43,7 +49,14 @@ class AnthropicProvider:
                 timeout=PROVIDER_TIMEOUT_SECONDS)
         except Exception as exc:  # every SDK failure becomes a provider error; only the class name is kept
             kind = type(exc).__name__
-            raise (ProviderTimeout if "Timeout" in kind else ProviderError)(f"The AI provider failed ({kind}).") from None
+            message = f"The AI provider failed ({kind})."
+            if "Timeout" in kind:
+                raise ProviderTimeout(message) from None
+            if kind in _CONNECTION:
+                raise ProviderUnavailable(message, reason="connection", retry_same=False) from None
+            if kind in _TRANSIENT:
+                raise ProviderUnavailable(message, reason=_TRANSIENT[kind]) from None
+            raise ProviderError(message, reason=_PERMANENT.get(kind, "error")) from None
         raw = ""
         for part in getattr(response, "content", []) or []:
             if getattr(part, "type", "") == "tool_use":

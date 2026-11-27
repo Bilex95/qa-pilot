@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     max_upload_mb: int = 10
 
     ai_provider: Literal["mock", "anthropic", "gemini", "openai_compatible"] = "mock"
+    ai_fallback_provider: Literal["", "anthropic", "gemini", "openai_compatible"] = ""  # empty means no fallback (D-085)
     anthropic_api_key: str = Field(default="", repr=False)
     anthropic_model: str = "claude-sonnet-5-5"
     gemini_api_key: str = Field(default="", repr=False)

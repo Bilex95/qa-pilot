@@ -34,3 +34,5 @@ class AIUsage(IdMixin, TimestampMixin, Base):
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
     outcome: Mapped[str | None] = mapped_column(String(10))
+    attempts: Mapped[int] = mapped_column(Integer, nullable=True, default=1, server_default="1")  # calls made to providers (D-085)
+    fallback_reason: Mapped[str | None] = mapped_column(String(24))  # why the primary was not used, for example http_503
