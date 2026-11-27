@@ -8,6 +8,8 @@
 
 **State:** Stages 4 to 6 (I-01 to I-22, BL-035) are merged to `main` through PR #1 (merge commit 751226d, 2026-11-27) and tagged `stage-4-approved`. CI was green on the last commit (386903d, push run 45854759323 and pull request run 45854772504). Final QA report: 63 requirements, 63 Verified (REQ-057 by the automated accessibility tree check, D-081), 0 Partial, 0 Not done; `docs/reviews/FINAL_QA_REPORT.md`. Decisions up to D-081 are in `docs/DECISIONS.md`.
 
+**Clean clone check (2026-11-27):** fresh clone of public main follows the README to a healthy stack, seeded data and a working sign-in (first build 459 s); README quick start fixed, see `docs/reviews/CLEAN_CLONE_CHECK.md`.
+
 **Open items:**
 * **BL-037 (must do before real users touch the AI features):** the live AI smoke test, `e2e/scripts/smoke-live-ai.mjs`, needs an API key in `.env`. Until it passes, REQ-042 is Verified for the mock provider only.
 * **Manual NVDA pass (REQ-057):** pending, by the product owner. The automated check is Playwright's accessibility tree, not a real screen reader.

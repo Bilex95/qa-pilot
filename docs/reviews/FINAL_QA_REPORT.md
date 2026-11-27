@@ -87,7 +87,7 @@ Evidence key: UT = backend pytest, NM = Newman collection, FL = browser flow scr
 | REQ-056 widths | Verified | LY at 320 to 2560 px and 200 percent zoom, CI shards |
 | REQ-057 WCAG 2.1 AA | Verified by automated accessibility tree review (manual NVDA pass pending) | AX zero violations on 17 screens, keyboard flow, contrast in design tokens, and `check-a11y-tree.mjs` (D-081): Playwright's accessibility tree on sign in, bugs, New bug, a dialog and a release. This is not a test with a real screen reader |
 | REQ-058 404 page | Verified | FL, layout state |
-| REQ-059 compose healthy from a clean clone | Verified | CI stack start on every run, REV (I-24) |
+| REQ-059 compose healthy from a clean clone | Verified | CI stack start on every run, REV (I-24); fresh clone of public main run by hand, all checks pass, `docs/reviews/CLEAN_CLONE_CHECK.md` |
 | REQ-060 seed CLI | Verified | UT (idempotent, refuses production), five scenarios |
 | REQ-061 Postman and CI | Verified | CI runs ruff, mypy, pytest, lint, tsc, build and Newman |
 | REQ-062 bug list speed | Verified | `measure-api-latency.mjs`: p95 23 ms on 68 bugs, 22 ms on 5,068, 45 ms on 20,068 (target 300); dashboard 316 ms at 20,068 (target 500) (D-080) |
