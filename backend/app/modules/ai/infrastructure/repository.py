@@ -13,9 +13,10 @@ from app.modules.ai.infrastructure.models import AIUsage
 
 
 def add(db: Session, *, org_id: uuid.UUID, user_id: uuid.UUID | None, feature: str, provider: str, model: str, status: str,
-        input_tokens: int, output_tokens: int, latency_ms: int) -> AIUsage:
+        input_tokens: int, output_tokens: int, latency_ms: int, attempts: int = 1, fallback_reason: str | None = None) -> AIUsage:
     row = AIUsage(org_id=org_id, user_id=user_id, feature=feature, provider=provider, model=model, status=status,
-                  input_tokens=input_tokens, output_tokens=output_tokens, latency_ms=latency_ms)
+                  input_tokens=input_tokens, output_tokens=output_tokens, latency_ms=latency_ms, attempts=attempts,
+                  fallback_reason=fallback_reason[:24] if fallback_reason else None)
     db.add(row)
     db.flush()
     return row

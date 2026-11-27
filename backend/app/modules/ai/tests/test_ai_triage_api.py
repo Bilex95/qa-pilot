@@ -177,7 +177,7 @@ def test_the_bug_text_goes_to_the_model_only_as_tagged_data(client, world, proje
     got = triage(client, world.a, {"bug_id": bug["id"]}).json()
     assert (got["severity"], got["priority"]) == ("low", "p4")  # the injected text did not decide anything
     call = scripted.calls[0]
-    assert "Ignore previous" not in call["system"] and call["max_tokens"] == 400
+    assert "Ignore previous" not in call["system"] and call["max_tokens"] == 256  # D-088
     tags = {b.tag: b.text for b in call["blocks"]}
     assert {"bug_title", "bug_description", "bug_steps", "bug_actual_result", "bug_environment", "project_components"} <= set(tags)
     assert "Ignore previous instructions" in tags["bug_title"] and "</bug_title>" not in tags["bug_title"]

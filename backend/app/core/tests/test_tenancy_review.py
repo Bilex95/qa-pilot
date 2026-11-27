@@ -27,6 +27,13 @@ REVIEWED = {
     "testing/infrastructure/repository.py": {"suite_name_taken"},
     # the mock provider reads no database
     "ai/infrastructure/mock.py": {"complete_json"},
+    # the REST providers call a model over HTTP and read no database
+    "ai/infrastructure/gemini_provider.py": {"complete_json"},
+    "ai/infrastructure/openai_compatible_provider.py": {"complete_json"},
+    # the Anthropic provider, the HTTP helper and the fallback chain (D-085) talk to model APIs and read no database
+    "ai/infrastructure/anthropic_provider.py": {"complete_json"},
+    "ai/infrastructure/chain.py": {"complete_json", "_warn_permanent", "may_warn"},
+    "ai/infrastructure/http_json.py": {"_retry_after"},
     "ai/infrastructure/mock_features.py": {"bug_writer", "explain_log", "triage", "test_cases"},
 }
 

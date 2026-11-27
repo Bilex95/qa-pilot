@@ -88,15 +88,22 @@ def run[T: BaseModel](db: Session, org: Organization, user_id: uuid.UUID, *, fea
     system = system_prompt(task)
     started = time.perf_counter()
     status, input_tokens, output_tokens, model = "ok", 0, 0, provider.model
+    answered, attempts, fallback_reason = provider.name, 0, None  # who answered, calls made, why the primary was skipped (D-085)
     value: T | None = None
     correction: str | None = None
     for attempt in (1, 2):
         try:
             result: ProviderResult = provider.complete_json(feature=feature, system=system, blocks=blocks, output_model=output_model,
                                                             max_tokens=max_tokens, correction=correction)
-        except ProviderError:
+        except ProviderError as exc:
             status = "error"
+            attempts += exc.attempts
+            fallback_reason = exc.reasons or exc.reason
+            answered = provider.name  # every provider failed: the row names the primary
             break
+        attempts += result.attempts
+        answered = result.provider or provider.name
+        fallback_reason = result.fallback_reason or fallback_reason
         input_tokens += result.input_tokens
         output_tokens += result.output_tokens
         model = result.model
@@ -113,8 +120,9 @@ def run[T: BaseModel](db: Session, org: Organization, user_id: uuid.UUID, *, fea
         if attempt == 2:
             status = "invalid_output"
     used_fallback = value is None
-    row = repo.add(db, org_id=org.id, user_id=user_id, feature=feature, provider=provider.name, model=model, status=status,
-                   input_tokens=input_tokens, output_tokens=output_tokens, latency_ms=int((time.perf_counter() - started) * 1000))
+    row = repo.add(db, org_id=org.id, user_id=user_id, feature=feature, provider=answered, model=model, status=status,
+                   input_tokens=input_tokens, output_tokens=output_tokens, latency_ms=int((time.perf_counter() - started) * 1000),
+                   attempts=max(attempts, 1), fallback_reason=fallback_reason)
     db.commit()
     return AIResult(value=fallback if value is None else value, fallback=used_fallback, usage_id=row.id, status=status)
 

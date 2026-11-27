@@ -1,0 +1,15 @@
+# Test mode overlay (D-086): the backend runs on the mock AI provider whatever the developer's .env says, so no test can reach a live
+# provider. An `environment` entry beats `env_file`. Used by scripts/ai-mock.sh (Newman, local flows); never by CI (CI uses .env.example).
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --wait backend
+services:
+  backend:
+    environment:
+      QAP_TEST_MODE: "1"
+      AI_PROVIDER: mock
+      AI_FALLBACK_PROVIDER: ""
+      ANTHROPIC_API_KEY: ""
+      GEMINI_API_KEY: ""
+      GEMINI_BASE_URL: ""
+      OPENAI_COMPAT_API_KEY: ""
+      OPENAI_COMPAT_BASE_URL: ""
+      OPENAI_COMPAT_MODEL: ""

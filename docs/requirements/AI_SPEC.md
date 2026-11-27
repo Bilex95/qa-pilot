@@ -15,7 +15,9 @@ API router (thin)  ->  AIService (permission, ai_enabled, rate limit, usage log,
 * `AIProvider` protocol: `async complete_json(feature, system, user_blocks, output_model, max_tokens) -> ProviderResult(raw_text, input_tokens, output_tokens, model)`.
 * `AnthropicProvider`: official `anthropic` Python SDK, model from `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`), key from `ANTHROPIC_API_KEY`, timeout 30 s, temperature 0.2. Uses a JSON only instruction plus a tool definition shaped like the output schema so the reply is structured.
 * `MockProvider`: deterministic, no network. Output is derived from the input with simple rules (keyword matching, hashing for stable choices) so tests are repeatable and the offline demo looks realistic. Token counts are estimated as `ceil(chars / 4)`.
-* Selection: `AI_PROVIDER=mock|anthropic`. If `AI_PROVIDER=anthropic` but the key is empty, the app logs a warning at startup and uses mock (REQ-042).
+* `GeminiProvider` (D-083): Google AI Studio REST generateContent, model from `GEMINI_MODEL` (default `gemini-3.5-flash-lite`), key from `GEMINI_API_KEY` in the `x-goog-api-key` header, optional `GEMINI_BASE_URL`. `OpenAICompatibleProvider` (D-083): chat completions with `json_object`, from `OPENAI_COMPAT_BASE_URL`, `OPENAI_COMPAT_API_KEY`, `OPENAI_COMPAT_MODEL` (Groq, OpenRouter). Both put the output schema in the prompt text and return the raw text for the same validation, retry and fallback.
+* Selection: `AI_PROVIDER=mock|anthropic|gemini|openai_compatible`. If the selected provider's key is empty, the app logs a warning once and uses mock (REQ-042).
+* Fallback provider (D-085): `AI_FALLBACK_PROVIDER` (empty means none) names a second provider. A 429 or 5xx answer is retried once on the same provider (1.5 s plus jitter, or Retry-After, at most 5 s); a timeout or connection error goes straight to the second provider; a permanent error (400, 401, 403, 404) also does, and logs one admin warning. 60 s budget per request, 30 s cool-down for a failed primary. Invalid JSON never falls back to the second provider (the correction retry asks the same provider). One usage row per call records `provider` (who answered), `attempts` and `fallback_reason`. Stage 8 rule: with a workspace's own key, fallback may only go to providers that workspace configured.
 * Duplicate detection does not call the model (D-013); it is still exposed through the AI module and logged as feature `duplicates` with zero tokens.
 
 ## 2. Guardrails common to every feature (REQ-050)
@@ -24,6 +26,7 @@ API router (thin)  ->  AIService (permission, ai_enabled, rate limit, usage log,
 2. **Context minimisation.** Only fields needed for the task are sent. No emails, no user ids, no tokens. Member names are not sent.
 3. **Input limits.** Each text field truncated to 12,000 characters (D-012) with a note "[truncated]". Logs are trimmed to the last 300 lines.
 4. **Structured output.** The model must return JSON matching the Pydantic schema. Unknown keys are ignored; enums must match exactly.
+4a. **Provider waits (D-088).** A 429 or 5xx is retried once on the same provider after exactly the `Retry-After` value (seconds or an HTTP date) or, without one, 1.5 s plus jitter. The retry happens only if elapsed time plus the wait plus a 10 s reserve fits the 60 s request budget; otherwise the next provider is asked at once. A provider that failed cools down for the longer of 30 s and its Retry-After, at most 120 s.
 5. **One retry.** On parse or validation failure, one retry with the validation error appended ("Your previous output was invalid: ... Return only valid JSON"). Second failure: status `invalid_output`, fall back.
 6. **Fallback.** Each feature defines a safe fallback (below). The response sets `fallback: true` and the UI shows "AI could not produce a suggestion. You can continue manually." Provider errors and timeouts also fall back (status `error`).
 7. **Allowed values.** Where the model picks from project values (components, environments), the server maps the answer to an existing id, or drops it if there is no match. The model can never invent ids.
@@ -51,7 +54,7 @@ API router (thin)  ->  AIService (permission, ai_enabled, rate limit, usage log,
   ```
 * **Fallback:** title from the first line of the notes (trimmed to 120 chars), description = notes, steps empty, severity medium.
 * **Mock behaviour:** title = first sentence; steps = split on newlines or sentences into numbered steps; severity by keywords (`crash|data loss|payment|security` -> critical, `error|fail|500` -> high, `typo|alignment` -> low, else medium); environment by keyword `prod|staging|dev`.
-* **Cost controls:** `max_tokens` 1,200.
+* **Cost controls:** `max_tokens` 384 (D-088, table in `domain/rules.py`).
 
 ### 3.2 Explain this log (REQ-044), API-141
 
@@ -67,7 +70,7 @@ API router (thin)  ->  AIService (permission, ai_enabled, rate limit, usage log,
   ```
 * **Fallback:** summary "Could not analyse the log", key_lines = lines containing `error`, `exception` or `fatal` (max 10).
 * **Mock:** the same keyword extraction plus a templated summary naming the first exception type found.
-* **Cost:** `max_tokens` 600.
+* **Cost:** `max_tokens` 384 (D-088).
 
 ### 3.3 AI Triage (REQ-045), API-142
 
@@ -84,7 +87,7 @@ API router (thin)  ->  AIService (permission, ai_enabled, rate limit, usage log,
   ```
 * **Fallback:** no suggestion; panel shows the fallback message.
 * **Mock:** severity rules as in 3.1; priority = severity mapped (critical p1, high p2, medium p3, low p4), raised one level if the environment is prod; component = first component whose name appears in the text; reason lists matched keywords.
-* **Cost:** `max_tokens` 400.
+* **Cost:** `max_tokens` 256 (D-088).
 
 ### 3.4 Duplicate Detector (REQ-046), API-143
 
@@ -119,7 +122,7 @@ API router (thin)  ->  AIService (permission, ai_enabled, rate limit, usage log,
 * **Validation extra:** at least one case of each type when `count >= 3`; otherwise counted as invalid and retried once.
 * **Fallback:** no cases, message shown.
 * **Mock:** extracts acceptance criteria lines (lines starting with `-`, `*`, `Given`, numbered) and builds one positive case per criterion, plus fixed negative cases (empty input, invalid format) and edge cases (maximum length, special characters), up to `count`.
-* **Cost:** `max_tokens` 3,000.
+* **Cost:** `max_tokens` 480 per requested case plus 128 (1,568 for 3 cases), at most 3,000 (D-088).
 
 ### 3.6 Release Readiness Summary (REQ-048), API-145
 
@@ -136,7 +139,7 @@ API router (thin)  ->  AIService (permission, ai_enabled, rate limit, usage log,
 * **Validation extra:** recommendation must be consistent with readiness (`blocked` cannot become `ship`); otherwise invalid and retried.
 * **Fallback:** a templated summary built from the readiness reasons.
 * **Mock:** the same template, so the offline demo is meaningful.
-* **Cost:** `max_tokens` 800.
+* **Cost:** `max_tokens` 384 (D-088).
 
 ## 4. Usage logging and limits (REQ-051, REQ-052)
 

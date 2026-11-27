@@ -10,6 +10,7 @@ from app.core.errors import NotFound, Unprocessable
 from app.modules.ai.application import service
 from app.modules.ai.domain import heuristics, release_summary, similarity
 from app.modules.ai.domain.prompt import block
+from app.modules.ai.domain.rules import max_tokens_for
 from app.modules.ai.infrastructure import mock_features  # noqa: F401  (registers the mock answers)
 from app.modules.ai.schemas.features import (
     BugDraftSuggestion,
@@ -90,7 +91,7 @@ def bug_writer(db: Session, org: service.Organization, user_id: uuid.UUID, body:
         title=line if len(line) >= 5 else "Untitled bug report", description=body.notes[:4000], steps_to_reproduce=[], expected_result="",
         actual_result="", environment=None, component=None, suggested_severity="medium", missing_information=[])
     got = service.run(db, org, user_id, feature="bug_writer", task=BUG_WRITER_TASK, blocks=blocks, output_model=BugDraftSuggestion,
-                      fallback=fallback, max_tokens=1200)
+                      fallback=fallback, max_tokens=max_tokens_for("bug_writer"))
     v = got.value
     environment, environment_id = _named(v.environment, environments)
     component, component_id = _named(v.component, components)
@@ -137,7 +138,7 @@ def triage(db: Session, org: service.Organization, user_id: uuid.UUID, body: Tri
     fallback = TriageAnswer.model_construct(severity="medium", priority="p3", component=None,
                                             reason="No suggestion is available right now.", confidence="low")
     got = service.run(db, org, user_id, feature="triage", task=TRIAGE_TASK, blocks=blocks, output_model=TriageAnswer, fallback=fallback,
-                      max_tokens=400)
+                      max_tokens=max_tokens_for("triage"))
     if got.fallback:
         reason = "The assistant could not suggest a triage. Set severity, priority and component yourself."
         return TriageOut(severity=None, priority=None, component=None, component_id=None, reason=reason, confidence=None, fallback=True,
@@ -182,7 +183,7 @@ def generate_test_cases(db: Session, org: service.Organization, user_id: uuid.UU
     blocks = [block("story", body.story), block("project_components", "\n".join(components)), block("case_count", str(body.count))]
     fallback = GeneratedTestCases.model_construct(cases=[], coverage_notes="")
     got = service.run(db, org, user_id, feature="test_cases", task=TEST_CASES_TASK, blocks=blocks, output_model=GeneratedTestCases,
-                      fallback=fallback, max_tokens=3000, check=_type_gap(body.count))
+                      fallback=fallback, max_tokens=max_tokens_for("test_cases", body.count), check=_type_gap(body.count))
     if got.fallback:
         return GenerateCasesOut(cases=[], coverage_notes="AI could not produce test cases. You can write them yourself.", fallback=True,
                                 usage_id=got.usage_id)
@@ -231,7 +232,7 @@ def release_readiness_summary(db: Session, org: service.Organization, user_id: u
         return None
 
     got = service.run(db, org, user_id, feature="release_summary", task=RELEASE_SUMMARY_TASK, blocks=release_summary.to_blocks(facts),
-                      output_model=ReleaseSummaryAnswer, fallback=fallback, max_tokens=800, check=agrees)
+                      output_model=ReleaseSummaryAnswer, fallback=fallback, max_tokens=max_tokens_for("release_summary"), check=agrees)
     v = got.value
     return ReleaseSummarySuggestion(headline=v.headline, summary=v.summary, top_risks=list(v.top_risks), recommendation=v.recommendation,
                                     readiness=facts.readiness, fallback=got.fallback, usage_id=got.usage_id)  # type: ignore[arg-type]
@@ -242,7 +243,7 @@ def explain_log(db: Session, org: service.Organization, user_id: uuid.UUID, body
     fallback = LogExplanationAnswer(summary="Could not analyse the log", likely_cause="", key_lines=heuristics.error_lines(data.text),
                                     error_type=None)
     got = service.run(db, org, user_id, feature="explain_log", task=EXPLAIN_LOG_TASK, blocks=[data], output_model=LogExplanationAnswer,
-                      fallback=fallback, max_tokens=600)
+                      fallback=fallback, max_tokens=max_tokens_for("explain_log"))
     v = got.value
     return LogExplanationOut(summary=v.summary, likely_cause=v.likely_cause, key_lines=list(v.key_lines), error_type=v.error_type,
                              fallback=got.fallback, usage_id=got.usage_id)

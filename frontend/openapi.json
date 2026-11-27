@@ -17151,6 +17151,22 @@
             ],
             "title": "Outcome"
           },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "default": 1
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",

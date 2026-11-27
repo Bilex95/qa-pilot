@@ -30545,7 +30545,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"a page\", () => { const b = pm.response.json(); pm.expect(b.items).to.be.an(\"array\"); pm.expect(b.total).to.be.a(\"number\"); pm.expect(b.page).to.eql(1); });"
+                  "pm.test(\"a page\", () => { const b = pm.response.json(); pm.expect(b.items).to.be.an(\"array\"); pm.expect(b.total).to.be.a(\"number\"); pm.expect(b.page).to.eql(1); });",
+                  "pm.test(\"each row has attempts and a fallback reason (D-085)\", () => { const b = pm.response.json(); b.items.forEach(i => { pm.expect(i).to.have.property(\"attempts\"); pm.expect(i).to.have.property(\"fallback_reason\"); pm.expect(i.attempts).to.eql(1); pm.expect(i.fallback_reason).to.eql(null); }); });"
                 ]
               }
             }

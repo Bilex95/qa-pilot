@@ -14,6 +14,7 @@ description: Use when running checks, gates, commits or pushes in QA Pilot: how 
 * Helper scripts live in `C:/Users/HP/qa-pilot/scripts/` only. `.claude/settings.local.json` holds this machine's allow, ask and deny lists (not committed).
 
 ## Gate runs
+* AI in tests (D-086): local pytest, Newman and flows always run on the MOCK provider automatically, `.env` untouched (never read or edit it; it may hold real keys). `py-checks.sh` uses `exec -e` flags, `newman.sh`, `run-flows.ps1` and `e2e.ps1` recreate only the backend with `docker-compose.test.yml` and restore it afterwards; a guard fails fast with "AI guard FAILED". `gate.ps1 -Only newman` runs Newman (baseline seed needed).
 * All local gates in one command: `& C:\Users\HP\qa-pilot\scripts\gate.ps1` (frontend lint, typecheck, build, then ruff, mypy, pytest, in one held WSL session; `-Only frontend` or `-Only python`). It prints one PASS or FAIL line per part and writes the full output to `.gate\gate-frontend.txt` and `.gate\gate-python.txt` (Grep those for failure lines).
 * Backend ruff, mypy and pytest alone: `with-wsl.ps1 -Up` then `py-checks.ps1`. Contract regeneration: `api-types.ps1` the same way.
 * Newman: `scripts/newman.ps1` (baseline seed needed). Postman collection is generated: edit `postman/build_collection.py`, run it.

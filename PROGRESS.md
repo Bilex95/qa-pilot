@@ -8,13 +8,18 @@
 
 **State:** Stages 4 to 6 (I-01 to I-22, BL-035) are merged to `main` through PR #1 (merge commit 751226d, 2026-11-27) and tagged `stage-4-approved`. CI was green on the last commit (386903d, push run 45854759323 and pull request run 45854772504). Final QA report: 63 requirements, 63 Verified (REQ-057 by the automated accessibility tree check, D-081), 0 Partial, 0 Not done; `docs/reviews/FINAL_QA_REPORT.md`. Decisions up to D-081 are in `docs/DECISIONS.md`.
 
+**Clean clone check (2026-11-27):** fresh clone of public main follows the README to a healthy stack, seeded data and a working sign-in (first build 459 s); README quick start fixed, see `docs/reviews/CLEAN_CLONE_CHECK.md`.
+
 **Open items:**
-* **BL-037 (must do before real users touch the AI features):** the live AI smoke test, `e2e/scripts/smoke-live-ai.mjs`, needs an API key in `.env`. Until it passes, REQ-042 is Verified for the mock provider only.
+* **BL-037 DONE (27 Nov 2026, D-087):** live smoke on Gemini `gemini-3.5-flash-lite` (15 of 15) with Groq `qwen/qwen3.8-27b` as fallback (owner decision, D-087); evidence `docs/reviews/LIVE_AI_SMOKE.md`; a lone provider now retries once too.
 * **Manual NVDA pass (REQ-057):** pending, by the product owner. The automated check is Playwright's accessibility tree, not a real screen reader.
 * **BL-034:** general API rate limit, before public exposure.
 * **BL-036:** dashboard latency grows faster than the data (316 ms at 20,000 bugs, target 500 ms); EXPLAIN ANALYZE and an index or pre-aggregation before a larger customer. Not blocking.
 * **BL-038:** run `check-a11y-tree.mjs` at 390 px as well as 1440 px.
 * **BL-041 (CI on `main`, 2026-11-27):** run 46010951819 (merge of PR 21, docs only) failed in one job, "Newman smoke", step "Newman": 1072 of 1073 assertions passed, the one failure is API-077 "newest first, with the actor and the old and new status" (`expected [ Array(20) ] to deeply equal [ '2026-11-27T13:57:01Z', ... ]`). The other 15 jobs passed, and the same Newman job passed on the pull request runs of PR 21 (45992618104) and PR 20 (45973757621). No code changed between those runs, so this is a timing dependent test, not a regression. Cause: pydantic drops the fraction on a whole second timestamp, and `Z` sorts after `.` as text. Fixed on branch `fix/bl-041-timestamp-order` (D-082): one fixed width timestamp format in `ApiModel`, a backend test for it, and the Newman and pytest assertions compare parsed moments. Local: ruff, mypy, pytest 1773, OpenAPI contract unchanged, Newman 620 requests and 1074 assertions. CI on the pull request and then on `main`: see the next entry. CodeQL on `main` passed (run 46010768494).
+* **Prompt 0 part A (branch `fix/health-and-live-ai`, D-083):** Gemini and OpenAI compatible providers behind `AI_PROVIDER`, tested on a fake HTTP server (no live call, BL-037 still needs a real key); BL-039 fixed.
+* **Prompt 0 part B (same branch, D-085, D-086):** AI providers retry once, fall back to `AI_FALLBACK_PROVIDER` and record who answered (migration 0015, API-147 fields); local tests always run on the mock without touching `.env`.
+* **Prompt 0 part D (same branch, D-088):** output token limits per feature (about twice the measured output, in `domain/rules.py`) and Retry-After honoured exactly within the 60 s budget.
 * **CodeQL:** run once on `main` after the merge (workflow run 45969464233); the result goes in the next entry.
 * **Read block:** `blockReadsOutsideWorkingDirectories` is false in the user settings but a session still enforced it on 2026-11-26; check `/status` after a fresh restart.
 

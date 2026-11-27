@@ -15,6 +15,27 @@ TEXT_LIMIT = 12_000  # characters per text field sent to the model (D-012)
 LOG_LINES = 300  # a log is cut to its last lines
 PROVIDER_TIMEOUT_SECONDS = 30
 TEMPERATURE = 0.2
+# Output token limits per feature (D-088). Groq counts the REQUESTED max_tokens against its 8,000 tokens per minute budget, so a limit far
+# above the real output causes 429s. Each limit is about twice the largest output measured over 3 runs on Gemini 3.5 Flash-Lite, Groq
+# qwen3.8-27b and Gemini 3.1 Flash-Lite, at least 256, rounded up to a multiple of 64, and never above the limit used before:
+#   bug_writer 186 -> 384 (was 1200), explain_log 183 -> 384 (was 600), triage 88 -> 256 (was 400), release_summary 175 -> 384 (was 800),
+#   test_cases 689 for 3 cases (about 230 per case) -> 480 per requested case plus 128, so 1,568 for 3 (cap 3000, the earlier value).
+# The schema maximums are larger (for example a 4,000 character bug description), but real answers are far shorter; a cut answer is
+# invalid JSON and goes through the correction retry, then to the manual fallback (status invalid_output).
+# The duplicate check is local and needs no limit.
+MAX_TOKENS = {"bug_writer": 384, "explain_log": 384, "triage": 256, "release_summary": 384}
+TEST_CASES_TOKENS_PER_CASE = 480
+TEST_CASES_TOKENS_BASE = 128
+TEST_CASES_TOKENS_CAP = 3000
+
+
+def max_tokens_for(feature: str, count: int = 1) -> int:
+    """The output token limit a feature asks the provider for; `count` only matters for test_cases."""
+    if feature == "test_cases":
+        return min(TEST_CASES_TOKENS_PER_CASE * max(count, 1) + TEST_CASES_TOKENS_BASE, TEST_CASES_TOKENS_CAP)
+    return MAX_TOKENS[feature]
+
+
 # Statuses that count against the organization's daily limit: the model was asked, or a fallback was served
 COUNTED = ("ok", "invalid_output", "error", "fallback")
 

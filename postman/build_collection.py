@@ -1462,7 +1462,10 @@ folders = [
         # and the refusals of the outcome endpoint
         req("List AI usage as QA Lead (API-146)", "GET", O + "/ai/usage?page_size=25", token="leadToken",
             tests=[status(200), 'pm.test("a page", () => { const b = pm.response.json(); pm.expect(b.items).to.be.an("array"); pm.expect(b.total).to.be.a("number"); '
-                   'pm.expect(b.page).to.eql(1); });']),
+                   'pm.expect(b.page).to.eql(1); });',
+                   'pm.test("each row has attempts and a fallback reason (D-085)", () => { const b = pm.response.json(); b.items.forEach(i => { '
+                   'pm.expect(i).to.have.property("attempts"); pm.expect(i).to.have.property("fallback_reason"); '
+                   'pm.expect(i.attempts).to.eql(1); pm.expect(i.fallback_reason).to.eql(null); }); });']),
         req("List AI usage as Org Admin with filters (API-146)", "GET", O + "/ai/usage?feature=triage&from=2020-01-01&to=2099-01-01", token="adminToken",
             tests=[status(200), 'pm.test("only triage calls", () => pm.response.json().items.forEach(i => pm.expect(i.feature).to.eql("triage")));']),
         req("List AI usage as QA Engineer (API-146 forbidden)", "GET", O + "/ai/usage", token="qaToken", tests=[status(403), err("forbidden")]),

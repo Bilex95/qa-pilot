@@ -190,7 +190,7 @@ def test_the_story_goes_to_the_model_only_as_tagged_data(client, world, project,
     monkeypatch.setattr(service, "get_provider", lambda settings=None: scripted)
     assert generate(client, world.a, {"project_id": project["id"], "story": story, "count": 4}).status_code == 200
     call = scripted.calls[0]
-    assert "Ignore previous" not in call["system"] and call["max_tokens"] == 3000
+    assert "Ignore previous" not in call["system"] and call["max_tokens"] == 2048  # 480 * 4 + 128 (D-088)
     tags = {b.tag: b.text for b in call["blocks"]}
     assert {"story", "project_components", "case_count"} <= set(tags) and tags["project_components"] == "Checkout" and tags["case_count"] == "4"
     assert "Ignore previous instructions" in tags["story"] and "</story>" not in tags["story"]

@@ -23,6 +23,8 @@ class UsageOut(ApiModel):
     output_tokens: int
     latency_ms: int
     outcome: Outcome | None
+    attempts: int = 1  # calls made to providers for this request (a retry or a fallback makes it more than 1)
+    fallback_reason: str | None = None  # why the primary provider was not used, for example http_503
     created_at: datetime
 
 

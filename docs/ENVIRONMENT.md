@@ -46,6 +46,10 @@ If it still happens, check with `docker inspect -f '{{.NetworkSettings.Networks}
 docker compose up -d --force-recreate --wait
 ```
 
+## Tests use the mock AI provider (D-086)
+
+Your `.env` may name a live AI provider and keys. Local test runs never use them and never edit `.env`: `scripts/py-checks.sh` runs pytest with the mock set through `docker compose exec -e`, and `scripts/newman.sh`, `scripts/run-flows.ps1` and `scripts/e2e.ps1` recreate only the backend with `docker-compose.test.yml` and restore it afterwards (a `trap` or `finally`, also on failure). A guard refuses to run when the backend is not on the mock. After an interrupted run, `docker compose up -d --wait backend` returns the backend to its `.env` settings.
+
 ## Bundler in the dev container (found in Stage 3)
 
 The frontend container runs `next dev --webpack` with polling. Turbopack, the Next 16 default, did not see file changes on the WSL bind mount and served stale code (D-042).

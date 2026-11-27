@@ -183,7 +183,7 @@ def test_bug_titles_go_to_the_model_only_as_tagged_data(client, world, project, 
     monkeypatch.setattr(service, "get_provider", lambda settings=None: scripted)
     assert summarise(client, world.a, release).status_code == 200
     call = scripted.calls[0]
-    assert "Ignore previous" not in call["system"] and call["max_tokens"] == 800
+    assert "Ignore previous" not in call["system"] and call["max_tokens"] == 384  # D-088
     tags = {b.tag: b.text for b in call["blocks"]}
     assert {"release_name", "release_numbers", "readiness_reasons", "open_critical_and_high_bugs", "test_runs"} <= set(tags)
     assert "Ignore previous instructions" in tags["open_critical_and_high_bugs"] and "</open_critical_and_high_bugs>" not in tags["open_critical_and_high_bugs"]
