@@ -52,7 +52,7 @@ You need Docker with Compose v2.
    cp .env.example .env
    ```
 
-   Set `POSTGRES_PASSWORD`, `JWT_SECRET` (at least 32 random characters, for example `python -c "import secrets;print(secrets.token_urlsafe(48))"`) and `SEED_USER_PASSWORD` (the password every demo account will share). Leave `AI_PROVIDER=mock` to work offline, or for free live AI set `AI_PROVIDER=gemini` (model `gemini-3.5-flash-lite`) and `AI_FALLBACK_PROVIDER=openai_compatible` (Groq, `openai/gpt-oss-20b`) with the two keys.
+   Set `POSTGRES_PASSWORD`, `JWT_SECRET` (at least 32 random characters, for example `python -c "import secrets;print(secrets.token_urlsafe(48))"`) and `SEED_USER_PASSWORD` (the password every demo account will share). Leave `AI_PROVIDER=mock` to work offline, or for free live AI set `AI_PROVIDER=gemini` (model `gemini-3.5-flash-lite`) and `AI_FALLBACK_PROVIDER=openai_compatible` (Groq, `qwen/qwen3.8-27b`) with the two keys.
 
 2. Start the stack and load the demo data:
 

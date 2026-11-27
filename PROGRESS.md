@@ -11,7 +11,7 @@
 **Clean clone check (2026-11-27):** fresh clone of public main follows the README to a healthy stack, seeded data and a working sign-in (first build 459 s); README quick start fixed, see `docs/reviews/CLEAN_CLONE_CHECK.md`.
 
 **Open items:**
-* **BL-037 DONE (27 Nov 2026, D-087):** live smoke on Gemini `gemini-3.5-flash-lite` (15 of 15) with Groq `openai/gpt-oss-20b` as fallback; evidence `docs/reviews/LIVE_AI_SMOKE.md`; a lone provider now retries once too.
+* **BL-037 DONE (27 Nov 2026, D-087):** live smoke on Gemini `gemini-3.5-flash-lite` (15 of 15) with Groq `qwen/qwen3.8-27b` as fallback (owner decision, D-087); evidence `docs/reviews/LIVE_AI_SMOKE.md`; a lone provider now retries once too.
 * **Manual NVDA pass (REQ-057):** pending, by the product owner. The automated check is Playwright's accessibility tree, not a real screen reader.
 * **BL-034:** general API rate limit, before public exposure.
 * **BL-036:** dashboard latency grows faster than the data (316 ms at 20,000 bugs, target 500 ms); EXPLAIN ANALYZE and an index or pre-aggregation before a larger customer. Not blocking.

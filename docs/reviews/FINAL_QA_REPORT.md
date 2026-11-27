@@ -70,7 +70,7 @@ Evidence key: UT = backend pytest, NM = Newman collection, FL = browser flow scr
 | REQ-039 reports | Verified | UT, NM, FL |
 | REQ-040 CSV export | Verified | UT, NM |
 | REQ-041 SLA breach | Verified | UT, NM, `sla-breach` seed scenario |
-| REQ-042 provider interface | Verified | UT; live smoke on Gemini `gemini-3.5-flash-lite` with Groq `openai/gpt-oss-20b` as fallback (15 of 15), see `docs/reviews/LIVE_AI_SMOKE.md` (D-087); Anthropic not run |
+| REQ-042 provider interface | Verified | UT; live smoke on Gemini `gemini-3.5-flash-lite` (15 of 15 model calls) with Groq `qwen/qwen3.8-27b` as fallback (15 of 15 behind the chain), see `docs/reviews/LIVE_AI_SMOKE.md` (D-087); Anthropic not run |
 | REQ-043 Bug Writer | Verified | UT, NM, FL (AI flow, journeys) |
 | REQ-044 Explain this log | Verified | UT, NM |
 | REQ-045 Triage | Verified | UT, NM, FL |

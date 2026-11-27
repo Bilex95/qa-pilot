@@ -17,8 +17,8 @@ Date: 27 Nov 2026. Free tiers only. No key appears in this file or in the raw ou
 | Gemini `gemini-3.7-flash` | 0 | n/a | n/a | HTTP 503 |
 | Gemini `gemini-3.6-flash` | answered | n/a | 59 s for a trivial request | HTTP 200 but thinking makes it far too slow |
 | Gemini `gemini-3.5-flash` | 0 | n/a | 40 s | no usable answer within a small budget |
-| Groq `openai/gpt-oss-20b` (chosen Groq and fallback default) | 14 of 15 | about 1.7 s (1.7, 2.3, 1.7 s) | 4.5 s | one http_400 json_validate_failed |
-| Groq `qwen/qwen3.8-27b`, spaced runs | 12 of 15 | about 1.7 s (1.7, 1.5, 1.9 s) | 10.1 s | every miss an http_429 |
+| Groq `openai/gpt-oss-20b` | 14 of 15 | about 1.7 s (1.7, 2.3, 1.7 s) | 4.5 s | one http_400 json_validate_failed |
+| Groq `qwen/qwen3.8-27b`, spaced runs (chosen Groq and fallback default, owner decision, D-087) | 12 of 15 | about 1.7 s (1.7, 1.5, 1.9 s) | 10.1 s | every miss an http_429 |
 | Groq `qwen/qwen3.8-27b`, back to back burst | 6 of 15 (4, 1 and 1 of 5 per run) | about 1.1 to 1.9 s | 5.6 s | http_429 after the minute budget is used |
 | Groq `openai/gpt-oss-120b` | not adopted | n/a | n/a | http_400 json_validate_failed in a tiny JSON probe |
 
@@ -42,6 +42,8 @@ Two things the table shows. The Groq `gpt-oss-20b` model spends about three time
 ## Chain tests (live)
 * Primary Gemini with the retired `gemini-2.5-flash`, fallback Groq `gpt-oss-20b`: all five model features answered by `openai_compatible` with `fallback_reason` `http_404`. The admin warning was logged once; the key is not in the log.
 * Primary Groq `qwen/qwen3.8-27b`, fallback `gemini-3.5-flash-lite`, three spaced runs: 15 of 15. One call recovered on its own retry (attempts 2); one fell back to Gemini with `http_429` (attempts 3). The chain turns the Groq rate limit misses into passes. The price is time: the two affected Release Summary calls took 9.5 s and 8.3 s, against 1.4 to 2.2 s for an unaffected call. That includes the retry wait (the design allows up to 5 s) and the extra attempts; the exact split was not measured.
+
+* Final configuration, after the owner chose qwen as the Groq default. Normal case, primary `gemini-3.5-flash-lite` with `qwen/qwen3.8-27b` configured behind it, two runs: 10 of 10 model calls answered by Gemini, median about 1.0 s, no retry, no fallback. Gemini failing (the retired `gemini-2.5-flash`, a real 404) with qwen as the fallback, one run of five model calls back to back: 4 of 5 answered by qwen (`http_404` recorded); the fifth (Release Summary) failed with `http_404>http_429`, because Groq's per minute token budget was used up by the four calls before it and the single retry did not clear it, so that call returned the manual fallback text. The same test with `gpt-oss-20b` as the fallback answered 5 of 5. One run each, so this is a signal and not a measurement.
 
 ## Groq free tier limits
 8,000 tokens per minute and 1,000 requests per day for both Groq models. Groq counts the requested `max_tokens` against the minute budget, which is why a burst of calls ends in 429.
