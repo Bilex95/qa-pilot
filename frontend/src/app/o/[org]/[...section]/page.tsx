@@ -18,8 +18,7 @@ export default function SectionPage() {
   const org = useOrg();
   const key = section[0] ?? "";
   const item = NAV.flatMap((g) => g.items).find((i) => i.path === key);
-  const isNewBug = key === "bugs" && section[1] === "new";
-  if (!item || (section.length > 1 && !isNewBug)) return <NotFoundScreen home={`/o/${org.slug}/dashboard`} />;
+  if (!item || section.length > 1) return <NotFoundScreen home={`/o/${org.slug}/dashboard`} />;
   if (item.requires && !can(org.role, item.requires)) {
     return (
       <EmptyState icon={IconLock} title={`You do not have access to ${item.label}`}>
@@ -27,7 +26,7 @@ export default function SectionPage() {
       </EmptyState>
     );
   }
-  const title = isNewBug ? "Report a bug" : (SECTION_TITLES[key] ?? item.label);
+  const title = SECTION_TITLES[key] ?? item.label;
   return (
     <>
       <div className="page-head">

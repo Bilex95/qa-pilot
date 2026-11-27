@@ -1,6 +1,6 @@
 # I-21 Security, tenancy review and performance
 
-**Stage:** 6 | **Batch:** 6A (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 6 | **Batch:** 6A (see [DAG](DAG.md)) | **Status:** Done (D-078, review in STAGE_4_REVIEW.md)
 
 ## Goal / requirement IDs
 

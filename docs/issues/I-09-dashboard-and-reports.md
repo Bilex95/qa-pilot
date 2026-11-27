@@ -1,6 +1,6 @@
 # I-09 Dashboard and reports
 
-**Stage:** 4 | **Batch:** 4E (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4E (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -23,7 +23,7 @@ Requirements: REQ-038, REQ-039, REQ-040, REQ-041
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-05**: [`dashboard-default-desktop.png`](../../design/screenshots/dashboard-default-desktop.png), [`dashboard-default-mobile.png`](../../design/screenshots/dashboard-default-mobile.png), [`dashboard-empty-desktop.png`](../../design/screenshots/dashboard-empty-desktop.png), [`dashboard-loading-desktop.png`](../../design/screenshots/dashboard-loading-desktop.png), [`dashboard-error-desktop.png`](../../design/screenshots/dashboard-error-desktop.png)
 * **SCR-18**: [`reports-default-desktop.png`](../../design/screenshots/reports-default-desktop.png), [`reports-default-mobile.png`](../../design/screenshots/reports-default-mobile.png), [`reports-empty-desktop.png`](../../design/screenshots/reports-empty-desktop.png), [`reports-loading-desktop.png`](../../design/screenshots/reports-loading-desktop.png), [`reports-error-desktop.png`](../../design/screenshots/reports-error-desktop.png)

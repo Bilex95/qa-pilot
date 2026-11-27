@@ -1,6 +1,6 @@
 # I-17 AI Test Case Generator
 
-**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 5 | **Batch:** 5B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -23,7 +23,7 @@ Requirements: REQ-047
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-13**: [`test-case-editor-default-desktop.png`](../../design/screenshots/test-case-editor-default-desktop.png), [`test-case-editor-default-mobile.png`](../../design/screenshots/test-case-editor-default-mobile.png), [`test-case-editor-ai-desktop.png`](../../design/screenshots/test-case-editor-ai-desktop.png), [`test-case-editor-loading-desktop.png`](../../design/screenshots/test-case-editor-loading-desktop.png), [`test-case-editor-error-desktop.png`](../../design/screenshots/test-case-editor-error-desktop.png)
 

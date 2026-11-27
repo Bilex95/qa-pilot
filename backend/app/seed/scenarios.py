@@ -1,11 +1,13 @@
 """Seed scenario definitions (REQ-060, BUILD_PLAN section 4). Pure data; no database access.
 
-Stage 3 seeds identity data only: organizations, people, memberships and invitations.
-Stage 4 adds projects, bugs, tests and releases to each scenario.
+Organizations, people, memberships and invitations are defined here; projects, bugs, tests and releases per scenario are in
+`domain_data.py` (I-12, D-066).
 """
 
 import uuid
 from dataclasses import dataclass, field
+
+from app.seed.domain_data import totals_for
 
 NAMESPACE = uuid.UUID("6f1d3c9a-2b47-4e58-9a1e-aa0000000001")  # fixed forever: changing it changes every seeded id
 
@@ -97,13 +99,24 @@ SCENARIOS: dict[str, list[SeedOrg]] = {
     "release-blocked": [LUMEN, HARBOR],  # plus a blocked release (D-014) from Stage 4
     "multi-tenant": [TENANT_A, TENANT_B],
 }
+# Local latency check only (BL-035, D-080): not in SCENARIOS, so the parametrized seed tests and CI never load them.
+LARGE_SCENARIOS: dict[str, list[SeedOrg]] = {"large-5k": [LUMEN, HARBOR], "large-20k": [LUMEN, HARBOR]}
+
+
+def orgs_for(scenario: str) -> list[SeedOrg]:
+    return SCENARIOS[scenario] if scenario in SCENARIOS else LARGE_SCENARIOS[scenario]
+
+
 SCENARIO_NOTES = {
-    "baseline": ("Two organizations with every role; Priya Raman belongs to both. "
-                 "Stage 4 adds projects, about 60 bugs, suites, runs and releases."),
+    "large-5k": "Local only. Baseline plus one generated project with 5,000 bugs, for the latency check (BL-035).",
+    "large-20k": "Local only. Baseline plus one generated project with 20,000 bugs, for the latency check (BL-035).",
+    "baseline": ("Two organizations with every role; Priya Raman belongs to both. Lumen Freight has 3 projects, 60 bugs in every "
+                 "status, 4 suites with 40 cases, 5 runs and 3 releases (Blocked, At risk, Ready); Harbor Clinics has a small set."),
     "empty": "One organization with only its Org Admin; every screen shows its empty state.",
-    "sla-breach": "Baseline people. Stage 4 adds bugs that are not fixed within their SLA (D-019).",
-    "release-blocked": "Baseline people. Stage 4 adds a release blocked by open Critical bugs and a low pass rate (D-014).",
-    "multi-tenant": "Two organizations with one user per role each and nobody shared, for isolation tests.",
+    "sla-breach": "Baseline people. One project with 7 bugs, 4 of them past their SLA (D-019): Critical 24 h, High 72 h.",
+    "release-blocked": ("Baseline people. Release WEB 2.4.0 is Blocked by two open Critical bugs and a 63% pass rate (D-014), "
+                        "the two reasons the screens show."),
+    "multi-tenant": "Two organizations with one user per role each and nobody shared; the same small project in each, for isolation tests.",
 }
 ALL_ORGS = [LUMEN, HARBOR, EMPTY, TENANT_A, TENANT_B]
 
@@ -114,10 +127,11 @@ def users_for(orgs: list[SeedOrg]) -> list[SeedUser]:
 
 
 def expected_counts(scenario: str) -> dict[str, int]:
-    orgs = SCENARIOS[scenario]
+    orgs = orgs_for(scenario)
     return {
         "organizations": len(orgs),
         "users": len(users_for(orgs)),
         "memberships": sum(len(o.members) for o in orgs),
         "invitations": sum(len(o.invitations) for o in orgs),
+        **totals_for(scenario).as_dict(),  # projects, bugs, suites, cases, runs, releases (domain_data.py)
     }

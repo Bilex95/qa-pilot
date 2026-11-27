@@ -1,0 +1,1 @@
+This is text, not a PNG. The extension says png, the first bytes say otherwise, so the API refuses it (415).

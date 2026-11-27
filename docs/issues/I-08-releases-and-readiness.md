@@ -1,6 +1,6 @@
 # I-08 Releases and readiness
 
-**Stage:** 4 | **Batch:** 4D (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4D (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -25,7 +25,7 @@ Requirements: REQ-035, REQ-036, REQ-037
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-16**: [`releases-default-desktop.png`](../../design/screenshots/releases-default-desktop.png), [`releases-default-mobile.png`](../../design/screenshots/releases-default-mobile.png), [`releases-empty-desktop.png`](../../design/screenshots/releases-empty-desktop.png), [`releases-loading-desktop.png`](../../design/screenshots/releases-loading-desktop.png), [`releases-error-desktop.png`](../../design/screenshots/releases-error-desktop.png)
 * **SCR-17**: [`release-detail-default-desktop.png`](../../design/screenshots/release-detail-default-desktop.png), [`release-detail-default-mobile.png`](../../design/screenshots/release-detail-default-mobile.png), [`release-detail-ai-desktop.png`](../../design/screenshots/release-detail-ai-desktop.png), [`release-detail-loading-desktop.png`](../../design/screenshots/release-detail-loading-desktop.png), [`release-detail-error-desktop.png`](../../design/screenshots/release-detail-error-desktop.png)

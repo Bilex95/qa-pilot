@@ -1,6 +1,6 @@
 # I-05 Bug detail: comments, attachments and activity
 
-**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -22,11 +22,11 @@ Requirements: REQ-018, REQ-023, REQ-024, REQ-025
 * `backend/app/modules/bugs`
 * `frontend/src/modules/bugs`
 * Depends on: [I-03](I-03-bugs-model-create-edit-list-search-and-saved-vie.md)
-* Migration: `0005_bug_detail`
+* Migration: `0006_bug_detail`
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-10**: [`bug-detail-default-desktop.png`](../../design/screenshots/bug-detail-default-desktop.png), [`bug-detail-default-mobile.png`](../../design/screenshots/bug-detail-default-mobile.png), [`bug-detail-ai-desktop.png`](../../design/screenshots/bug-detail-ai-desktop.png), [`bug-detail-loading-desktop.png`](../../design/screenshots/bug-detail-loading-desktop.png), [`bug-detail-error-desktop.png`](../../design/screenshots/bug-detail-error-desktop.png)
 

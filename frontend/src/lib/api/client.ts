@@ -33,7 +33,10 @@ export async function unwrap<T>(p: Promise<{ data?: T; error?: unknown; response
   const { data, error, response } = result;
   if (error !== undefined || !response.ok) {
     const e = (error ?? {}) as { error?: { code?: string; message?: string; details?: unknown } };
-    if (e.error) throw new ApiError(response.status, e.error.code ?? "http_error", e.error.message ?? "Request failed.", e.error.details);
+    if (e.error) {
+      throw new ApiError(response.status, e.error.code ?? "http_error", e.error.message ?? "Request failed.", e.error.details,
+        response.headers.get("X-Request-ID") ?? undefined);
+    }
     throw await toApiError(response);
   }
   return data as T;

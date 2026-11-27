@@ -37,6 +37,8 @@ def get_current_user(db: DB, creds: Annotated[HTTPAuthorizationCredentials | Non
     user = auth.get_active_user(db, user_id)
     if user is None:
         raise Unauthorized("Sign in to continue.")
+    if auth.access_token_predates_password_change(user, payload):  # a reset or a password change ends every session (D-055)
+        raise Unauthorized("Your session has expired. Sign in again.")
     request_info().user_id = str(user.id)
     return user
 

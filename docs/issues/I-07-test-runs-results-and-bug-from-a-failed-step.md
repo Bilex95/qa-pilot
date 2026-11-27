@@ -1,6 +1,6 @@
 # I-07 Test runs, results and bug from a failed step
 
-**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -25,7 +25,7 @@ Requirements: REQ-032, REQ-033, REQ-034
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-14**: [`test-runs-default-desktop.png`](../../design/screenshots/test-runs-default-desktop.png), [`test-runs-default-mobile.png`](../../design/screenshots/test-runs-default-mobile.png), [`test-runs-empty-desktop.png`](../../design/screenshots/test-runs-empty-desktop.png), [`test-runs-loading-desktop.png`](../../design/screenshots/test-runs-loading-desktop.png), [`test-runs-error-desktop.png`](../../design/screenshots/test-runs-error-desktop.png)
 * **SCR-15**: [`test-run-default-desktop.png`](../../design/screenshots/test-run-default-desktop.png), [`test-run-default-mobile.png`](../../design/screenshots/test-run-default-mobile.png), [`test-run-failed-desktop.png`](../../design/screenshots/test-run-failed-desktop.png), [`test-run-loading-desktop.png`](../../design/screenshots/test-run-loading-desktop.png), [`test-run-error-desktop.png`](../../design/screenshots/test-run-error-desktop.png)

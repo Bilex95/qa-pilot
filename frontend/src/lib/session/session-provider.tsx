@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { api, unwrap, type Schemas } from "@/lib/api/client";
 import { toApiError } from "@/lib/api/errors";
+import { clearPendingInvite } from "@/lib/secret-link";
 
 import { currentAccessToken, onTokenChange, refreshAccessToken, setAccessToken } from "./token-store";
 
@@ -93,6 +94,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }).catch(() => undefined);
     setSignedOut(true);
     setAccessToken(null);
+    clearPendingInvite(); // an invitation that was waiting for sign in does not outlive the session (D-055)
     qc.clear();
   }, [qc]);
 

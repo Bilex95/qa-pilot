@@ -75,3 +75,20 @@ class ProfileIn(ApiModel):
 class PasswordChangeIn(ApiModel):
     current_password: Password
     new_password: Password
+
+
+ResetToken = Annotated[str, StringConstraints(min_length=10, max_length=200)]
+
+
+class ResetPreviewIn(ApiModel):
+    token: ResetToken
+
+
+class ResetPreviewOut(ApiModel):
+    email_masked: str
+    expires_at: datetime
+
+
+class ResetConfirmIn(ApiModel):
+    token: ResetToken
+    new_password: Password = Field(description="At least 10 characters with a letter and a number")

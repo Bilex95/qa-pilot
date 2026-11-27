@@ -47,7 +47,9 @@
 | API-013 | POST | `/auth/logout` | Signed in | `{refresh_token}` | 204 | none |
 | API-014 | GET | `/auth/me` | Signed in | none | `{user, memberships:[{org:{id,name,slug,ai_enabled}, role}], pending_invitations:[...]}` | none |
 | API-015 | PATCH | `/auth/me` | Signed in | `{full_name}` | `user` | 422 |
-| API-016 | POST | `/auth/me/password` | Signed in | `{current_password, new_password}` | 204 | 400 `wrong_password`, 422 |
+| API-016 | POST | `/auth/me/password` | Signed in | `{current_password, new_password}` | 200 `{access_token, refresh_token, expires_in}`: a fresh pair for this device, issued after the change. Every other session ends (every refresh token is revoked and every access token issued before the change is refused: D-055) | 400 `wrong_password`, 422 |
+| API-152 | POST | `/auth/password-reset/preview` | Public | `{token}` | `{email_masked, expires_at}` | 410 `reset_invalid` (the same answer for an unknown, used, expired or replaced link), 422, 429 |
+| API-153 | POST | `/auth/password-reset/confirm` | Public | `{token, new_password}` | 204 (the link is used up, every session of the person ends) | 410 `reset_invalid`, 422, 429 |
 
 ### 2.3 Orgs, members, invitations (module `orgs`)
 
@@ -63,8 +65,9 @@
 | API-027 | POST | `{O}/invitations` | `invitation.create` | `{email, role}` | 201 `{id, email, role, expires_at, invite_url}` (url shown once) | 409 `already_member` |
 | API-028 | GET | `{O}/invitations` | `invitation.list` | `?status` | list of invitations without token | none |
 | API-029 | DELETE | `{O}/invitations/{invitation_id}` | `invitation.revoke` | none | 204 | none |
-| API-030 | GET | `/invitations/{token}` | Public | none | `{org_name, role, email_masked, expires_at}` | 410 `invitation_invalid` |
-| API-031 | POST | `/invitations/{token}/accept` | Signed in (email must match) | none | `{org, membership}` | 403 `email_mismatch`, 410 |
+| API-030 | POST | `/invitations/preview` | Public | `{token}` (the token is in the body, never in a path or query: BL-014, D-055) | `{org_name, role, email_masked, expires_at}` | 410 `invitation_invalid`, 422 |
+| API-031 | POST | `/invitations/accept` | Signed in (email must match) | `{token}` | `{org, membership}` | 403 `email_mismatch`, 410, 422 |
+| API-151 | POST | `{O}/members/{membership_id}/password-reset` | `member.reset_password` (Org Admin) | none | 201 `{reset_url, expires_at}` (url shown once, single use, 1 hour, `/reset-password#<token>`) | 404, 409 `own_account`, 409 `shared_account` |
 
 ### 2.4 Projects (module `projects`)
 
@@ -121,8 +124,8 @@
 | API-092 | GET | `{O}/test-suites/{suite_id}` | `test.read` | none | suite | 404 |
 | API-093 | PATCH | `{O}/test-suites/{suite_id}` | `suite.manage` | `{name?, description?, component_id?}` | suite | 422 |
 | API-094 | DELETE | `{O}/test-suites/{suite_id}` | `suite.manage` | none | 204 (soft) | none |
-| API-095 | GET | `{O}/test-suites/{suite_id}/cases` | `test.read` | `?tag&case_type&page` | page of `{id, title, priority, case_type, tags, step_count, ai_generated}` | none |
-| API-096 | POST | `{O}/test-suites/{suite_id}/cases` | `case.manage` | `{title, preconditions?, steps:[{action, expected}], tags?, priority?, case_type?}` | 201 case | 422 |
+| API-095 | GET | `{O}/test-suites/{suite_id}/cases` | `test.read` | `?tag&case_type (positive, negative, edge)&page` | page of `{id, title, priority, case_type, tags, step_count, ai_generated}` | none |
+| API-096 | POST | `{O}/test-suites/{suite_id}/cases` | `case.manage` | `{title (5 to 200 chars), preconditions?, steps:[{action, expected}], tags?, priority?, case_type? (positive, negative, edge)}` | 201 case | 422 |
 | API-097 | GET | `{O}/test-cases/{case_id}` | `test.read` | none | full case | 404 |
 | API-098 | PATCH | `{O}/test-cases/{case_id}` | `case.manage` | any case field | case | 422 |
 | API-099 | DELETE | `{O}/test-cases/{case_id}` | `case.manage` | none | 204 (soft) | none |
@@ -178,8 +181,9 @@ All AI endpoints: check `ai_enabled` (403 `ai_disabled`), rate limits (429), wri
 
 | ID | Method | Path | Role | Request | Response | Errors |
 |---|---|---|---|---|---|---|
-| API-150 | GET | `{O}/audit-events` | `audit.read` | `?action&actor_id&entity_type&from&to&page` | page of audit events | none |
+| API-150 | GET | `{O}/audit-events` | `audit.read` | `?action&actor_id&entity_type&from&to&page` | page of audit events; each event carries `actor_name` and, for role changes, removals and reset links, `target_name` (the person it was about; both also for a person removed since) | none |
+| API-154 | GET | `{O}/audit-events/actors` | `audit.read` | none | `[{id, full_name}]`: only people with at least one event in this workspace, removed members included, by name (for the actor filter) | none |
 
 ## 3. Counts
 
-97 endpoints across 10 groups (counted by `scripts/check_traceability.py`). Every endpoint gets: Pydantic request and response schemas, pytest cases for happy, invalid, unauthorized, forbidden and cross tenant paths, and a Postman request (CLAUDE.md rules).
+101 endpoints across 10 groups (counted by `scripts/check_traceability.py`). Every endpoint gets: Pydantic request and response schemas, pytest cases for happy, invalid, unauthorized, forbidden and cross tenant paths, and a Postman request (CLAUDE.md rules).

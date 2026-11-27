@@ -5,11 +5,11 @@ import { InviteAccept } from "@/modules/orgs/components/invite-accept";
 
 export const metadata: Metadata = { title: "Invitation" };
 
-export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
+/** The token is in the URL fragment (`/invite#<token>`), so this page needs no route parameter (D-055). */
+export default function InvitePage() {
   return (
     <AuthLayout>
-      <InviteAccept token={token} />
+      <InviteAccept />
     </AuthLayout>
   );
 }

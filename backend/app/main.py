@@ -8,9 +8,15 @@ from app.core.errors import install_error_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
+from app.modules.ai.api.routes import router as ai_router
 from app.modules.audit.api.routes import router as audit_router
 from app.modules.auth.api.routes import router as auth_router
+from app.modules.bugs.api.routes import router as bugs_router
+from app.modules.dashboard.api.routes import router as dashboard_router
 from app.modules.orgs.api.routes import router as orgs_router
+from app.modules.projects.api.routes import router as projects_router
+from app.modules.releases.api.routes import router as releases_router
+from app.modules.testing.api.routes import router as testing_router
 
 API_PREFIX = "/api/v1"
 
@@ -22,8 +28,9 @@ def create_app() -> FastAPI:
         title="QA Pilot API",
         version=settings.version,
         description="AI powered bug tracking and QA management. All tenant routes live under /api/v1/orgs/{org_id}.",
-        openapi_url=f"{API_PREFIX}/openapi.json",
-        docs_url=f"{API_PREFIX}/docs",
+        # The interactive docs and the schema are for development only (public repo hardening, D-073)
+        openapi_url=None if settings.is_production else f"{API_PREFIX}/openapi.json",
+        docs_url=None if settings.is_production else f"{API_PREFIX}/docs",
         redoc_url=None,
     )
     install_error_handlers(app)
@@ -42,6 +49,12 @@ def create_app() -> FastAPI:
     api.include_router(health_router)
     api.include_router(auth_router)
     api.include_router(orgs_router)
+    api.include_router(projects_router)
+    api.include_router(bugs_router)
+    api.include_router(testing_router)
+    api.include_router(releases_router)
+    api.include_router(dashboard_router)
+    api.include_router(ai_router)
     api.include_router(audit_router)
     app.include_router(api)
     return app

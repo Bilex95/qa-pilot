@@ -4,7 +4,7 @@
 #   1. branch mode: branch is not main (main changes only through an approved PR merge)
 #      tag mode: tag exists locally, points at a commit already on origin/main (approved work only),
 #      and does not exist on origin yet (tags are never moved or overwritten)
-#   2. origin is the PRIVATE repo Bilex95/qa-pilot
+#   2. origin is the repo Bilex95/qa-pilot (public since 2026-11-25, D-073)
 #   3. git config user.email is a verified email on the GitHub account
 #      (public profile email, or the verified list from gh api user/emails when the email is private)
 #   4. no .env file in any commit
@@ -52,21 +52,28 @@ else
   echo "ok   branch $BRANCH"
 fi
 
-# 2. origin must be the private repo
+# 2. origin must be the expected repo
 ORIGIN_URL="$(git remote get-url origin 2>/dev/null)" || fail "no origin remote"
 case "$ORIGIN_URL" in
   *github.com/$REPO.git|*github.com/$REPO|*github.com:$REPO.git) ;;
   *) fail "origin is $ORIGIN_URL, expected $REPO" ;;
 esac
 VISIBILITY="$(gh repo view "$REPO" --json visibility --jq .visibility)" || fail "could not read repo visibility"
-[ "$VISIBILITY" = "PRIVATE" ] || fail "$REPO visibility is $VISIBILITY, must be PRIVATE"
-echo "ok   origin $REPO is PRIVATE"
+case "$VISIBILITY" in
+  PRIVATE|PUBLIC) ;;
+  *) fail "$REPO visibility is $VISIBILITY, expected PRIVATE or PUBLIC" ;;
+esac
+echo "ok   origin $REPO visibility is $VISIBILITY (the repository is public since 2026-11-25, D-073; every other check below still applies)"
 
 # 3. commit email must be verified on the account
 LOCAL_EMAIL="$(git config user.email | tr '[:upper:]' '[:lower:]')"
 [ -n "$LOCAL_EMAIL" ] || fail "git config user.email is empty"
 PUBLIC_EMAIL="$(gh api user --jq '.email // ""' | tr '[:upper:]' '[:lower:]')" || fail "gh api user failed"
-if [ -n "$PUBLIC_EMAIL" ]; then
+# the account's own GitHub noreply address (id+login@users.noreply.github.com) is always allowed (D-073)
+NOREPLY_EMAIL="$(gh api user --jq '"\(.id)+\(.login)@users.noreply.github.com"' | tr '[:upper:]' '[:lower:]')" || fail "gh api user failed"
+if [ "$LOCAL_EMAIL" = "$NOREPLY_EMAIL" ]; then
+  echo "ok   git email is the account's GitHub noreply address"
+elif [ -n "$PUBLIC_EMAIL" ]; then
   # GitHub only allows a verified address as the public profile email
   [ "$LOCAL_EMAIL" = "$PUBLIC_EMAIL" ] || fail "git email does not match the account's verified profile email; tell the owner before pushing"
   echo "ok   git email matches the verified public profile email"

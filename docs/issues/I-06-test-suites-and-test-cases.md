@@ -1,6 +1,6 @@
 # I-06 Test suites and test cases
 
-**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -21,11 +21,11 @@ Requirements: REQ-030, REQ-031
 * `backend/app/modules/testing`
 * `frontend/src/modules/testing`
 * Depends on: [I-01](I-01-projects-components-and-environments.md)
-* Migration: `0006_testing`
+* Migration: `0005_testing`
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-12**: [`test-suites-default-desktop.png`](../../design/screenshots/test-suites-default-desktop.png), [`test-suites-default-mobile.png`](../../design/screenshots/test-suites-default-mobile.png), [`test-suites-empty-desktop.png`](../../design/screenshots/test-suites-empty-desktop.png), [`test-suites-loading-desktop.png`](../../design/screenshots/test-suites-loading-desktop.png), [`test-suites-error-desktop.png`](../../design/screenshots/test-suites-error-desktop.png)
 * **SCR-13**: [`test-case-editor-default-desktop.png`](../../design/screenshots/test-case-editor-default-desktop.png), [`test-case-editor-default-mobile.png`](../../design/screenshots/test-case-editor-default-mobile.png), [`test-case-editor-ai-desktop.png`](../../design/screenshots/test-case-editor-ai-desktop.png), [`test-case-editor-loading-desktop.png`](../../design/screenshots/test-case-editor-loading-desktop.png), [`test-case-editor-error-desktop.png`](../../design/screenshots/test-case-editor-error-desktop.png)
@@ -41,8 +41,8 @@ Copied from `docs/requirements/API_INVENTORY.md` (`{O}` = `/api/v1/orgs/{org_id}
 | API-092 | GET | `{O}/test-suites/{suite_id}` | `test.read` | none | suite | 404 |
 | API-093 | PATCH | `{O}/test-suites/{suite_id}` | `suite.manage` | `{name?, description?, component_id?}` | suite | 422 |
 | API-094 | DELETE | `{O}/test-suites/{suite_id}` | `suite.manage` | none | 204 (soft) | none |
-| API-095 | GET | `{O}/test-suites/{suite_id}/cases` | `test.read` | `?tag&case_type&page` | page of `{id, title, priority, case_type, tags, step_count, ai_generated}` | none |
-| API-096 | POST | `{O}/test-suites/{suite_id}/cases` | `case.manage` | `{title, preconditions?, steps:[{action, expected}], tags?, priority?, case_type?}` | 201 case | 422 |
+| API-095 | GET | `{O}/test-suites/{suite_id}/cases` | `test.read` | `?tag&case_type (positive, negative, edge)&page` | page of `{id, title, priority, case_type, tags, step_count, ai_generated}` | none |
+| API-096 | POST | `{O}/test-suites/{suite_id}/cases` | `case.manage` | `{title (5 to 200 chars), preconditions?, steps:[{action, expected}], tags?, priority?, case_type? (positive, negative, edge)}` | 201 case | 422 |
 | API-097 | GET | `{O}/test-cases/{case_id}` | `test.read` | none | full case | 404 |
 | API-098 | PATCH | `{O}/test-cases/{case_id}` | `case.manage` | any case field | case | 422 |
 | API-099 | DELETE | `{O}/test-cases/{case_id}` | `case.manage` | none | 204 (soft) | none |

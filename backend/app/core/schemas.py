@@ -42,6 +42,8 @@ ERRORS = {
     404: {"model": ErrorResponse, "description": "Not found, or not a member of the org"},
     409: {"model": ErrorResponse, "description": "Conflict"},
     410: {"model": ErrorResponse, "description": "Gone"},
+    413: {"model": ErrorResponse, "description": "Payload too large"},
+    415: {"model": ErrorResponse, "description": "Unsupported media type"},
     422: {"model": ErrorResponse, "description": "Validation error"},
     429: {"model": ErrorResponse, "description": "Rate limited"},
 }

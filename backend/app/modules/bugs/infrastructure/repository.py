@@ -1,0 +1,273 @@
+"""Bug persistence. Every query takes org_id (NFR-TEN-02) and hides soft deleted bugs (D-016) unless it says otherwise."""
+
+import uuid
+from datetime import datetime, timedelta
+from typing import Any
+
+from sqlalchemy import ColumnElement, Interval, Select, and_, case, delete, exists, func, literal, or_, select
+from sqlalchemy.orm import Session
+
+from app.modules.bugs.domain.filters import BugFilters
+from app.modules.bugs.domain.rules import FINISHED_STATUSES, SLA_HOURS, SLA_STOPPED_STATUSES
+from app.modules.bugs.infrastructure.models import Attachment, Bug, BugActivity, BugLabel, Comment, SavedView
+
+# Shared definitions -------------------------------------------------------
+
+
+def open_clause() -> ColumnElement[bool]:
+    """THE definition of an open bug: not soft deleted and not Verified, Closed or Won't fix. The counters, the list filter
+    and (later) the dashboard all take it from here. The SLA clock rules are separate (`sla_breached_clause`)."""
+    return and_(Bug.deleted_at.is_(None), Bug.status.not_in(FINISHED_STATUSES))
+
+
+def sla_breached_clause(now: datetime) -> ColumnElement[bool]:
+    """D-019: time from creation to Fixed (or Won't fix) against the threshold of the bug's current severity. A bug whose
+    clock is still running (including a reopened one) is measured up to `now`."""
+    stopped = and_(Bug.status.in_(SLA_STOPPED_STATUSES), Bug.resolved_at.is_not(None))
+    end = case((stopped, Bug.resolved_at), else_=literal(now))
+    threshold = case(*[(Bug.severity == sev, literal(timedelta(hours=hours), Interval)) for sev, hours in SLA_HOURS.items()],
+                     else_=literal(timedelta(hours=SLA_HOURS["low"]), Interval))
+    return end - Bug.created_at > threshold
+
+
+def _escape_like(text: str) -> str:
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+# Queries ------------------------------------------------------------------
+
+def bugs_query(org_id: uuid.UUID, f: BugFilters, now: datetime) -> Select[Bug]:
+    stmt = select(Bug).where(Bug.org_id == org_id, Bug.deleted_at.is_(None))
+    if f.project_id:
+        stmt = stmt.where(Bug.project_id == f.project_id)
+    if f.status:
+        stmt = stmt.where(Bug.status.in_(f.status))
+    if f.severity:
+        stmt = stmt.where(Bug.severity.in_(f.severity))
+    if f.priority:
+        stmt = stmt.where(Bug.priority.in_(f.priority))
+    if f.assignee_id:
+        stmt = stmt.where(Bug.assignee_id == f.assignee_id)
+    if f.unassigned is True:
+        stmt = stmt.where(Bug.assignee_id.is_(None))
+    elif f.unassigned is False:
+        stmt = stmt.where(Bug.assignee_id.is_not(None))
+    if f.reporter_id:
+        stmt = stmt.where(Bug.reporter_id == f.reporter_id)
+    if f.component_id:
+        stmt = stmt.where(Bug.component_id == f.component_id)
+    if f.environment_id:
+        stmt = stmt.where(Bug.environment_id == f.environment_id)
+    if f.release_id:
+        stmt = stmt.where(Bug.release_id == f.release_id)
+    if f.label_id:
+        stmt = stmt.where(exists().where(BugLabel.bug_id == Bug.id, BugLabel.label_id == f.label_id))
+    if f.open is True:
+        stmt = stmt.where(open_clause())
+    elif f.open is False:
+        stmt = stmt.where(Bug.status.in_(FINISHED_STATUSES))
+    if f.sla_breached is True:
+        stmt = stmt.where(sla_breached_clause(now))
+    elif f.sla_breached is False:
+        stmt = stmt.where(~sla_breached_clause(now))
+    if f.q and f.q.strip():
+        pattern = f"%{_escape_like(f.q.strip())}%"
+        stmt = stmt.where(or_(Bug.key.ilike(pattern, escape="\\"), Bug.title.ilike(pattern, escape="\\"),
+                              Bug.description.ilike(pattern, escape="\\")))
+    return stmt.order_by(*_order(f.sort), Bug.id)
+
+
+def board_rows(db: Session, org_id: uuid.UUID, f: BugFilters, now: datetime,
+               per_column: int) -> tuple[dict[str, int], list[Bug]]:
+    """The board in two queries: how many bugs each status has, and the `per_column` most recently updated of each (a window
+    function ranks the bugs inside their status). The status filter is ignored; every other filter applies."""
+    base = bugs_query(org_id, BugFilters(**{**f.__dict__, "status": []}), now).order_by(None)
+    every = base.subquery()
+    counts: dict[str, int] = {status: int(n) for status, n in db.execute(
+        select(every.c.status, func.count()).group_by(every.c.status)).all()}
+    ranked = base.with_only_columns(
+        Bug.id.label("id"),
+        func.row_number().over(partition_by=Bug.status, order_by=(Bug.updated_at.desc(), Bug.id)).label("rn"),
+    ).subquery()
+    rows = db.scalars(select(Bug).join(ranked, ranked.c.id == Bug.id).where(ranked.c.rn <= per_column)
+                      .order_by(Bug.status, ranked.c.rn))
+    return counts, list(rows)
+
+
+def _order(sort: str) -> list[ColumnElement[object]]:
+    desc = sort.startswith("-")
+    field = sort.lstrip("-")
+    column: Any
+    if field == "severity":  # critical first when ascending
+        column = case({"critical": 1, "high": 2, "medium": 3, "low": 4}, value=Bug.severity, else_=5)
+    else:
+        column = {"updated_at": Bug.updated_at, "created_at": Bug.created_at, "priority": Bug.priority}[field]
+    return [column.desc() if desc else column.asc()]
+
+
+def get_bug(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID, *, lock: bool = False) -> Bug | None:
+    stmt = select(Bug).where(Bug.org_id == org_id, Bug.id == bug_id, Bug.deleted_at.is_(None))
+    return db.scalar(stmt.with_for_update() if lock else stmt)
+
+
+def get_bug_by_key(db: Session, org_id: uuid.UUID, key: str) -> Bug | None:
+    return db.scalar(select(Bug).where(Bug.org_id == org_id, Bug.key == key, Bug.deleted_at.is_(None)))
+
+
+def label_ids_by_bug(db: Session, bug_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[uuid.UUID]]:
+    result: dict[uuid.UUID, list[uuid.UUID]] = {bug_id: [] for bug_id in bug_ids}
+    if bug_ids:
+        for bug_id, label_id in db.execute(select(BugLabel.bug_id, BugLabel.label_id).where(BugLabel.bug_id.in_(bug_ids))):
+            result[bug_id].append(label_id)
+    return result
+
+
+def replace_labels(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID, label_ids: list[uuid.UUID]) -> None:
+    db.execute(delete(BugLabel).where(BugLabel.bug_id == bug_id))
+    for label_id in label_ids:
+        db.add(BugLabel(bug_id=bug_id, label_id=label_id, org_id=org_id))
+
+
+def release_bug_counts(db: Session, org_id: uuid.UUID, release_ids: list[uuid.UUID]) -> tuple[
+        dict[uuid.UUID, dict[str, int]], dict[uuid.UUID, int]]:
+    """(open bugs per release per severity, linked bugs per release whatever their status). Soft deleted bugs are not counted.
+    Open follows `open_clause`, the one definition of an open bug."""
+    open_by: dict[uuid.UUID, dict[str, int]] = {rid: {} for rid in release_ids}
+    linked: dict[uuid.UUID, int] = dict.fromkeys(release_ids, 0)
+    if not release_ids:
+        return open_by, linked
+    for rid, severity, n in db.execute(select(Bug.release_id, Bug.severity, func.count()).where(
+            Bug.org_id == org_id, Bug.release_id.in_(release_ids), open_clause()).group_by(Bug.release_id, Bug.severity)):
+        if rid is not None:
+            open_by[rid][severity] = int(n)
+    for rid, n in db.execute(select(Bug.release_id, func.count()).where(
+            Bug.org_id == org_id, Bug.release_id.in_(release_ids), Bug.deleted_at.is_(None)).group_by(Bug.release_id)):
+        if rid is not None:
+            linked[rid] = int(n)
+    return open_by, linked
+
+
+def bugs_of_release(db: Session, org_id: uuid.UUID, release_id: uuid.UUID) -> list[Bug]:
+    """The bugs linked to a release: open ones first, then by severity and key."""
+    severity_rank = case({"critical": 1, "high": 2, "medium": 3, "low": 4}, value=Bug.severity, else_=5)
+    return list(db.scalars(select(Bug).where(Bug.org_id == org_id, Bug.release_id == release_id, Bug.deleted_at.is_(None))
+                           .order_by(Bug.status.in_(FINISHED_STATUSES), severity_rank, Bug.number)))
+
+
+def get_bugs(db: Session, org_id: uuid.UUID, bug_ids: list[uuid.UUID]) -> list[Bug]:
+    return list(db.scalars(select(Bug).where(Bug.org_id == org_id, Bug.id.in_(bug_ids), Bug.deleted_at.is_(None)).with_for_update()))
+
+
+def bugs_from_run_results(db: Session, org_id: uuid.UUID, result_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[tuple[uuid.UUID, str]]]:
+    """{run result id: [(bug id, bug key)]} for the bugs filed from those results (I-07), oldest bug first."""
+    out: dict[uuid.UUID, list[tuple[uuid.UUID, str]]] = {rid: [] for rid in result_ids}
+    if result_ids:
+        rows = db.execute(select(Bug.source_run_result_id, Bug.id, Bug.key).where(
+            Bug.org_id == org_id, Bug.deleted_at.is_(None), Bug.source_run_result_id.in_(result_ids)).order_by(Bug.created_at, Bug.id))
+        for rid, bug_id, key in rows:
+            if rid is not None:
+                out[rid].append((bug_id, key))
+    return out
+
+
+# Comments, attachments, activity (I-05) -------------------------------------
+
+def add_activity(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID, actor_id: uuid.UUID, kind: str, *,
+                 field: str | None = None, old: str | None = None, new: str | None = None,
+                 at: datetime | None = None) -> BugActivity:
+    entry = BugActivity(org_id=org_id, bug_id=bug_id, actor_id=actor_id, kind=kind, field=field, old_value=old,
+                        new_value=new, **({"created_at": at} if at else {}))
+    db.add(entry)
+    return entry
+
+
+def activity_query(org_id: uuid.UUID, bug_id: uuid.UUID) -> Select[BugActivity]:
+    return (select(BugActivity).where(BugActivity.org_id == org_id, BugActivity.bug_id == bug_id)
+            .order_by(BugActivity.created_at.desc(), BugActivity.id.desc()))
+
+
+def comments_query(org_id: uuid.UUID, bug_id: uuid.UUID) -> Select[Comment]:
+    return (select(Comment).where(Comment.org_id == org_id, Comment.bug_id == bug_id, Comment.deleted_at.is_(None))
+            .order_by(Comment.created_at.desc(), Comment.id.desc()))
+
+
+def get_comment(db: Session, org_id: uuid.UUID, comment_id: uuid.UUID, *, lock: bool = False) -> Comment | None:
+    """A comment of a bug that still exists. Another org's comment, a deleted comment and the comment of a deleted bug
+    are all None."""
+    stmt = (select(Comment).join(Bug, Bug.id == Comment.bug_id)
+            .where(Comment.org_id == org_id, Comment.id == comment_id, Comment.deleted_at.is_(None), Bug.deleted_at.is_(None)))
+    return db.scalar(stmt.with_for_update(of=Comment) if lock else stmt)
+
+
+def attachments_of(db: Session, org_id: uuid.UUID, bug_id: uuid.UUID) -> list[Attachment]:
+    return list(db.scalars(select(Attachment).where(Attachment.org_id == org_id, Attachment.bug_id == bug_id)
+                           .order_by(Attachment.created_at, Attachment.id)))
+
+
+def get_attachment(db: Session, org_id: uuid.UUID, attachment_id: uuid.UUID) -> Attachment | None:
+    stmt = (select(Attachment).join(Bug, Bug.id == Attachment.bug_id)
+            .where(Attachment.org_id == org_id, Attachment.id == attachment_id, Bug.deleted_at.is_(None)))
+    return db.scalar(stmt)
+
+
+def detail_counts(db: Session, bug_id: uuid.UUID) -> tuple[int, int]:
+    """(comments, attachments) of one bug: what the detail page shows next to its tabs."""
+    comments = db.scalar(select(func.count()).select_from(Comment).where(
+        Comment.bug_id == bug_id, Comment.deleted_at.is_(None))) or 0
+    files = db.scalar(select(func.count()).select_from(Attachment).where(Attachment.bug_id == bug_id)) or 0
+    return int(comments), int(files)
+
+
+# Counters for the projects module hooks ------------------------------------
+
+def label_bug_counts(db: Session, org_id: uuid.UUID, label_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    """Bugs tagged with each label, whatever their status (a label delete takes it off all of them); soft deleted bugs
+    are not counted."""
+    if not label_ids:
+        return {}
+    rows = db.execute(
+        select(BugLabel.label_id, func.count()).join(Bug, Bug.id == BugLabel.bug_id)
+        .where(Bug.org_id == org_id, Bug.deleted_at.is_(None), BugLabel.label_id.in_(label_ids))
+        .group_by(BugLabel.label_id))
+    return {label_id: int(n) for label_id, n in rows}
+
+
+def open_counts_by_project(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    if not project_ids:
+        return {}
+    rows = db.execute(select(Bug.project_id, func.count()).where(
+        Bug.org_id == org_id, Bug.project_id.in_(project_ids), open_clause()).group_by(Bug.project_id))
+    return {project_id: int(n) for project_id, n in rows}
+
+
+def open_critical_counts_by_project(db: Session, org_id: uuid.UUID, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    if not project_ids:
+        return {}
+    rows = db.execute(select(Bug.project_id, func.count()).where(
+        Bug.org_id == org_id, Bug.project_id.in_(project_ids), Bug.severity == "critical", open_clause()).group_by(Bug.project_id))
+    return {project_id: int(n) for project_id, n in rows}
+
+
+def open_counts_by_component(db: Session, org_id: uuid.UUID, component_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    if not component_ids:
+        return {}
+    rows = db.execute(select(Bug.component_id, func.count()).where(
+        Bug.org_id == org_id, Bug.component_id.in_(component_ids), open_clause()).group_by(Bug.component_id))
+    return {component_id: int(n) for component_id, n in rows if component_id is not None}
+
+
+# Saved views --------------------------------------------------------------
+
+def saved_views(db: Session, org_id: uuid.UUID, user_id: uuid.UUID) -> list[SavedView]:
+    return list(db.scalars(select(SavedView).where(SavedView.org_id == org_id, SavedView.user_id == user_id)
+                           .order_by(func.lower(SavedView.name), SavedView.id)))
+
+
+def get_saved_view(db: Session, org_id: uuid.UUID, user_id: uuid.UUID, view_id: uuid.UUID) -> SavedView | None:
+    return db.scalar(select(SavedView).where(
+        SavedView.org_id == org_id, SavedView.user_id == user_id, SavedView.id == view_id))
+
+
+def saved_view_name_taken(db: Session, org_id: uuid.UUID, user_id: uuid.UUID, name: str) -> bool:
+    return db.scalar(select(func.count()).select_from(SavedView).where(
+        SavedView.org_id == org_id, SavedView.user_id == user_id, func.lower(SavedView.name) == name.lower())) != 0

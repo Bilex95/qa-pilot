@@ -1,0 +1,219 @@
+// I-10 acceptance flow: an Org Admin invites someone, copies the link, and the new user accepts it (SCR-19, SCR-04).
+//
+// Usage (from e2e/, stack up, baseline seeded):
+//   powershell -File ../scripts/with-wsl.ps1 -Up node scripts/check-members-flow.mjs
+// Reads SEED_USER_PASSWORD from ../.env or the environment and never prints it.
+//
+// The invite link is a secret. It is held in one variable, never printed, never written to a file or a screenshot, and
+// removed from any error text before it is shown. Test users are named flow-i10-<timestamp>@qapilot.test so they are easy
+// to find and clean up; the script removes the membership at the end (the user record stays, as in any registration).
+import { chromium } from 'playwright';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i > -1 ? process.argv[i + 1] : fallback; };
+const BASE = arg('--base', 'http://localhost:3000');
+const envFile = resolve(root, '.env');
+const PW = process.env.SEED_USER_PASSWORD
+  || (existsSync(envFile) ? (readFileSync(envFile, 'utf8').match(/^SEED_USER_PASSWORD=(.*)$/m)?.[1] ?? '').trim() : '');
+if (!PW) { console.error('SEED_USER_PASSWORD missing'); process.exit(2); }
+
+const EMAIL = `flow-i10-${Date.now()}@qapilot.test`;
+const NAME = 'Flow I10 Tester';
+let secret = ''; // the invite link
+const redact = (text) => {
+  let out = String(text);
+  if (secret) {
+    const token = secret.split('#').pop();
+    out = out.split(secret).join('[invite link]');
+    if (token) out = out.split(token).join('[token]');
+  }
+  return out;
+};
+const log = (message) => console.log(`flow-i10: ${message}`);
+const check = (condition, message) => { if (!condition) throw new Error(message); };
+
+async function fillStable(page, selector, value) {
+  for (let i = 0; i < 4; i++) {
+    await page.fill(selector, value);
+    await page.waitForTimeout(150);
+    if ((await page.inputValue(selector)) === value) return;
+  }
+  throw new Error(`could not fill ${selector}`);
+}
+async function signIn(page, email) {
+  await page.goto(`${BASE}/login`);
+  await page.waitForSelector('#l-email');
+  await page.waitForLoadState('networkidle');
+  await fillStable(page, '#l-email', email);
+  await fillStable(page, '#l-pass', PW);
+  await page.click('button[type=submit]');
+  await page.waitForURL('**/o/lumen/dashboard');
+}
+
+// Removes every flow-i10-* member (this run's and any left by an earlier failed run) through the screen's own Remove dialog
+async function removeFlowMembers(admin) {
+  await admin.goto(`${BASE}/o/lumen/members`);
+  await admin.waitForSelector('table.t tbody tr');
+  await fillStable(admin, '#m-q', 'flow-i10-');
+  let removed = 0;
+  for (;;) {
+    // wait for the filtered list: only flow-i10 rows, or the no results message
+    await admin.waitForFunction(() => {
+      const rows = [...document.querySelectorAll('table.t:has(thead) tbody tr')];
+      const none = document.body.innerText.includes('No one matches your search or role filter.');
+      return none || (rows.length > 0 && rows.every((r) => r.textContent.includes('flow-i10-')));
+    });
+    const rows = admin.locator('table.t:has(thead) tbody tr', { hasText: 'flow-i10-' });
+    if ((await rows.count()) === 0) break;
+    await rows.first().locator('button:has-text("Remove")').click();
+    await admin.waitForSelector('.modal');
+    await admin.click('.modal button:has-text("Remove member")');
+    await admin.waitForSelector('.modal', { state: 'detached' });
+    removed++;
+    await admin.waitForTimeout(500); // let the list refetch before looking again
+  }
+  return removed;
+}
+
+// Revokes every pending flow-i10-* invitation (this run's and any left by an earlier failed run) through the screen's Revoke button
+async function revokeFlowInvitations(admin) {
+  await admin.goto(`${BASE}/o/lumen/members`);
+  await admin.waitForSelector('text=Pending invitations');
+  await admin.waitForSelector('table.t tbody tr');
+  const buttons = admin.locator('button[aria-label^="Revoke the invitation for flow-i10-"]');
+  let revoked = 0;
+  while ((await buttons.count()) > 0) {
+    await buttons.first().click();
+    await admin.waitForSelector('text=Invitation revoked');
+    revoked++;
+    await admin.waitForTimeout(700); // let the list refetch and the toast go before looking again
+  }
+  return revoked;
+}
+
+const browser = await chromium.launch();
+let failed = false;
+let step = 'start';
+let current = null; // the page being driven, to describe it when something fails
+try {
+  // 1. The Org Admin invites a new person
+  const admin = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+  admin.setDefaultTimeout(60_000);
+  current = admin;
+  step = 'sign in as the Org Admin';
+  await signIn(admin, 'amara@lumenfreight.test');
+  step = 'remove test users left by earlier runs';
+  const leftovers = await removeFlowMembers(admin);
+  if (leftovers) log(`removed ${leftovers} test member(s) left by earlier runs`);
+  step = 'revoke test invitations left by earlier runs';
+  const staleInvites = await revokeFlowInvitations(admin);
+  if (staleInvites) log(`revoked ${staleInvites} test invitation(s) left by earlier runs`);
+  step = 'invite a new person';
+  await admin.goto(`${BASE}/o/lumen/members`);
+  await admin.waitForSelector('table.t tbody tr');
+  await admin.click('button:has-text("Invite people")');
+  await admin.waitForSelector('.modal');
+  await fillStable(admin, '#inv-email', EMAIL);
+  await admin.selectOption('#inv-role', 'developer');
+  await admin.click('.modal button:has-text("Create invite link")');
+  await admin.waitForSelector('#inv-link');
+  secret = await admin.inputValue('#inv-link');
+  const parsed = new URL(secret);
+  if (parsed.pathname !== '/invite' || parsed.search !== '' || parsed.hash.length < 40) throw new Error('the invite link should be /invite with the token in the fragment only');
+  log('invitation created, link shown once');
+  await admin.click('.modal button:has-text("Done")');
+  await admin.waitForSelector('.modal', { state: 'detached' });
+  await admin.waitForSelector(`text=${EMAIL}`);
+  log('the invitation is listed as pending');
+
+  // 2. The new person opens the link, creates an account with the invited email and accepts
+  const guest = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+  guest.setDefaultTimeout(60_000);
+  // Every request URL and Referer header and every console message of this person's browser: the token must be in none (D-055)
+  const seen = [];
+  guest.context().on('request', async (r) => { seen.push(r.url(), `referer:${(await r.allHeaders().catch(() => ({}))).referer ?? ''}`); });
+  guest.on('console', (m) => seen.push(`console:${m.text()}`));
+  step = 'open the invite link as a new person'; current = guest;
+  // A second link opened in a tab already on /invite only changes the hash (no reload): the page must use the new token each time
+  // and clear it from the address bar again. Order: a bad link first (error state), then the real one (the page must recover),
+  // then a bad one again (the page must drop the good state), then the real one again, which stays in use from here on.
+  const sameTab = async (token) => {
+    await guest.evaluate((t) => { location.hash = t; }, token); // a hash change: no reload, like pasting a link into this tab
+    await guest.waitForFunction(() => location.hash === '', null, { timeout: 15_000 });
+    check(await guest.evaluate(() => location.search === ''), 'the address bar must carry no query after a second link');
+  };
+  const realToken = secret.split('#').pop();
+  const badToken = 'z'.repeat(43); // looks like a token but is not one
+  await guest.goto(`${BASE}/invite#${badToken}`);
+  await guest.waitForSelector('text=This invite link no longer works');
+  check(new URL(guest.url()).hash === '', 'the fragment must be removed from the address bar after the page read it');
+  await sameTab(realToken);
+  await guest.waitForSelector('a.btn:has-text("Create an account")');
+  check((await guest.locator('text=This invite link no longer works').count()) === 0, 'the valid second link must replace the error state');
+  log('a valid second link opened in the same tab replaced the error state, and its token was cleared from the address bar');
+  await sameTab(badToken);
+  await guest.waitForSelector('text=This invite link no longer works');
+  check((await guest.locator('a.btn:has-text("Create an account")').count()) === 0, 'a bad second link must not leave the first link\'s page on screen');
+  await sameTab(realToken);
+  await guest.waitForSelector('a.btn:has-text("Create an account")');
+  log('a bad link and then the real link in the same tab: each was used and cleared from the address bar');
+  check(new URL(guest.url()).hash === '', 'the fragment must be removed from the address bar after the page read it');
+  step = 'create an account'; await guest.click('a.btn:has-text("Create an account")');
+  await guest.waitForSelector('#r-name');
+  check(new URL(guest.url()).search === '' && new URL(guest.url()).hash === '', 'the register page address must carry no token and no next parameter');
+  await guest.waitForLoadState('networkidle');
+  await fillStable(guest, '#r-name', NAME);
+  await fillStable(guest, '#r-email', EMAIL);
+  await fillStable(guest, '#r-pass', PW);
+  step = 'register and return to the invitation'; await guest.click('button[type=submit]');
+  await guest.waitForSelector('text=Accept and continue');
+  step = 'accept the invitation'; await guest.click('text=Accept and continue');
+  await guest.waitForURL('**/o/lumen/dashboard');
+  log('the new user accepted the invitation and reached the workspace');
+  const token = secret.split('#').pop();
+  check(seen.length > 5, 'the recorder should have seen the requests of this person');
+  check(seen.filter((s) => s.includes(token)).length === 0, 'the invite token must not appear in any request URL, Referer header or console message');
+  check(!(await guest.evaluate(() => JSON.stringify({ l: { ...localStorage }, s: { ...sessionStorage }, c: document.cookie }))).includes(token),
+    'the token must not stay in browser storage after the invitation is accepted');
+  log('the invite token appeared in no request URL, Referer header, console message or browser storage, and left sessionStorage on accept');
+
+  // 3. The link works once
+  const stranger = await (await browser.newContext()).newPage();
+  stranger.setDefaultTimeout(60_000);
+  await stranger.goto(secret);
+  await stranger.waitForSelector('text=This invite link no longer works');
+  log('the used link no longer works');
+
+  // 4. The Org Admin sees the new member as a Developer and no pending invitation, then removes the member
+  await admin.goto(`${BASE}/o/lumen/members`);
+  await admin.waitForSelector('table.t tbody tr');
+  await fillStable(admin, '#m-q', EMAIL);
+  step = 'check the new member';
+  const row = admin.locator('table.t tbody tr', { hasText: EMAIL });
+  await row.waitFor();
+  const role = await row.locator('select').inputValue();
+  if (role !== 'developer') throw new Error(`the new member has role ${role}, expected developer`);
+  if (await admin.locator(`section:has(h2:text("Pending invitations")) >> text=${EMAIL}`).count()) {
+    throw new Error('the accepted invitation is still listed as pending');
+  }
+  log('the new member is a Developer and the invitation is no longer pending');
+  current = admin;
+  step = 'remove the test member';
+  const removed = await removeFlowMembers(admin);
+  if (removed !== 1) throw new Error(`expected to remove 1 test member, removed ${removed}`);
+  log('the member was removed (test user record left: ' + EMAIL + ')');
+} catch (e) {
+  failed = true;
+  console.log(`FAIL at step "${step}": ${redact(String(e.message || e).split(/\r?\n/)[0])}`);
+  if (current) {
+    const seen = await current.locator('h1, h2, .banner, .err').allInnerTexts().catch(() => []);
+    console.log(`  the page showed: ${redact(seen.join(' | ').replace(/\s+/g, ' ')).slice(0, 300)}`);
+  }
+} finally {
+  await browser.close();
+}
+if (failed) process.exit(1);
+console.log('PASS: invite, copy link, accept as a new user, link works once, member removed');

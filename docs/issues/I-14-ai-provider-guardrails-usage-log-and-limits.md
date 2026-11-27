@@ -1,6 +1,6 @@
 # I-14 AI provider, guardrails, usage log and limits
 
-**Stage:** 5 | **Batch:** 5A (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 5 | **Batch:** 5A (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

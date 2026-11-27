@@ -6,7 +6,7 @@ pending_invitations_for_email, member_user_ids.
 
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
@@ -124,11 +124,29 @@ def change_role(db: Session, org_id: uuid.UUID, membership_id: uuid.UUID, *, rol
     return m
 
 
+def create_password_reset_link(db: Session, org: Organization, membership_id: uuid.UUID, *,
+                               actor_id: uuid.UUID) -> tuple[str, datetime]:
+    """An Org Admin issues a single use, one hour reset link for a member (D-045). Two refusals protect accounts (D-055):
+    your own (change it in your profile) and a person who belongs to more than one workspace, because the password is
+    global and an admin of one workspace must not be able to take over access to the others."""
+    m = _member_or_404(db, org.id, membership_id)
+    if m.user_id == actor_id:
+        raise Conflict("You cannot create a reset link for your own account. Change your password in your profile.",
+                       code="own_account")
+    if len(repo.memberships_for_user(db, m.user_id)) > 1:
+        raise Conflict("This person belongs to more than one workspace, so a workspace admin cannot reset their password.",
+                       code="shared_account")
+    raw, expires = auth.issue_password_reset(db, user_id=m.user_id, org_id=org.id, actor_id=actor_id)
+    return f"{get_settings().frontend_origin}/reset-password#{raw}", expires
+
+
 def remove_member(db: Session, org_id: uuid.UUID, membership_id: uuid.UUID, *, actor_id: uuid.UUID) -> None:
     m = _member_or_404(db, org_id, membership_id)
     if m.role == Role.ORG_ADMIN and repo.count_active_admins(db, org_id) <= 1:
         raise Conflict("The last Org Admin cannot be removed.", code="last_admin")
     m.status = "removed"
+    db.flush()
+    auth.end_access_after_removal(db, user_id=m.user_id, in_other_workspace=bool(repo.memberships_for_user(db, m.user_id)))
     audit.record(db, "member.removed", actor_id=actor_id, org_id=org_id, entity_type="membership",
                  entity_id=m.id, data={"user_id": str(m.user_id)})
     db.commit()
@@ -163,7 +181,8 @@ def create_invitation(db: Session, org: Organization, *, email: str, role: Role,
     audit.record(db, "invitation.created", actor_id=actor_id, org_id=org.id, entity_type="invitation",
                  entity_id=inv.id, data={"email": email, "role": role})
     db.commit()
-    return inv, f"{get_settings().frontend_origin}/invite/{raw}"
+    # The token is in the fragment: browsers never send it to a server and it is not in the Referer header (BL-014, D-055)
+    return inv, f"{get_settings().frontend_origin}/invite#{raw}"
 
 
 def list_invitations(db: Session, org_id: uuid.UUID, *, status: str | None) -> list[Invitation]:

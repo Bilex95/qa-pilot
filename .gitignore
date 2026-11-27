@@ -36,6 +36,7 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+e2e/parity/
 e2e/parity/*.tmp
 
 # Newman output
@@ -48,8 +49,19 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 
-# Claude local settings
+# Claude local settings and other local-only files
 .claude/settings.local.json
+*.local.json
+*.local.*
+*.pem
+*.key
+*.p12
+*.sqlite
+*.sqlite3
+*.dump
+*.log
+!postman/fixtures/*.log
+.wslconfig
 
 # local gate scratch files
 .gate/

@@ -28,7 +28,7 @@ export function Field({ id, label, error, hint, labelAside, children }: FieldPro
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
       {hint ? <div className="hint" id={`${id}-h`}>{hint}</div> : null}
       {error ? (
-        <div className="err" id={`${id}-e`}>
+        <div className="err" id={`${id}-e`} role="alert">
           <IconAlert width={16} height={16} />
           <span>{error}</span>
         </div>
@@ -43,4 +43,8 @@ export function Input({ className, ...props }: ComponentProps<"input">) {
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
   return <select className={cn("select", className)} {...props} />;
+}
+
+export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
+  return <textarea className={cn("textarea", className)} {...props} />;
 }

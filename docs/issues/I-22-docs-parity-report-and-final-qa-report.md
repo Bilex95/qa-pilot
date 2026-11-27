@@ -1,6 +1,6 @@
 # I-22 Docs, parity report and final QA report
 
-**Stage:** 6 | **Batch:** 6B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 6 | **Batch:** 6B (see [DAG](DAG.md)) | **Status:** Done (D-079)
 
 ## Goal / requirement IDs
 

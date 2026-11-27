@@ -1,6 +1,6 @@
 # I-04 Bug workflow, transitions and Kanban board
 
-**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4C (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -25,7 +25,7 @@ Requirements: REQ-019, REQ-028
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-09**: [`board-default-desktop.png`](../../design/screenshots/board-default-desktop.png), [`board-default-mobile.png`](../../design/screenshots/board-default-mobile.png), [`board-empty-desktop.png`](../../design/screenshots/board-empty-desktop.png), [`board-loading-desktop.png`](../../design/screenshots/board-loading-desktop.png), [`board-error-desktop.png`](../../design/screenshots/board-error-desktop.png)
 * **SCR-10**: [`bug-detail-default-desktop.png`](../../design/screenshots/bug-detail-default-desktop.png), [`bug-detail-default-mobile.png`](../../design/screenshots/bug-detail-default-mobile.png), [`bug-detail-ai-desktop.png`](../../design/screenshots/bug-detail-ai-desktop.png), [`bug-detail-loading-desktop.png`](../../design/screenshots/bug-detail-loading-desktop.png), [`bug-detail-error-desktop.png`](../../design/screenshots/bug-detail-error-desktop.png)

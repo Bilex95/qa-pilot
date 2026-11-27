@@ -1,4 +1,4 @@
-"""Auth endpoints API-010 to API-016. Thin: parse, call service, shape response."""
+"""Auth endpoints API-010 to API-016 and the password reset endpoints API-152, API-153. Thin: parse, call service, shape response."""
 
 from typing import Annotated
 
@@ -18,6 +18,9 @@ from app.modules.auth.schemas.auth import (
     ProfileIn,
     RefreshIn,
     RegisterIn,
+    ResetConfirmIn,
+    ResetPreviewIn,
+    ResetPreviewOut,
     TokensOut,
     UserOut,
 )
@@ -67,9 +70,27 @@ def me(db: DB, user: CurrentUser) -> MeOut:
 
 @router.patch("/me", response_model=UserOut, responses=errors(401, 422))
 def update_me(body: ProfileIn, db: DB, user: CurrentUser) -> UserOut:
-    return UserOut.model_validate(service.update_profile(db, user, full_name=body.full_name))
+    org_ids = [o.id for o, _ in orgs.memberships_for_user(db, user.id)]
+    return UserOut.model_validate(service.update_profile(db, user, full_name=body.full_name, org_ids=org_ids))
 
 
-@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT, responses=errors(400, 401, 422))
-def change_password(body: PasswordChangeIn, db: DB, user: CurrentUser) -> None:
-    service.change_password(db, user, current_password=body.current_password, new_password=body.new_password)
+@router.post("/me/password", response_model=TokensOut, responses=errors(400, 401, 422))
+def change_password(body: PasswordChangeIn, db: DB, user: CurrentUser, user_agent: UA = None) -> TokensOut:
+    """Every other session ends (refresh tokens revoked, earlier access tokens refused). The response is a fresh token pair
+    for this device, issued after the change, so the person stays signed in here (D-055)."""
+    org_ids = [o.id for o, _ in orgs.memberships_for_user(db, user.id)]
+    pair = service.change_password(db, user, current_password=body.current_password, new_password=body.new_password,
+                                   user_agent=user_agent, org_ids=org_ids)
+    return TokensOut(access_token=pair.access_token, refresh_token=pair.refresh_token, expires_in=pair.expires_in)
+
+
+# The token travels in the body, never in the path or the query, so it stays out of logs, history and Referer (BL-014)
+@router.post("/password-reset/preview", response_model=ResetPreviewOut, responses=errors(410, 422, 429))
+def preview_password_reset(body: ResetPreviewIn, db: DB) -> ResetPreviewOut:
+    masked, expires = service.preview_password_reset(db, token=body.token)
+    return ResetPreviewOut(email_masked=masked, expires_at=expires)
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT, responses=errors(410, 422, 429))
+def confirm_password_reset(body: ResetConfirmIn, db: DB) -> None:
+    service.confirm_password_reset(db, token=body.token, new_password=body.new_password)

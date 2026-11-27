@@ -1,6 +1,6 @@
 # I-03 Bugs: model, create, edit, list, search and saved views
 
-**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4B (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -26,7 +26,7 @@ Requirements: REQ-017, REQ-018, REQ-020, REQ-021, REQ-026, REQ-027, REQ-029, REQ
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-08**: [`bug-list-default-desktop.png`](../../design/screenshots/bug-list-default-desktop.png), [`bug-list-default-mobile.png`](../../design/screenshots/bug-list-default-mobile.png), [`bug-list-empty-desktop.png`](../../design/screenshots/bug-list-empty-desktop.png), [`bug-list-loading-desktop.png`](../../design/screenshots/bug-list-loading-desktop.png), [`bug-list-error-desktop.png`](../../design/screenshots/bug-list-error-desktop.png)
 * **SCR-11**: [`bug-new-default-desktop.png`](../../design/screenshots/bug-new-default-desktop.png), [`bug-new-default-mobile.png`](../../design/screenshots/bug-new-default-mobile.png), [`bug-new-ai-desktop.png`](../../design/screenshots/bug-new-ai-desktop.png), [`bug-new-error-desktop.png`](../../design/screenshots/bug-new-error-desktop.png), [`bug-new-loading-desktop.png`](../../design/screenshots/bug-new-loading-desktop.png)
@@ -75,6 +75,7 @@ Copied from `docs/requirements/API_INVENTORY.md` (`{O}` = `/api/v1/orgs/{org_id}
 - [ ] QA Engineer files a bug and sees key WEB-1 in the list
 - [ ] Developer files a bug: severity Medium and P3 forced
 - [ ] Saved views are private to their owner
+- [ ] Deleting a label cascades to `bug_labels` (foreign key `ON DELETE CASCADE`, test deletes a label that is on a bug) and replaces the placeholder `bug_count` of I-02 with the real count through `hooks.label_bug_counts`
 - [ ] Implementation and tests
 - [ ] Negative and tenant permission tests
 - [ ] Docker and CI pass

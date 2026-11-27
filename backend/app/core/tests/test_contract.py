@@ -10,7 +10,8 @@ from app.core.permissions import PERMISSIONS, Role, can
 from app.main import app
 
 PUBLIC = {("GET", "/api/v1/health"), ("POST", "/api/v1/auth/register"), ("POST", "/api/v1/auth/login"),
-          ("POST", "/api/v1/auth/refresh"), ("GET", "/api/v1/invitations/{token}")}
+          ("POST", "/api/v1/auth/refresh"), ("POST", "/api/v1/invitations/preview"),
+          ("POST", "/api/v1/auth/password-reset/preview"), ("POST", "/api/v1/auth/password-reset/confirm")}
 
 
 def _routes() -> list[tuple[str, str]]:
@@ -44,8 +45,46 @@ def test_openapi_lists_every_inventory_endpoint_built_so_far() -> None:
         ("DELETE", "/api/v1/orgs/{org_id}/members/{membership_id}"),
         ("POST", "/api/v1/orgs/{org_id}/invitations"), ("GET", "/api/v1/orgs/{org_id}/invitations"),
         ("DELETE", "/api/v1/orgs/{org_id}/invitations/{invitation_id}"),
-        ("GET", "/api/v1/invitations/{token}"), ("POST", "/api/v1/invitations/{token}/accept"),
+        ("POST", "/api/v1/invitations/preview"), ("POST", "/api/v1/invitations/accept"),
+        ("POST", "/api/v1/orgs/{org_id}/members/{membership_id}/password-reset"),
+        ("POST", "/api/v1/auth/password-reset/preview"), ("POST", "/api/v1/auth/password-reset/confirm"),
         ("GET", "/api/v1/orgs/{org_id}/audit-events"),
+        ("GET", "/api/v1/orgs/{org_id}/bugs"), ("POST", "/api/v1/orgs/{org_id}/bugs"),
+        ("GET", "/api/v1/orgs/{org_id}/bugs/{bug_ref}"), ("PATCH", "/api/v1/orgs/{org_id}/bugs/{bug_id}"),
+        ("DELETE", "/api/v1/orgs/{org_id}/bugs/{bug_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/saved-views"), ("POST", "/api/v1/orgs/{org_id}/saved-views"),
+        ("DELETE", "/api/v1/orgs/{org_id}/saved-views/{view_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/test-suites"), ("POST", "/api/v1/orgs/{org_id}/test-suites"),
+        ("GET", "/api/v1/orgs/{org_id}/test-suites/{suite_id}"), ("PATCH", "/api/v1/orgs/{org_id}/test-suites/{suite_id}"),
+        ("DELETE", "/api/v1/orgs/{org_id}/test-suites/{suite_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/test-suites/{suite_id}/cases"), ("POST", "/api/v1/orgs/{org_id}/test-suites/{suite_id}/cases"),
+        ("POST", "/api/v1/orgs/{org_id}/test-suites/{suite_id}/cases/bulk"),
+        ("GET", "/api/v1/orgs/{org_id}/test-cases/{case_ref}"), ("PATCH", "/api/v1/orgs/{org_id}/test-cases/{case_id}"),
+        ("DELETE", "/api/v1/orgs/{org_id}/test-cases/{case_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/bugs/{bug_id}/comments"), ("POST", "/api/v1/orgs/{org_id}/bugs/{bug_id}/comments"),
+        ("PATCH", "/api/v1/orgs/{org_id}/comments/{comment_id}"), ("DELETE", "/api/v1/orgs/{org_id}/comments/{comment_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/bugs/{bug_id}/attachments"), ("POST", "/api/v1/orgs/{org_id}/bugs/{bug_id}/attachments"),
+        ("GET", "/api/v1/orgs/{org_id}/attachments/{attachment_id}/download"),
+        ("DELETE", "/api/v1/orgs/{org_id}/attachments/{attachment_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/bugs/{bug_id}/activity"),
+        ("GET", "/api/v1/orgs/{org_id}/test-runs"), ("POST", "/api/v1/orgs/{org_id}/test-runs"),
+        ("GET", "/api/v1/orgs/{org_id}/test-runs/{run_ref}"), ("PATCH", "/api/v1/orgs/{org_id}/test-runs/{run_id}"),
+        ("PATCH", "/api/v1/orgs/{org_id}/test-runs/{run_id}/results/{result_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/test-runs/{run_id}/results/{result_id}/bug-draft"),
+        ("GET", "/api/v1/orgs/{org_id}/releases"), ("POST", "/api/v1/orgs/{org_id}/releases"),
+        ("GET", "/api/v1/orgs/{org_id}/releases/{release_id}"), ("PATCH", "/api/v1/orgs/{org_id}/releases/{release_id}"),
+        ("DELETE", "/api/v1/orgs/{org_id}/releases/{release_id}"), ("GET", "/api/v1/orgs/{org_id}/releases/{release_id}/readiness"),
+        ("POST", "/api/v1/orgs/{org_id}/releases/{release_id}/bugs"),
+        ("DELETE", "/api/v1/orgs/{org_id}/releases/{release_id}/bugs/{bug_id}"),
+        ("POST", "/api/v1/orgs/{org_id}/releases/{release_id}/runs"),
+        ("DELETE", "/api/v1/orgs/{org_id}/releases/{release_id}/runs/{run_id}"),
+        ("GET", "/api/v1/orgs/{org_id}/dashboard"), ("GET", "/api/v1/orgs/{org_id}/reports/bug-trend"),
+        ("GET", "/api/v1/orgs/{org_id}/reports/summary"), ("GET", "/api/v1/orgs/{org_id}/reports/bugs.csv"),
+        ("POST", "/api/v1/orgs/{org_id}/ai/bug-writer"), ("POST", "/api/v1/orgs/{org_id}/ai/explain-log"),
+        ("POST", "/api/v1/orgs/{org_id}/ai/duplicates"), ("POST", "/api/v1/orgs/{org_id}/ai/triage"),
+        ("POST", "/api/v1/orgs/{org_id}/ai/test-cases"),
+        ("GET", "/api/v1/orgs/{org_id}/ai/usage"), ("GET", "/api/v1/orgs/{org_id}/ai/usage/summary"),
+        ("POST", "/api/v1/orgs/{org_id}/ai/usage/{usage_id}/outcome"),
     }
     assert expected <= routes, sorted(expected - routes)
 
@@ -109,7 +148,7 @@ A, L, Q, D, V = "org_admin", "qa_lead", "qa_engineer", "developer", "viewer"
 MATRIX = {
     "org.update_settings": {A}, "member.list": {A, L}, "member.list_basic": {A, L, Q, D, V},
     "member.update_role": {A}, "member.remove": {A}, "invitation.create": {A}, "invitation.list": {A, L},
-    "audit.read": {A}, "label.manage": {A, L}, "project.create": {A, L}, "bug.create": {A, L, Q, D},
+    "audit.read": {A}, "member.reset_password": {A}, "label.manage": {A, L}, "project.create": {A, L}, "bug.create": {A, L, Q, D},
     "bug.set_severity_priority": {A, L, Q}, "bug.delete": {A, L}, "comment.create": {A, L, Q, D, V},
     "attachment.upload": {A, L, Q, D}, "suite.manage": {A, L, Q}, "run.execute": {A, L, Q},
     "release.manage": {A, L}, "report.export": {A, L, Q, D, V}, "ai.bug_writer": {A, L, Q, D},

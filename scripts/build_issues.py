@@ -87,7 +87,10 @@ ISSUES = [
           ["Attaching labels to bugs is part of I-03"], ["backend/app/modules/projects (labels live with projects)", "frontend/src/modules/settings"], [],
           rng("API-052", "API-054"), ["SCR-20"],
           ["org.read to list; label.manage (Org Admin, QA Lead) to create and delete"],
-          ["Names unique per org, case insensitive (409)", "Colour must be a token name from design/TOKENS.md", "Deleting a label removes it from bugs"],
+          ["Names are trimmed, 1 to 40 characters, unique per org case insensitively (409); a race past the check is caught from the unique index and is also 409",
+           "Colour is optional and must be a token name (D-047); default neutral; chips stay neutral until BL-010",
+           "The list returns `bug_count`, 0 until I-03 registers the real count through `hooks.label_bug_counts`",
+           "Deleting a label removes it from bugs (I-03 adds the cascading `bug_labels` foreign key); an unknown id in the same org is 404 like another org's id"],
           STD_TESTS, ["Lead creates and deletes labels; QA Engineer gets 403"], "0003_labels"),
     Issue("I-03", "Bugs: model, create, edit, list, search and saved views", 4, "4B",
           ["REQ-017", "REQ-018", "REQ-020", "REQ-021", "REQ-026", "REQ-027", "REQ-029", "REQ-041", "REQ-062"],
@@ -110,7 +113,9 @@ ISSUES = [
            "Search matches key, title and description, case insensitive; page_size above 100 is 422"],
           STD_TESTS + STD_UI_TESTS + ["Performance: `GET /bugs` p95 under 300 ms on the baseline seed (NFR-PERF-01)"],
           ["QA Engineer files a bug and sees key WEB-1 in the list", "Developer files a bug: severity Medium and P3 forced",
-           "Saved views are private to their owner"], "0004_bugs"),
+           "Saved views are private to their owner",
+           "Deleting a label cascades to `bug_labels` (foreign key `ON DELETE CASCADE`, test deletes a label that is on a bug) and replaces the placeholder `bug_count` of I-02 with the real count through `hooks.label_bug_counts`"],
+          "0004_bugs"),
     Issue("I-04", "Bug workflow, transitions and Kanban board", 4, "4C", ["REQ-019", "REQ-028"],
           "Enforce the nine status workflow on the server and let teams move bugs on a board.",
           ["State machine in `bugs/domain` from DOMAIN_MODEL section 4, with side effects (resolved_at, closed_at)",
@@ -138,7 +143,7 @@ ISSUES = [
           ["413 file_too_large over 10 MB, 415 unsupported_type by extension or magic bytes, 409 too_many_files over 10",
            "Download sends Content-Disposition attachment and nosniff; never served from a public path",
            "Activity records old and new values for every field change"],
-          STD_TESTS + STD_UI_TESTS, ["Viewer comments; Viewer cannot upload"], "0005_bug_detail"),
+          STD_TESTS + STD_UI_TESTS, ["Viewer comments; Viewer cannot upload"], "0006_bug_detail"),
     Issue("I-06", "Test suites and test cases", 4, "4B", ["REQ-030", "REQ-031"],
           "QA organises cases into suites with ordered steps and expected results.",
           ["TestSuite and TestCase models (steps as JSON list, D-031) and migration", "Suites screen and case editor without AI",
@@ -147,7 +152,7 @@ ISSUES = [
           rng("API-090", "API-100"), ["SCR-12", "SCR-13"],
           ["test.read for all; suite.manage and case.manage for Org Admin, QA Lead, QA Engineer", "Audit: suite.deleted, case.deleted"],
           ["At least one step; at most 50 steps; step reorder keeps ids", "Bulk create at most 50 cases, all or nothing"],
-          STD_TESTS + STD_UI_TESTS, ["QA Engineer writes a case with 4 steps; Developer sees it read only"], "0006_testing"),
+          STD_TESTS + STD_UI_TESTS, ["QA Engineer writes a case with 4 steps; Developer sees it read only"], "0005_testing"),
     Issue("I-07", "Test runs, results and bug from a failed step", 4, "4C", ["REQ-032", "REQ-033", "REQ-034"],
           "Execute runs against an environment and turn a failed step into a prefilled bug in one click.",
           ["TestRun and TestRunResult models with case snapshots", "Run list, run execution screen", "Bug draft endpoint and prefilled new bug form"],
@@ -190,7 +195,7 @@ ISSUES = [
           "One settings screen with tabs per role.",
           ["Organization tab (name, AI on or off, daily limit), Labels tab (from I-02), Audit log tab, My profile tab with password change"],
           ["AI usage numbers (I-19)"], ["frontend/src/modules/settings"], ["I-02", "I-10"],
-          ["API-015", "API-016", "API-023", "API-150"], ["SCR-20"],
+          ["API-015", "API-016", "API-023", "API-150", "API-154"], ["SCR-20"],
           ["Org Admin: all tabs; QA Lead: Labels and My profile; others: My profile"],
           ["Password change signs out other sessions (backend revokes refresh tokens)", "Turning AI off hides AI controls everywhere (D-027)"],
           STD_UI_TESTS, ["Viewer only sees My profile"]),
@@ -217,25 +222,35 @@ ISSUES = [
           ["PasswordReset model (token hash, expiry 1 hour, single use) and migration",
            "Endpoints: admin creates a reset link for a member; public preview; set new password with the token",
            "Forgot password page on sign in; reset link action on the members screen; set new password page"],
-          ["Self service by email (BL-005)"], ["backend/app/modules/auth", "frontend/src/modules/auth", "frontend/src/modules/members"],
-          ["I-10"], [], ["SCR-01", "SCR-19"],
-          ["Only an Org Admin of an org the person belongs to can create a link (member.update_role level)",
-           "Audit: auth.reset_link_created, auth.password_reset"],
-          ["Used, expired or revoked links return 410; setting a password revokes every refresh token",
-           "New endpoints added to API_INVENTORY.md (new API ids), Postman and OpenAPI",
-           "No user enumeration: the forgot password page gives the same answer for any email"],
+          ["Self service by email (BL-005, BL-019)"], ["backend/app/modules/auth", "frontend/src/modules/auth", "frontend/src/modules/members"],
+          ["I-10"], ["API-030", "API-031", "API-151", "API-152", "API-153"], ["SCR-01", "SCR-19"],
+          ["Only an Org Admin of the org can create a link (`member.reset_password`); not for your own account (409 `own_account`) and not for a person who belongs to more than one workspace (409 `shared_account`, D-055)",
+           "Audit: auth.reset_link_created, auth.password_reset, auth.reset_failed (no token in any audit data)"],
+          ["Used, expired, unknown or replaced links all return the same 410 `reset_invalid`; setting a password revokes every refresh token and, with `users.password_changed_at`, every access token issued before it (same second handled by microsecond order)",
+           "BL-014: invitation and reset tokens travel in the URL fragment and in request bodies, never in a path or query; the old token in path invitation routes and the `/invite/[token]` page are removed (D-055)",
+           "Referrer-Policy no-referrer and Cache-Control no-store on the invite, reset and forgot password pages",
+           "New endpoints added to API_INVENTORY.md (API-151 to API-153; API-030 and API-031 now take the token in the body), Postman and OpenAPI",
+           "No user enumeration: the forgot password page has no email field and makes no request; every bad link gets the same answer; failed attempts per address are throttled (429)"],
           STD_TESTS + STD_UI_TESTS, ["Admin creates a link, the person sets a new password, old sessions are signed out"],
           "0010_password_resets"),
     Issue("I-24", "Docker: no container left without a network", 4, "4A", ["REQ-059"],
           "Root cause fix for the Stage 3 incident: a failed first start (port taken) left the db container running without a network.",
-          ["Preflight in scripts/dc.ps1 and a POSIX twin that refuses `up` when a host port is already taken, naming the process",
-           "Reproduce the incident in a test script; confirm whether `restart: unless-stopped` causes the detached restart and switch to "
-           "`on-failure` with healthcheck based dependencies if so",
-           "Compose healthcheck for the backend that fails fast when `db` does not resolve, with a clear log line"],
-          ["Changing the Docker engine itself"], ["docker-compose.yml", "scripts/"], [], [], [],
-          [], ["Two stacks on the same ports; WSL restart in the middle of `up`"],
-          ["Scripted reproduction before and after the fix, output in the stage review"],
-          ["`up` with a taken port stops with a clear message and leaves no half started container"]),
+          ["Preflight in scripts/dc.ps1 and a POSIX twin (scripts/dc-preflight.sh, scripts/dc.sh) that refuses `up` when a host port "
+           "belongs to anything but this Compose project, naming the owner; a port of the same project (qa-pilot) is a no-op (D-048)",
+           "scripts/repro-i24.sh reproduces the incident in its own throwaway Compose project, before and after the fix; the restart "
+           "policy stays `unless-stopped` because it brings the stack back after a WSL idle stop (measured, D-048)",
+           "Backend startup check (`python -m app.core.db_preflight`) that retries resolving `db` for about 30 seconds, then exits with a "
+           "clear message; `depends_on` db with `condition: service_healthy` is already in place",
+           "WSL idle shutdown: scripts/with-wsl.ps1 holds one WSL session for exactly one task (closed in `finally`), scripts/newman.sh "
+           "and scripts/newman.ps1 run Newman@6.2.3 inside Docker as one WSL session, scripts/repro-i24-idle.ps1 measures the effect; "
+           "`instanceIdleTimeout=-1` in .wslconfig is documented as optional only and never changed by the build"],
+          ["Changing the Docker engine itself", "Changing the product owner's .wslconfig"], ["docker-compose.yml", "scripts/", "backend/app/core"], [], [], [],
+          [], ["Two stacks on the same ports; WSL restart in the middle of `up`; a Docker restart that beats the network by a moment"],
+          ["Scripted reproduction before and after the fix, output in the stage review",
+           "pytest for the db resolve retry and the clear failure message",
+           "Idle control (no WSL session, Docker stops) against the held run (Docker stays up); Newman and the layout check green through the wrappers"],
+          ["`up` with a taken port stops with a clear message and leaves no half started container",
+           "Newman and the layout check run green without the stack disappearing in the middle of a run"]),
     Issue("I-14", "AI provider, guardrails, usage log and limits", 5, "5A", ["REQ-042", "REQ-049", "REQ-050", "REQ-051", "REQ-052"],
           "The AI foundation every feature uses (AI_SPEC sections 1, 2 and 4).",
           ["AIProvider protocol, MockProvider (deterministic), AnthropicProvider (model from ANTHROPIC_MODEL)",
@@ -298,17 +313,43 @@ ISSUES = [
 ]
 
 
+# Finished issues: id -> commits on the stage branch. Add an entry when an issue is committed, then rerun this script.
+DONE = {
+    "I-01": "53bbea8, 82dd4f7",
+    "I-02": "8199178, 4ef3d92, 9749945, 30a3319, ce8a9d2",
+    "I-24": "562a4be, c1d81e2, b7db68a, af5eaec",
+    "I-10": "870e66a, 1e226d1, d4d776d, 111036e",
+    "I-03": "6b29711, 9668292, 1a9d8c2, d2fee0b",
+    "I-04": "540f6f3, 145a648, 8cc30f2, 232333d",
+    "I-05": "e3cb3fd, 3cfb1a9",
+    "I-07": "98428b5, 6c272ce",
+    "I-08": "6e17626, cf32393",
+    "I-09": "da1af30, a263b32, db24cde, a6f7d31, 710a3d9",
+    "I-12": "d78eac7, b26f723",
+    "I-13": "c9b2db2, 49569c4, e3b3bd0, 1739e8e, d155cf4",
+    "I-06": "20bfae6, c23000f, 0c960f3, c19719f",
+    "I-23": "cfb9ba1, 1af7cee, adc120f, b236d13, 3552994, 2555f2c, 190ba90, 7438afd",
+    "I-11": "e1de501, 2e5b26c, 816a2a2, 305989c, 8002211, 5aab6b0",
+    "I-14": "0103b8a",
+    "I-15": "34ece25, 08ec901, 96e6ffb",
+    "I-16": "18f10f2, f782b7e",
+    "I-17": "6cd798d",
+    "I-18": "b3c8911",
+    "I-19": "ef55723",
+}
+
+
 def render(i: Issue) -> str:
     deps = ", ".join(f"[{d}]({next(x.file for x in ISSUES if x.id == d)})" for d in i.deps) or "None"
     lines = [f"# {i.id} {i.title}", "",
-             f"**Stage:** {i.stage} | **Batch:** {i.batch} (see [DAG](DAG.md)) | **Status:** Planned", "",
+             f"**Stage:** {i.stage} | **Batch:** {i.batch} (see [DAG](DAG.md)) | **Status:** {'Done' if i.id in DONE else 'Planned'}", "",
              "## Goal / requirement IDs", "", i.goal, "", "Requirements: " + ", ".join(i.reqs), "",
              "## Scope and exclusions", "", *[f"* {s}" for s in i.scope], *([""] + [f"* Not in this issue: {e}" for e in i.exclusions] if i.exclusions else []), "",
              "## Module ownership / dependencies", "", *[f"* `{m}`" for m in i.modules], f"* Depends on: {deps}",
              *([f"* Migration: `{i.migration}`"] if i.migration else []), ""]
     if i.screens:
         lines += ["## UI states and committed screenshots", "",
-                  "Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).", ""]
+                  "Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).", ""]
         for s in i.screens:
             files = [f for f in SHOT_FILES if f.startswith(slug_of(s) + "-")]
             lines.append(f"* **{s}**: " + ", ".join(f"[`{f}`](../../design/screenshots/{f})" for f in files))
@@ -343,7 +384,7 @@ def dag() -> str:
         deps = sorted({d for i in items for d in i.deps} - {i.id for i in items})
         lines.append(f"| {b} | {items[0].stage} | " + ", ".join(f"[{i.id}]({i.file}) {i.title}" for i in items)
                      + f" | {', '.join(deps) or 'Stage 3 foundations'} |")
-    lines += ["", "## Status", "", "| Issue | Status | Commit |", "|---|---|---|", *[f"| {i.id} | Planned | |" for i in ISSUES], "",
+    lines += ["", "## Status", "", "| Issue | Status | Commit |", "|---|---|---|", *[f"| {i.id} | {'Done' if i.id in DONE else 'Planned'} | {DONE.get(i.id, '')} |" for i in ISSUES], "",
               "## Requirement coverage", ""]
     covered = sorted({r for i in ISSUES for r in i.reqs})
     lines.append(f"{len(covered)} requirements are referenced by Stage 4 to 6 issues: " + ", ".join(covered) + ".")
@@ -358,6 +399,6 @@ if __name__ == "__main__":
     for i in ISSUES:
         missing = [a for a in i.apis if a not in API_ROWS]
         assert not missing, (i.id, missing)
-        (OUT / i.file).write_text(render(i), encoding="utf-8")
-    (OUT / "DAG.md").write_text(dag(), encoding="utf-8")
+        (OUT / i.file).write_text(render(i), encoding="utf-8", newline="\n")  # LF on Windows too: no line ending noise in git
+    (OUT / "DAG.md").write_text(dag(), encoding="utf-8", newline="\n")
     print(f"Wrote {len(ISSUES)} issues and DAG.md")

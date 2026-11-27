@@ -93,6 +93,7 @@ a { color: var(--primary); text-decoration-thickness: 1px; text-underline-offset
 a:hover { color: var(--primary-hover); }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+main:focus-visible { outline: none; } /* the content area takes focus after a page change; it is not a control */
 .mono { font-family: var(--font-mono); font-size: 0.92em; font-weight: 500; letter-spacing: 0; white-space: nowrap; }
 .muted { color: var(--ink-3); }
 .small { font-size: var(--fs-sm); }
@@ -244,6 +245,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
 .filters { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); }
 .filters .input, .filters .select { width: auto; min-width: 140px; height: 34px; min-height: 34px; padding-top: 4px; padding-bottom: 4px; }
 .filters .search-f { min-width: 240px; flex: 1; max-width: 340px; }
+.filters .search-f::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 .views { display: flex; gap: var(--sp-1); align-items: center; padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--line); overflow-x: auto; }
 .view-tab { border: 0; background: none; padding: 6px 10px; border-radius: var(--r-sm); font-weight: var(--fw-bold); font-size: var(--fs-sm); color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .view-tab[aria-pressed="true"] { background: var(--primary-wash); color: var(--primary-hover); }
@@ -358,6 +360,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
 .step-ed .textarea { min-height: 60px; }
 .gen-case { display: grid; grid-template-columns: 22px 1fr; gap: var(--sp-3); padding: var(--sp-3) 0; border-top: 1px dashed rgba(154,116,0,.4); }
 .gen-case:first-of-type { border-top: 0; }
+.gen-case input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); margin-top: 3px; }
 .type-tag { font-size: var(--fs-xs); font-weight: var(--fw-bold); padding: 1px 6px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line-strong); }
 
 /* Suite list */
@@ -405,6 +408,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
 .auth-card form { display: flex; flex-direction: column; gap: var(--sp-4); margin-top: var(--sp-6); }
 .banner { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm); font-size: var(--fs-sm); }
 .banner svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.banner .mono { font-size: 1em; } /* 0.92em of 13px is 11.96px, under the 12px floor */
 .banner.error { background: var(--danger-wash); color: #8E1C13; }
 .banner.info { background: var(--info-wash); color: #1C4E9E; }
 .banner.warn { background: var(--warn-wash); color: #6B4100; }
@@ -506,6 +510,8 @@ body.clean .devbar { display: none; }
   .t .title-cell a, .crumbs a, .panel-head a, a.small, .dupe a, .row > a:not(.btn) { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
   .card .ttl a { display: flex; align-items: center; min-height: 44px; }
   .checkbox { min-height: 44px; }
+  .gen-case { grid-template-columns: 44px 1fr; }
+  .gen-case input[type="checkbox"] { width: 44px; height: 44px; margin: 0; }
   summary { padding: 12px 0; line-height: 20px; cursor: pointer; }
   .switch { width: 52px; height: 44px; }
   .switch span { top: 8px; bottom: 8px; }
@@ -794,6 +800,8 @@ const F = { q: '', project: '', status: '', sev: '', assignee: '', view: 'all', 
 let selSuite = 's1';
 let tabState = {};
 let dragKey = null;
+let editing = ''; // bug detail inline edit: '', 'title', 'desc', 'steps', 'ea' (expected and actual) or 'labels' (also ?edit= in the address, for screenshots)
+let lastPath = '';
 
 const STATE_OPTIONS = {
   login: ['default', 'error', 'loading'], register: ['default', 'error'], 'org-setup': ['default', 'error'], invite: ['default', 'error'],
@@ -841,6 +849,7 @@ function render() {
   const { path, params } = parse();
   if (params.get('role') && ROLES[params.get('role')]) { S.role = params.get('role'); try { localStorage.setItem('qap-role', S.role); } catch (e) {} }
   S.state = params.get('state') || 'default';
+  editing = params.get('edit') || (path === lastPath ? editing : ''); lastPath = path;
   S.clean = params.get('clean') === '1';
   document.body.classList.toggle('clean', S.clean);
   document.body.classList.remove('nav-open');
@@ -1133,10 +1142,10 @@ function filteredBugs() {
   if (F.sort === 'priority') list.sort((a, b) => a.pri.localeCompare(b.pri) || a.h - b.h);
   return list;
 }
-function bugTable(list, sortable = true) {
+function bugTable(list, sortable = true, removable = false) {
   const sortBtn = (k, label) => sortable ? `<button data-action="sort" data-sort="${k}" aria-label="Sort by ${label}">${label}${F.sort === k ? ic.down.replace('<svg', '<svg width="12" height="12"') : ''}</button>` : label;
-  return `<div class="table-wrap"><table class="t stackable"><thead><tr><th>Key</th><th>Title</th><th>Status</th><th>${sortBtn('severity', 'Severity')}</th><th>${sortBtn('priority', 'Priority')}</th><th>Assignee</th><th>${sortBtn('updated', 'Updated')}</th></tr></thead><tbody>
-    ${list.map(b => `<tr><td data-label="Key" class="no-label"><span class="mono muted">${b.key}</span></td><td class="title-cell"><a href="${o('/bugs/' + b.key)}">${esc(b.title)}</a><div class="xs muted">${esc(b.comp)}, ${b.env}${b.labels.length ? ' ' + labelChips(b.labels) : ''}</div></td><td data-label="Status">${stBadge(b.status)}</td><td data-label="Severity">${sevBadge(b.sev)}</td><td data-label="Priority">${priTag(b.pri)}</td><td data-label="Assignee">${who(b.assignee)}</td><td data-label="Updated"><span class="small">${ago(b.h)}</span>${slaBreached(b) ? ` <span class="badge sla" title="Not fixed within ${SLA_TEXT[b.sev]} of being reported (SLA for ${SEV_NAME[b.sev]} bugs)">Past SLA</span>` : ''}</td></tr>`).join('')}
+  return `<div class="table-wrap"><table class="t stackable"><thead><tr><th>Key</th><th>Title</th><th>Status</th><th>${sortBtn('severity', 'Severity')}</th><th>${sortBtn('priority', 'Priority')}</th><th>Assignee</th><th>${sortBtn('updated', 'Updated')}</th>${removable ? '<th><span class="sr-only">Actions</span></th>' : ''}</tr></thead><tbody>
+    ${list.map(b => `<tr><td data-label="Key" class="no-label"><span class="mono muted">${b.key}</span></td><td class="title-cell"><a href="${o('/bugs/' + b.key)}">${esc(b.title)}</a><div class="xs muted">${esc(b.comp)}, ${b.env}${b.labels.length ? ' ' + labelChips(b.labels) : ''}</div></td><td data-label="Status">${stBadge(b.status)}</td><td data-label="Severity">${sevBadge(b.sev)}</td><td data-label="Priority">${priTag(b.pri)}</td><td data-label="Assignee">${who(b.assignee)}</td><td data-label="Updated"><span class="small">${ago(b.h)}</span>${slaBreached(b) ? ` <span class="badge sla" title="Not fixed within ${SLA_TEXT[b.sev]} of being reported (SLA for ${SEV_NAME[b.sev]} bugs)">Past SLA</span>` : ''}</td>${removable ? `<td data-label="Actions"><button class="btn ghost sm" data-action="toast" data-msg="${b.key} removed from the release">Remove</button></td>` : ''}</tr>`).join('')}
   </tbody></table></div>`;
 }
 function scrBugList() {
@@ -1190,15 +1199,18 @@ function scrBugDetail(key) {
   const devSelf = S.role === 'developer' && !b.assignee;
   const assigneeOpts = [['', 'Unassigned'], ...USERS.filter(u => u.role !== 'viewer').map(u => [u.id, u.name])];
   return `<div class="crumbs">${crumbs}</div>
-  <div class="page-head"><div class="grow"><div class="row small" style="margin-bottom:8px"><span class="mono muted">${b.key}</span>${stBadge(b.status)}${sevBadge(b.sev)}${priTag(b.pri)}${slaBreached(b) ? '<span class="badge sla">Past SLA</span>' : ''}</div><h1>${esc(b.title)}</h1><p>Reported by ${esc(user(b.reporter).name)} ${ago(createdHoursAgo(b))}. Updated ${ago(b.h)}.</p></div>
+  <div class="page-head"><div class="grow"><div class="row small" style="margin-bottom:8px"><span class="mono muted">${b.key}</span>${stBadge(b.status)}${sevBadge(b.sev)}${priTag(b.pri)}${slaBreached(b) ? '<span class="badge sla">Past SLA</span>' : ''}${canEdit && editing !== 'title' ? `<button class="btn ghost sm" data-action="edit-start" data-what="title">Edit title</button>` : ''}</div>${editing === 'title' ? `<form class="stack" data-action="edit-title" style="gap:8px"><div class="field"><label class="sr-only" for="e-title">Title</label><input class="input" id="e-title" value="${esc(b.title)}" maxlength="200" autocomplete="off"></div><div class="row"><button class="btn primary sm" type="submit">Save title</button><button class="btn sm" type="button" data-action="edit-cancel">Cancel</button></div></form>` : `<h1>${esc(b.title)}</h1>`}<p>Reported by ${esc(user(b.reporter).name)} ${ago(createdHoursAgo(b))}. Updated ${ago(b.h)}.</p></div>
     <div class="actions">${targets.length ? targets.map((t, i) => `<button class="btn ${i === 0 ? 'primary' : ''}" data-action="transition" data-key="${b.key}" data-to="${t}">${transitionLabel(t)}</button>`).join('') : `<span class="small muted">${S.role === 'viewer' ? 'Viewers can comment but cannot change bugs.' : S.role === 'developer' ? 'Only the assignee can move this bug.' : 'No status changes available.'}</span>`}
       ${can('bug.delete') ? `<button class="btn ghost icon-btn" data-action="confirm-delete" aria-label="Delete bug">${ic.trash}</button>` : ''}</div></div>
   <div class="split">
     <div class="stack">
       <section class="panel"><div class="panel-body prose">
-        <h3>Description</h3><p>After applying discount code SAVE10 at checkout, changing the delivery address recalculates shipping but drops the discount. The order total goes up by the discount amount and the code disappears from the summary. Seen by 3 customers in support tickets today.</p>
-        <h3>Steps to reproduce</h3><ol><li>Sign in as a shipper with a parcel in the cart.</li><li>Apply discount code SAVE10.</li><li>On the checkout page choose Change address and pick another saved address.</li><li>Look at the order summary.</li></ol>
-        <h3>Expected and actual</h3><div class="ea"><div class="exp"><div class="ea-title">Expected</div>Total includes the new shipping cost and still applies SAVE10.</div><div class="act"><div class="ea-title">Actual</div>SAVE10 is removed and the total rises by the discount amount.</div></div>
+        <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3 style="margin:0">Description</h3>${canEdit && editing !== 'desc' ? `<button class="btn ghost sm" data-action="edit-start" data-what="desc" aria-label="Edit description">Edit</button>` : ''}</div>
+        ${editing === 'desc' ? `<form class="stack" data-action="edit-desc" style="margin-top:8px"><div class="field"><label class="sr-only" for="e-desc">Description</label><textarea class="textarea" id="e-desc" style="min-height:140px">After applying discount code SAVE10 at checkout, changing the delivery address recalculates shipping but drops the discount. The order total goes up by the discount amount and the code disappears from the summary. Seen by 3 customers in support tickets today.</textarea><div class="hint">Plain text. Up to 20,000 characters.</div></div><div class="row"><button class="btn primary sm" type="submit">Save description</button><button class="btn sm" type="button" data-action="edit-cancel">Cancel</button></div></form>` : `<p style="margin-top:8px">After applying discount code SAVE10 at checkout, changing the delivery address recalculates shipping but drops the discount. The order total goes up by the discount amount and the code disappears from the summary. Seen by 3 customers in support tickets today.</p>`}
+        <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3 style="margin:0">Steps to reproduce</h3>${canEdit && editing !== 'steps' ? `<button class="btn ghost sm" data-action="edit-start" data-what="steps" aria-label="Edit steps to reproduce">Edit</button>` : ''}</div>
+        ${editing === 'steps' ? `<form class="stack" data-action="edit-steps" style="margin-top:8px">${['Sign in as a shipper with a parcel in the cart.', 'Apply discount code SAVE10.', 'On the checkout page choose Change address and pick another saved address.', 'Look at the order summary.'].map((s, i) => `<div class="row" style="flex-wrap:nowrap"><span class="mono muted" style="width:20px;text-align:right">${i + 1}</span><input class="input" id="e-step-${i + 1}" aria-label="Step ${i + 1}" value="${esc(s)}"><button type="button" class="btn ghost sm icon-btn" data-action="toast" data-msg="Step removed" aria-label="Remove step ${i + 1}">${ic.trash}</button></div>`).join('')}<div class="row"><button type="button" class="btn sm" data-action="toast" data-msg="Step added">${ic.plus}Add step</button><span class="hint">Up to 50 steps of 1,000 characters.</span></div><div class="row"><button class="btn primary sm" type="submit">Save steps</button><button class="btn sm" type="button" data-action="edit-cancel">Cancel</button></div></form>` : `<ol style="margin-top:8px"><li>Sign in as a shipper with a parcel in the cart.</li><li>Apply discount code SAVE10.</li><li>On the checkout page choose Change address and pick another saved address.</li><li>Look at the order summary.</li></ol>`}
+        <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3 style="margin:0">Expected and actual</h3>${canEdit && editing !== 'ea' ? `<button class="btn ghost sm" data-action="edit-start" data-what="ea" aria-label="Edit expected and actual result">Edit</button>` : ''}</div>
+        ${editing === 'ea' ? `<form class="stack" data-action="edit-ea" style="margin-top:8px"><div class="grid g2"><div class="field"><label for="e-exp">Expected result</label><textarea class="textarea" id="e-exp">Total includes the new shipping cost and still applies SAVE10.</textarea></div><div class="field"><label for="e-act">Actual result</label><textarea class="textarea" id="e-act">SAVE10 is removed and the total rises by the discount amount.</textarea></div></div><div class="hint">Plain text. Up to 5,000 characters each.</div><div class="row"><button class="btn primary sm" type="submit">Save results</button><button class="btn sm" type="button" data-action="edit-cancel">Cancel</button></div></form>` : `<div class="ea" style="margin-top:8px"><div class="exp"><div class="ea-title">Expected</div>Total includes the new shipping cost and still applies SAVE10.</div><div class="act"><div class="ea-title">Actual</div>SAVE10 is removed and the total rises by the discount amount.</div></div>`}
         <h3>Attachments</h3><div class="files"><span class="file">${ic.img}checkout-summary.png <span class="muted xs">412 KB</span></span><span class="file">${ic.file}console.log <span class="muted xs">8 KB</span></span>${can('attachment.upload') ? `<button class="btn sm" data-action="toast" data-msg="Attachment uploaded">${ic.clip}Attach file</button>` : ''}</div>
       </div></section>
       <section class="panel"><div class="panel-body">
@@ -1217,8 +1229,9 @@ function scrBugDetail(key) {
         <dt>Component</dt><dd>${sel('d-comp', b.project.comps.map(c => [c, c]), b.comp, canEdit, 'Component')}</dd>
         <dt>Environment</dt><dd>${sel('d-env', ENVS.map(e => [e, e]), b.env, canEdit, 'Environment')}</dd>
         <dt>Release</dt><dd>${sel('d-rel', [['', 'None'], ...RELEASES.filter(r => r.project === b.project.id).map(r => [r.id, r.name])], b.release || '', canEdit, 'Release')}</dd>
-        <dt>Labels</dt><dd>${labelChips(b.labels) || '<span class="muted">None</span>'}</dd>
+        <dt>Labels</dt><dd>${editing === 'labels' ? `<form class="stack" data-action="edit-labels" style="gap:8px"><div class="row" role="group" aria-label="Labels" style="gap:6px">${Object.entries(LABELS).map(([k, v]) => `<button type="button" class="btn sm ${b.labels.includes(k) ? 'primary' : ''}" aria-pressed="${b.labels.includes(k)}">${v}</button>`).join('')}</div><div class="row"><button class="btn primary sm" type="submit">Save labels</button><button class="btn sm" type="button" data-action="edit-cancel">Cancel</button></div></form>` : `${labelChips(b.labels) || '<span class="muted">None</span>'}${canEdit ? ` <button class="btn ghost sm" data-action="edit-start" data-what="labels" aria-label="Edit labels">Edit</button>` : ''}`}</dd>
         <dt>Reporter</dt><dd>${who(b.reporter)}</dd>
+        ${b.key === 'WEB-137' ? `<dt>Found in</dt><dd><a href="${o('/runs/R-31')}" class="mono">R-31</a> <span class="muted small">TC-104</span></dd>` : ''}
       </dl></div></section>
       ${!ai && can('ai.triage') ? triagePanel(b, ai) : ''}
     </aside>
@@ -1345,7 +1358,7 @@ function genPanel(ai) {
     <div class="field"><label for="g-story">User story or acceptance criteria</label><textarea class="textarea" id="g-story" placeholder="As a shipper I want...">${ai ? 'As a shipper I want my discount to stay applied when I change the delivery address, so the price I saw is the price I pay.\n- Discount stays after address change\n- Total shows new shipping cost\n- Expired codes are removed' : ''}</textarea></div>
     <div class="field"><label for="g-count">How many cases</label><select class="select" id="g-count"><option>6</option><option>8</option><option>12</option></select></div>
     ${ai ? `<div class="suggest"><div class="suggest-tag">${ic.spark}6 suggested cases, not saved</div>
-      ${gen.map(([t, title, n], i) => `<label class="gen-case"><input type="checkbox" checked aria-label="Include ${esc(title)}" style="width:16px;height:16px;accent-color:var(--primary);margin-top:3px"><span><span class="type-tag">${t[0].toUpperCase() + t.slice(1)}</span> <b class="small">${esc(title)}</b><span class="xs muted" style="display:block">${n} steps with expected results</span></span></label>`).join('')}
+      ${gen.map(([t, title, n], i) => `<label class="gen-case"><input type="checkbox" checked aria-label="Include ${esc(title)}"><span><span class="type-tag">${t[0].toUpperCase() + t.slice(1)}</span> <b class="small">${esc(title)}</b><span class="xs muted" style="display:block">${n} steps with expected results</span></span></label>`).join('')}
       <div class="suggest-actions"><button class="btn primary sm" data-action="ai-accept" data-msg="6 test cases added to Checkout">${ic.check}Add 6 to Checkout</button><button class="btn sm" data-action="ai-edit">Edit first</button><button class="btn ghost sm" data-action="ai-discard">Discard</button></div></div>`
     : `<button class="btn" data-action="ai-run" data-state="ai">${ic.spark}Generate cases</button>`}
     <p class="ai-note">Covers positive, negative and edge cases. You choose which ones to add.</p></div></section>`;
@@ -1405,15 +1418,15 @@ function scrReleases() {
 function scrRelease(id) {
   const r = RELEASES.find(x => x.id === id); if (!r) return scrNotFound();
   const rd = readiness(r);
-  const head = pageHead(`${esc(r.name)} ${readyBadge(rd.status)}`, `${esc(r.desc)} Target ${fmtDate(r.target)}.`, can('release.manage') ? `<button class="btn" data-action="toast" data-msg="Bugs linked">${ic.plus}Link bugs</button><button class="btn" data-action="toast" data-msg="Run linked">${ic.plus}Link run</button>${r.status !== 'released' ? `<button class="btn primary" data-action="toast" data-msg="Marked as released">Mark released</button>` : ''}` : '', `<a href="${o('/releases')}">Releases</a> / ${esc(r.name)}`);
+  const head = pageHead(`${esc(r.name)} ${readyBadge(rd.status)}`, `${esc(r.desc)} Target ${fmtDate(r.target)}.`, can('release.manage') ? `<button class="btn" data-action="toast" data-msg="Bugs linked">${ic.plus}Link bugs</button><button class="btn" data-action="toast" data-msg="Run linked">${ic.plus}Link run</button>${r.status !== 'released' ? `<button class="btn primary" data-action="toast" data-msg="Marked as released">Mark released</button>` : ''}<button class="btn ghost" data-action="toast" data-msg="Release saved">Edit release</button>${r.status !== 'released' ? `<button class="btn ghost icon-btn" data-action="toast" data-msg="Release deleted" aria-label="Delete release">${ic.trash}</button>` : ''}` : '', `<a href="${o('/releases')}">Releases</a> / ${esc(r.name)}`);
   const g = stateGate('detail', 'this release'); if (g) return head + g;
   const ai = S.state === 'ai';
   const bugs = BUGS.filter(b => b.release === r.id);
   return head + `<div class="split"><div class="stack">
       <section class="panel"><div class="panel-head"><h2>Why it is ${readinessName[rd.status].toLowerCase()}</h2></div><div class="panel-body"><ul style="margin:0;padding-left:20px">${rd.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
         <p class="xs muted" style="margin-top:12px">Blocked: any open Critical bug, or pass rate under 80%. At risk: open High bugs, pass rate under 95%, runs in progress, or no runs.</p></div></section>
-      <section class="panel"><div class="panel-head"><h2>Linked bugs</h2><span class="small muted">${rd.open} open of ${bugs.length}</span></div>${bugs.length ? bugTable(bugs, false) : '<div class="panel-body muted">No bugs linked.</div>'}</section>
-      <section class="panel"><div class="panel-head"><h2>Linked test runs</h2></div>${rd.runs.length ? `<div class="table-wrap"><table class="t stackable"><tbody>${rd.runs.map(x => `<tr><td class="title-cell"><a href="${o('/runs/' + x.id)}">${esc(x.name)}</a></td><td data-label="Status">${x.status === 'completed' ? 'Completed' : 'In progress'}</td><td data-label="Progress" style="width:36%">${progressBar(runCounts(x))}</td><td data-label="Pass rate"><b>${passRate([x])}%</b></td></tr>`).join('')}</tbody></table></div>` : '<div class="panel-body muted">No runs linked.</div>'}</section>
+      <section class="panel"><div class="panel-head"><h2>Linked bugs</h2><span class="small muted">${rd.open} open of ${bugs.length}</span></div>${bugs.length ? bugTable(bugs, false, can('release.manage')) : '<div class="panel-body muted">No bugs linked.</div>'}</section>
+      <section class="panel"><div class="panel-head"><h2>Linked test runs</h2></div>${rd.runs.length ? `<div class="table-wrap"><table class="t stackable"><tbody>${rd.runs.map(x => `<tr><td class="title-cell"><a href="${o('/runs/' + x.id)}">${esc(x.name)}</a></td><td data-label="Status">${x.status === 'completed' ? 'Completed' : 'In progress'}</td><td data-label="Progress" style="width:36%">${progressBar(runCounts(x))}</td><td data-label="Pass rate"><b>${passRate([x])}%</b></td>${can('release.manage') ? `<td data-label="Actions"><button class="btn ghost sm" data-action="toast" data-msg="${esc(x.name)} removed from the release">Remove</button></td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="panel-body muted">No runs linked.</div>'}</section>
     </div>
     <aside class="stack">${summaryPanel(r, rd, ai)}</aside></div>`;
 }
@@ -1437,7 +1450,7 @@ function summaryPanel(r, rd, ai) {
 function scrReports() {
   const head = pageHead('Reports', 'Trends and workload for the period you choose.', `<button class="btn" data-action="toast" data-msg="Exported to CSV">${ic.download}Export CSV</button>`);
   const g = stateGate('readout', 'reports'); if (g) return head + g;
-  const filters = `<div class="panel" style="margin-bottom:16px"><div class="filters" style="border:0"><label class="sr-only" for="rp-p">Project</label><select class="select" id="rp-p"><option>All projects</option>${PROJECTS.map(p => `<option>${p.name}</option>`).join('')}</select><label class="sr-only" for="rp-r">Date range</label><select class="select" id="rp-r"><option>Last 30 days</option><option>Last 7 days</option><option>Last 90 days</option><option>Custom range</option></select><span class="small muted">17 Oct to 16 Nov 2026</span></div></div>`;
+  const filters = `<div class="panel" style="margin-bottom:16px"><div class="filters" style="border:0"><label class="sr-only" for="rp-p">Project</label><select class="select" id="rp-p"><option>All projects</option>${PROJECTS.map(p => `<option>${p.name}</option>`).join('')}</select><label class="sr-only" for="rp-r">Date range</label><select class="select" id="rp-r"><option>Last 30 days</option><option>Last 7 days</option><option>Last 90 days</option><option>Custom range</option></select>${parse().params.get('range') === 'custom' ? '<label class="sr-only" for="rp-f">From</label><input class="input" id="rp-f" type="date" value="2026-10-17" style="width:auto"><label class="sr-only" for="rp-t">To</label><input class="input" id="rp-t" type="date" value="2026-11-16" style="width:auto">' : ''}<span class="small muted">17 Oct to 16 Nov 2026</span></div></div>`;
   if (S.state === 'empty') return head + filters + emptyBox(ic.report, 'No activity in this range', 'No bugs were opened or closed and no runs were executed between these dates. Pick a wider range.', `<button class="btn" data-action="toast" data-msg="Range set to last 90 days">Show last 90 days</button>`);
   const open = BUGS.filter(b => OPEN(b.status));
   const devs = USERS.filter(u => u.role === 'developer');
@@ -1501,6 +1514,7 @@ function scrSettings() {
     <section class="panel"><div class="panel-head"><h2>Change password</h2></div><div class="panel-body stack">
       <div class="field"><label for="p-cur">Current password</label><input class="input" id="p-cur" type="password"></div>
       <div class="field"><label for="p-new">New password</label><input class="input" id="p-new" type="password" aria-describedby="p-new-h"><div class="hint" id="p-new-h">At least 10 characters with a letter and a number. Other sessions are signed out.</div></div>
+      <div class="field"><label for="p-confirm">Confirm new password</label><input class="input" id="p-confirm" type="password"></div>
       <div><button class="btn" data-action="toast" data-msg="Password changed">Change password</button></div></div></section></div>`;
   return head + tabBar + body;
 }
@@ -1578,10 +1592,12 @@ document.addEventListener('click', e => {
     'confirm-delete': () => openModal(`<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="del-h" data-stop><div class="modal-head"><h2 id="del-h">Delete this bug?</h2></div><div class="modal-body"><p>The bug disappears from lists and boards. It stays in the audit log.</p></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" style="background:var(--danger);border-color:var(--danger)" data-action="deleted">Delete bug</button></div></div></div>`),
     deleted: () => { closeModal(); toast('Bug deleted'); go(o('/bugs')); },
     'close-modal': () => closeModal(),
+    'edit-start': () => { editing = el.dataset.what; render(); const f = document.querySelector('#e-title, #e-desc, #e-step-1, #e-exp'); if (f) f.focus(); },
+    'edit-cancel': () => { editing = ''; render(); },
     invite: () => openModal(inviteDialog(false)),
     'create-invite': () => { closeModal(); openModal(inviteDialog(true)); },
     'new-project': () => openModal(`<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="np-h" data-stop><div class="modal-head"><h2 id="np-h">New project</h2><button class="btn ghost icon-btn" data-action="close-modal" aria-label="Close">${ic.x}</button></div><div class="modal-body"><div class="field"><label for="np-n">Name</label><input class="input" id="np-n" placeholder="Warehouse scanner"></div><div class="field"><label for="np-k">Key</label><input class="input mono" id="np-k" placeholder="WHS" maxlength="6"><div class="hint">2 to 6 capital letters. Used in bug ids like WHS-1.</div></div><p class="hint">Environments dev, staging and prod are added for you.</p></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="close-modal">Create project</button></div></div></div>`),
-    'new-run': () => openModal(`<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="nr-h" data-stop><div class="modal-head"><h2 id="nr-h">New test run</h2><button class="btn ghost icon-btn" data-action="close-modal" aria-label="Close">${ic.x}</button></div><div class="modal-body"><div class="field"><label for="nr-n">Name</label><input class="input" id="nr-n" value="WEB 2.4.0 regression, round 2"></div><div class="grid g2"><div class="field"><label for="nr-e">Environment</label><select class="select" id="nr-e"><option>staging</option><option>prod</option><option>dev</option></select></div><div class="field"><label for="nr-r">Release</label><select class="select" id="nr-r"><option>WEB 2.4.0</option><option>None</option></select></div></div><fieldset class="field" style="border:0;padding:0;margin:0"><legend class="label">Suites to include</legend>${SUITES.filter(s => s.project === 'p1').map(s => `<label class="checkbox"><input type="checkbox" checked>${s.name} (${CASES.filter(c => c.suite === s.id).length} cases)</label>`).join('')}</fieldset></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="start-run">Start run with 9 cases</button></div></div></div>`),
+    'new-run': () => openModal(`<div class="modal-back" data-action="close-modal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="nr-h" data-stop><div class="modal-head"><h2 id="nr-h">New test run</h2><button class="btn ghost icon-btn" data-action="close-modal" aria-label="Close">${ic.x}</button></div><div class="modal-body"><div class="field"><label for="nr-p">Project</label><select class="select" id="nr-p">${PROJECTS.map(p => `<option>${p.name}</option>`).join('')}</select></div><div class="field"><label for="nr-n">Name</label><input class="input" id="nr-n" value="WEB 2.4.0 regression, round 2"></div><div class="grid g2"><div class="field"><label for="nr-e">Environment</label><select class="select" id="nr-e"><option>staging</option><option>prod</option><option>dev</option></select></div><div class="field"><label for="nr-r">Release</label><select class="select" id="nr-r"><option>WEB 2.4.0</option><option>None</option></select></div></div><fieldset class="field" style="border:0;padding:0;margin:0"><legend class="label">Suites to include</legend>${SUITES.filter(s => s.project === 'p1').map(s => `<label class="checkbox"><input type="checkbox" checked>${s.name} (${CASES.filter(c => c.suite === s.id).length} cases)</label>`).join('')}</fieldset></div><div class="modal-foot"><button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="start-run">Start run with 9 cases</button></div></div></div>`),
     'start-run': () => { closeModal(); toast('Run started'); go(o('/runs/R-31')); },
     view: () => { F.view = el.dataset.view; refreshBugs(); },
     sort: () => { F.sort = el.dataset.sort; refreshBugs(); },
@@ -1602,6 +1618,7 @@ document.addEventListener('submit', e => {
   if (a === 'org-setup') go(o('/dashboard'));
   if (a === 'accept-invite') go(o('/dashboard'));
   if (a === 'comment') { toast('Comment posted'); e.target.reset(); }
+  if (a === 'edit-title' || a === 'edit-desc' || a === 'edit-labels' || a === 'edit-steps' || a === 'edit-ea') { editing = ''; render(); toast({ 'edit-title': 'Title updated', 'edit-desc': 'Description updated', 'edit-labels': 'Labels updated', 'edit-steps': 'Steps updated', 'edit-ea': 'Results updated' }[a]); }
   if (a === 'submit-bug') { toast('WEB-143 saved'); go(o('/bugs/WEB-142')); }
 });
 document.addEventListener('input', e => {

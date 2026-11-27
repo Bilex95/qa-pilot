@@ -43,6 +43,30 @@ def count_recent(db: Session, action: str, *, email: str, minutes: int) -> int:
     return int(db.scalar(stmt) or 0)
 
 
+def count_recent_by_ip(db: Session, action: str, *, ip: str, minutes: int) -> int:
+    """Events of one kind from one client address, for throttling endpoints that have no account to count against."""
+    since = utcnow() - timedelta(minutes=minutes)
+    stmt = select(func.count()).select_from(AuditEvent).where(
+        and_(AuditEvent.action == action, AuditEvent.created_at >= since, AuditEvent.ip == ip))
+    return int(db.scalar(stmt) or 0)
+
+
+def target_user_id(event: AuditEvent) -> uuid.UUID | None:
+    """The person an event is about, when it is about a person: `data.user_id` (member role changes and removals) or the
+    entity of a user event (reset links). Returns None for anything else, including a value that is not a user id."""
+    raw = (event.data or {}).get("user_id") or (event.entity_id if event.entity_type == "user" else None)
+    try:
+        return uuid.UUID(str(raw)) if raw else None
+    except ValueError:
+        return None
+
+
+def actor_ids(db: Session, org_id: uuid.UUID) -> list[uuid.UUID]:
+    """Everyone who has at least one event in this workspace, including people removed since (for the Audit log filter)."""
+    stmt = select(AuditEvent.actor_id).where(AuditEvent.org_id == org_id, AuditEvent.actor_id.is_not(None)).distinct()
+    return list(db.scalars(stmt))
+
+
 def list_events(
     db: Session,
     org_id: uuid.UUID,

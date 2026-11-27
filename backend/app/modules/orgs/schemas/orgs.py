@@ -83,7 +83,20 @@ class InvitationOut(ApiModel):
 
 
 class InvitationCreatedOut(InvitationOut):
-    invite_url: str = Field(description="Shown once. Send it yourself; no email is sent (D-011).")
+    invite_url: str = Field(description="Shown once. Send it yourself; no email is sent (D-011). The token is in the "
+                                        "URL fragment (`/invite#<token>`), which browsers never send to a server.")
+
+
+class InvitationTokenIn(ApiModel):
+    """The token goes in the body, never in the path or the query (BL-014, D-055)."""
+
+    token: Annotated[str, StringConstraints(min_length=10, max_length=200)]
+
+
+class PasswordResetLinkOut(ApiModel):
+    reset_url: str = Field(description="Shown once. Send it to the person yourself; no email is sent (D-045). The token is "
+                                       "in the URL fragment (`/reset-password#<token>`).")
+    expires_at: datetime
 
 
 class InvitationPreviewOut(ApiModel):

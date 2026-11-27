@@ -16,6 +16,8 @@ ignore = ["B008"]  # FastAPI dependencies use calls in defaults
 "**/tests/**" = ["S101", "S105", "S106", "E741"]
 "conftest.py" = ["S101", "S105", "S106"]
 "app/seed/**" = ["S311"]
+"app/seed/domain_data.py" = ["E501"]  # one bug per line in the data tables
+"app/modules/ai/tests/*.py" = ["E501"]  # dense assertion lines, one check per line
 
 [tool.mypy]
 python_version = "3.12"

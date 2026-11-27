@@ -1,6 +1,6 @@
 # I-12 Seed data for every scenario
 
-**Stage:** 4 | **Batch:** 4E (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4E (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 

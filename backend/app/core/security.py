@@ -37,12 +37,22 @@ def verify_password(password_hash: str | None, password: str) -> bool:
         return False
 
 
-def create_access_token(user_id: uuid.UUID) -> tuple[str, int]:
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
+
+def to_microseconds(moment: datetime) -> int:
+    """Whole microseconds since the epoch, exact (no float rounding)."""
+    return (moment.astimezone(UTC) - _EPOCH) // timedelta(microseconds=1)
+
+
+def create_access_token(user_id: uuid.UUID, now: datetime | None = None) -> tuple[str, int]:
+    """`iat` is whole seconds (JWT standard). `iat_us` is the same moment in microseconds: a password change is compared
+    with it, so a token issued in the same second as the change is judged by the exact order (D-055)."""
     s = get_settings()
-    now = datetime.now(UTC)
+    now = now or datetime.now(UTC)
     ttl = s.access_token_minutes * 60
-    payload = {"sub": str(user_id), "type": "access", "iat": now, "exp": now + timedelta(seconds=ttl),
-               "jti": uuid.uuid4().hex}
+    payload = {"sub": str(user_id), "type": "access", "iat": now, "iat_us": to_microseconds(now),
+               "exp": now + timedelta(seconds=ttl), "jti": uuid.uuid4().hex}
     return jwt.encode(payload, s.jwt_secret, algorithm=s.jwt_algorithm), ttl
 
 

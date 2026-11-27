@@ -7,6 +7,8 @@ export class ApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly details: unknown = {},
+    /** The X-Request-ID response header, so an error screen can show it for support (locked error state). */
+    public readonly requestId?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -28,7 +30,8 @@ export async function toApiError(res: Response): Promise<ApiError> {
   try {
     const body = (await res.json()) as { error?: { code?: string; message?: string; details?: unknown } };
     const e = body.error ?? {};
-    return new ApiError(res.status, e.code ?? "http_error", e.message ?? "Request failed.", e.details ?? {});
+    return new ApiError(res.status, e.code ?? "http_error", e.message ?? "Request failed.", e.details ?? {},
+      res.headers.get("X-Request-ID") ?? undefined);
   } catch {
     return new ApiError(res.status, "network_error", "The server did not respond. Check your connection and try again.");
   }

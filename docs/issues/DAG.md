@@ -103,30 +103,30 @@ flowchart LR
 
 | Issue | Status | Commit |
 |---|---|---|
-| I-01 | Planned | |
-| I-02 | Planned | |
-| I-03 | Planned | |
-| I-04 | Planned | |
-| I-05 | Planned | |
-| I-06 | Planned | |
-| I-07 | Planned | |
-| I-08 | Planned | |
-| I-09 | Planned | |
-| I-10 | Planned | |
-| I-11 | Planned | |
-| I-12 | Planned | |
-| I-13 | Planned | |
-| I-23 | Planned | |
-| I-24 | Planned | |
-| I-14 | Planned | |
-| I-15 | Planned | |
-| I-16 | Planned | |
-| I-17 | Planned | |
-| I-18 | Planned | |
-| I-19 | Planned | |
-| I-20 | Planned | |
-| I-21 | Planned | |
-| I-22 | Planned | |
+| I-01 | Done | 53bbea8, 82dd4f7 |
+| I-02 | Done | 8199178, 4ef3d92, 9749945, 30a3319, ce8a9d2 |
+| I-03 | Done | 6b29711, 9668292, 1a9d8c2, d2fee0b |
+| I-04 | Done | 540f6f3, 145a648, 8cc30f2, 232333d |
+| I-05 | Done | e3cb3fd, 3cfb1a9 |
+| I-06 | Done | 20bfae6, c23000f, 0c960f3, c19719f |
+| I-07 | Done | 98428b5, 6c272ce |
+| I-08 | Done | 6e17626, cf32393 |
+| I-09 | Done | da1af30, a263b32, db24cde, a6f7d31, 710a3d9 |
+| I-10 | Done | 870e66a, 1e226d1, d4d776d, 111036e |
+| I-11 | Done | e1de501, 2e5b26c, 816a2a2, 305989c, 8002211, 5aab6b0 |
+| I-12 | Done | d78eac7, b26f723 |
+| I-13 | Done | c9b2db2, 49569c4, e3b3bd0, 1739e8e, d155cf4 |
+| I-23 | Done | cfb9ba1, 1af7cee, adc120f, b236d13, 3552994, 2555f2c, 190ba90, 7438afd |
+| I-24 | Done | 562a4be, c1d81e2, b7db68a, af5eaec |
+| I-14 | Done | 0103b8a |
+| I-15 | Done | 34ece25, 08ec901, 96e6ffb |
+| I-16 | Done | 18f10f2, f782b7e |
+| I-17 | Done | 6cd798d |
+| I-18 | Done | b3c8911 |
+| I-19 | Done | ef55723 |
+| I-20 | Done | see PROGRESS |
+| I-21 | Done | see PROGRESS |
+| I-22 | Done | see PROGRESS |
 
 ## Requirement coverage
 

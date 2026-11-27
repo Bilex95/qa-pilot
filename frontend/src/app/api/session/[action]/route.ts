@@ -4,6 +4,7 @@
  *   POST /api/session/login     {email, password}
  *   POST /api/session/register  {full_name, email, password}
  *   POST /api/session/refresh
+ *   POST /api/session/password  {current_password, new_password}  (Authorization: Bearer <access token>)
  *   POST /api/session/logout    (Authorization: Bearer <access token>)
  */
 import { NextResponse, type NextRequest } from "next/server";
@@ -70,6 +71,26 @@ async function refresh(req: NextRequest): Promise<NextResponse> {
   return withCookie(NextResponse.json({ access_token: tokens.access_token, expires_in: tokens.expires_in }), tokens.refresh_token);
 }
 
+/**
+ * Change password (API-016, D-055). The backend revokes every refresh token, including the one in this browser's cookie,
+ * and answers with a fresh pair for this device. The cookie is replaced here, so the person stays signed in.
+ */
+async function changePassword(req: NextRequest): Promise<NextResponse> {
+  const auth = req.headers.get("authorization");
+  if (!auth) return envelope(401, "unauthorized", "Sign in to continue.");
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return envelope(422, "validation_error", "Send a JSON body.");
+  }
+  const res = await backend("/auth/me/password", { method: "POST", body: JSON.stringify(body), headers: { Authorization: auth },
+    userAgent: req.headers.get("user-agent") });
+  if (!res.ok) return passError(res);
+  const tokens = (await res.json()) as Tokens;
+  return withCookie(NextResponse.json({ access_token: tokens.access_token, expires_in: tokens.expires_in }), tokens.refresh_token);
+}
+
 async function logout(req: NextRequest): Promise<NextResponse> {
   const token = req.cookies.get(COOKIE)?.value;
   const auth = req.headers.get("authorization");
@@ -90,6 +111,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ action: st
         return await issue("/auth/register", req);
       case "refresh":
         return await refresh(req);
+      case "password":
+        return await changePassword(req);
       case "logout":
         return await logout(req);
       default:

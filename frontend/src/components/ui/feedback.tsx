@@ -62,6 +62,30 @@ export function ErrorState({ what, onRetry, requestId }: { what: string; onRetry
   );
 }
 
+/** Loading state of a filtered table, as in the locked design (filter blocks, then rows of four cells). */
+export function TableSkeleton({ rows = 7 }: { rows?: number }) {
+  return (
+    <div role="status" aria-live="polite">
+      <span className="sr-only">Loading</span>
+      <div className="panel" aria-hidden="true">
+        <div className="filters">
+          <div className="sk" style={{ height: 34, width: 260 }} />
+          <div className="sk" style={{ height: 34, width: 140 }} />
+          <div className="sk" style={{ height: 34, width: 140 }} />
+        </div>
+        {Array.from({ length: rows }, (_, i) => (
+          <div key={i} style={{ display: "flex", gap: 16, padding: "14px 16px", borderBottom: "1px solid var(--line)" }}>
+            <div className="sk" style={{ height: 12, width: 60 }} />
+            <div className="sk" style={{ height: 12, flex: 1 }} />
+            <div className="sk" style={{ height: 12, width: 80 }} />
+            <div className="sk" style={{ height: 12, width: 100 }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function LoadingPanel({ rows = 6 }: { rows?: number }) {
   return (
     <div role="status" aria-live="polite">

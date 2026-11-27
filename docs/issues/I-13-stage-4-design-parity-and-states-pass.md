@@ -1,6 +1,6 @@
 # I-13 Stage 4 design parity and states pass
 
-**Stage:** 4 | **Batch:** 4F (see [DAG](DAG.md)) | **Status:** Planned
+**Stage:** 4 | **Batch:** 4F (see [DAG](DAG.md)) | **Status:** Done
 
 ## Goal / requirement IDs
 
@@ -24,7 +24,7 @@ Requirements: REQ-055, REQ-056, REQ-057, REQ-058
 
 ## UI states and committed screenshots
 
-Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge 73d7fcc, tag `stage-2-approved`).
+Locked design: `design/reference/approved.html`. Screenshots are committed on `main` (merge d5c5e14, tag `stage-2-approved`).
 
 * **SCR-05**: [`dashboard-default-desktop.png`](../../design/screenshots/dashboard-default-desktop.png), [`dashboard-default-mobile.png`](../../design/screenshots/dashboard-default-mobile.png), [`dashboard-empty-desktop.png`](../../design/screenshots/dashboard-empty-desktop.png), [`dashboard-loading-desktop.png`](../../design/screenshots/dashboard-loading-desktop.png), [`dashboard-error-desktop.png`](../../design/screenshots/dashboard-error-desktop.png)
 * **SCR-06**: [`projects-default-desktop.png`](../../design/screenshots/projects-default-desktop.png), [`projects-default-mobile.png`](../../design/screenshots/projects-default-mobile.png), [`projects-empty-desktop.png`](../../design/screenshots/projects-empty-desktop.png), [`projects-loading-desktop.png`](../../design/screenshots/projects-loading-desktop.png), [`projects-error-desktop.png`](../../design/screenshots/projects-error-desktop.png)
