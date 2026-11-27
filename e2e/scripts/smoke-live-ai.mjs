@@ -2,7 +2,9 @@
 // pass or fail, response time and token use from the usage rows (and cost when you give it the prices).
 //
 // Before you run it:
-//   1. Put the key in the repository's .env (gitignored, never commit it): ANTHROPIC_API_KEY=... and AI_PROVIDER=anthropic
+//   1. Put the key in the repository's .env (gitignored, never commit it): AI_PROVIDER=anthropic|gemini|openai_compatible and that provider's
+//      key and model (ANTHROPIC_API_KEY, GEMINI_API_KEY and GEMINI_MODEL, or OPENAI_COMPAT_BASE_URL, _API_KEY and _MODEL). For a clean
+//      measure of one provider leave AI_FALLBACK_PROVIDER empty; the report shows who answered each call (and any retry or fallback).
 //   2. Recreate the backend so it reads .env:  docker compose up -d --force-recreate backend
 //   3. Baseline seed loaded (the script signs in as seeded people; SEED_USER_PASSWORD is read from .env, never printed).
 // Run (stack up):
@@ -27,6 +29,9 @@ if (!PW) { console.error('SEED_USER_PASSWORD missing'); process.exit(2); }
 const PRICE_IN = Number(process.env.PRICE_IN_PER_MTOK);
 const PRICE_OUT = Number(process.env.PRICE_OUT_PER_MTOK);
 const HAS_PRICE = Number.isFinite(PRICE_IN) && Number.isFinite(PRICE_OUT) && PRICE_IN > 0 && PRICE_OUT > 0;
+
+// The providers that call a real model. The mock and the local duplicate check never count as a pass (BL-037).
+const REAL_PROVIDERS = ['anthropic', 'gemini', 'openai_compatible'];
 
 const RUN = Date.now();
 const KEY = `Z${[...String(RUN).slice(-4)].map((c) => String.fromCharCode(65 + Number(c))).join('')}`;
@@ -76,8 +81,8 @@ async function main() {
   const T = state.token;
 
   const summary = (await api(`${O()}/ai/usage/summary`, { token: T })).json;
-  if (summary?.provider !== 'anthropic') {
-    console.error(`smoke-live-ai: STOPPED, the provider is "${summary?.provider}", not "anthropic". Set AI_PROVIDER=anthropic and ANTHROPIC_API_KEY in .env and recreate the backend. No call was made.`);
+  if (!REAL_PROVIDERS.includes(summary?.provider)) {
+    console.error(`smoke-live-ai: STOPPED, the provider is "${summary?.provider}", not a real one (${REAL_PROVIDERS.join(', ')}). Set AI_PROVIDER and its key in .env and recreate the backend. No call was made.`);
     process.exit(2);
   }
   if (!summary.ai_enabled) { console.error('smoke-live-ai: STOPPED, AI is switched off for the workspace (Settings). No call was made.'); process.exit(2); }
@@ -108,24 +113,30 @@ async function main() {
     const usage = (await api(`${O()}/ai/usage?feature=${feature}&page_size=1`, { token: T })).json?.items?.[0];
     const fresh = usage && new Date(usage.created_at).getTime() >= started - 2000;
     const fellBack = r.json?.fallback === true || usage?.status === 'fallback';
-    const pass = r.status === 200 && fresh && usage.status === 'ok' && !fellBack;
+    // A pass needs a fresh usage row written by a REAL provider, status ok, and no manual fallback text (D-085: the row says who answered)
+    // The duplicate check is the local TF-IDF comparison by design (D-013): its row says `local` and it never calls a model
+    const answeredBy = !!usage && (feature === 'duplicates' ? usage.provider === 'local' : REAL_PROVIDERS.includes(usage.provider));
+    const pass = r.status === 200 && fresh && usage.status === 'ok' && !fellBack && answeredBy;
     const inTok = fresh ? usage.input_tokens : 0;
     const outTok = fresh ? usage.output_tokens : 0;
     const cost = HAS_PRICE ? (inTok * PRICE_IN + outTok * PRICE_OUT) / 1_000_000 : null;
-    rows.push({ label, pass, http: r.status, status: fresh ? usage.status : 'no usage row', ms: fresh ? usage.latency_ms : wall, inTok, outTok, cost });
+    rows.push({ label, pass, http: r.status, status: fresh ? usage.status : 'no usage row', ms: fresh ? usage.latency_ms : wall, inTok, outTok, cost,
+      who: fresh ? `${usage.provider}${usage.attempts > 1 ? ` x${usage.attempts}` : ''}${usage.fallback_reason ? ` (${usage.fallback_reason})` : ''}` : '-' });
   }
 
   console.log('');
-  console.log('feature              result  http  usage status   time ms  in tok  out tok  cost USD');
+  console.log('feature              result  http  usage status   time ms  in tok  out tok  cost USD  answered by');
   for (const x of rows) {
-    console.log(`${x.label.padEnd(20)} ${(x.pass ? 'PASS' : 'FAIL').padEnd(7)} ${String(x.http).padEnd(5)} ${String(x.status).padEnd(14)} ${String(x.ms).padEnd(8)} ${String(x.inTok).padEnd(7)} ${String(x.outTok).padEnd(8)} ${x.cost === null ? 'n/a' : x.cost.toFixed(5)}`);
+    console.log(`${x.label.padEnd(20)} ${(x.pass ? 'PASS' : 'FAIL').padEnd(7)} ${String(x.http).padEnd(5)} ${String(x.status).padEnd(14)} ${String(x.ms).padEnd(8)} ${String(x.inTok).padEnd(7)} ${String(x.outTok).padEnd(8)} ${(x.cost === null ? 'n/a' : x.cost.toFixed(5)).padEnd(9)} ${x.who}`);
   }
+  const msSorted = rows.map((x) => x.ms).sort((a, b) => a - b);
+  log(`pass ${rows.filter((x) => x.pass).length} of ${rows.length}; time per call: median ${msSorted[Math.floor(msSorted.length / 2)]} ms, slowest ${msSorted[msSorted.length - 1]} ms`);
   const totIn = rows.reduce((s, x) => s + x.inTok, 0);
   const totOut = rows.reduce((s, x) => s + x.outTok, 0);
   console.log('');
   log(`total tokens: ${totIn} in, ${totOut} out${HAS_PRICE ? `, about ${((totIn * PRICE_IN + totOut * PRICE_OUT) / 1_000_000).toFixed(5)} USD` : ' (set PRICE_IN_PER_MTOK and PRICE_OUT_PER_MTOK for a cost; the usage rows hold tokens, not money)'}`);
   const failed = rows.filter((x) => !x.pass);
-  log(failed.length ? `FAIL: ${failed.map((x) => x.label).join(', ')}` : 'PASS: all six features answered from the real provider');
+  log(failed.length ? `FAIL: ${failed.map((x) => x.label).join(', ')}` : 'PASS: the five model features answered from the real provider; the duplicate check ran locally by design');
   process.exitCode = failed.length ? 1 : 0;
 }
 
