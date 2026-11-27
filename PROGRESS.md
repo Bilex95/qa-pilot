@@ -1,22 +1,29 @@
 # Progress
 
-**Current stage:** 4 Core features
-**Branch:** stage/4-core-features
+**Current stage:** Stages 4 to 6 complete and merged (tag `stage-4-approved`)
+**Branch:** main (work on short branches and PRs; the stage branch `stage/4-core-features` is merged)
 **Remote:** origin = github.com/Bilex95/qa-pilot (PUBLIC since 2026-11-25, keep it free of secrets and personal data). Push only with `bash scripts/safe-push.sh` (branch or `--tag`). Gate flow per D-034, D-036.
 
 ## Resume here (updated 2026-11-26, token rules in CLAUDE.md)
 
-**State:** Stage 5 is complete (I-14 to I-19, D-076) and green in CI (run 45699676339 on 59ec77d). I-20 (journeys, keyboard pass, nine widths, D-077) is done and green in CI: run 45790781486 on 1b91943, all 16 jobs success, including the new "critical journeys and keyboard" job and the 320, 375, 412 and 430 px layout shard (no layout findings). The run journey's original expectation (failed step 2, title "fails at step 2") passed there, so the app was right; the earlier local failure was timing on the slow dev server, and the check is restored to step 2 with a wait for the prefill notice. The npm cache race in the frontend Docker build (flaky `npm ci` ENOENT in the cache, seen on 9f8164b) is fixed by one retry after `npm cache clean --force` in `frontend/Dockerfile` (44227dc; a per build cache would not help, the collision is inside one install). Archive repo Actions are disabled. I-21 (security, tenancy review, performance, D-078) is done and green in CI: run 45796890360 on f8352f9 and run 45794835089 on 44227dc, both success. No leak or product decision found; BL-034 holds two gaps (no general API rate limit, latency measured only at 68 bugs). I-22 (docs, parity report, final QA report, D-079) is done: docs only, 61 of 63 requirements Verified, 2 Partial (REQ-057, REQ-062). BL-035 large seed latency is done (D-080). D-081: REQ-057 is now Verified by the automated accessibility tree check `check-a11y-tree.mjs` (not a real screen reader; the manual NVDA pass is still pending), so the report totals are 63 Verified, 0 Partial; the board drag flake (run 45848926329) was a product race plus a test race, both fixed. Next: the final review.
+**State:** Stages 4 to 6 (I-01 to I-22, BL-035) are merged to `main` through PR #1 (merge commit 751226d, 2026-11-27) and tagged `stage-4-approved`. CI was green on the last commit (386903d, push run 45854759323 and pull request run 45854772504). Final QA report: 63 requirements, 63 Verified (REQ-057 by the automated accessibility tree check, D-081), 0 Partial, 0 Not done; `docs/reviews/FINAL_QA_REPORT.md`. Decisions up to D-081 are in `docs/DECISIONS.md`.
+
+**Open items:**
+* **BL-037 (must do before real users touch the AI features):** the live AI smoke test, `e2e/scripts/smoke-live-ai.mjs`, needs an API key in `.env`. Until it passes, REQ-042 is Verified for the mock provider only.
+* **Manual NVDA pass (REQ-057):** pending, by the product owner. The automated check is Playwright's accessibility tree, not a real screen reader.
+* **BL-034:** general API rate limit, before public exposure.
+* **BL-036:** dashboard latency grows faster than the data (316 ms at 20,000 bugs, target 500 ms); EXPLAIN ANALYZE and an index or pre-aggregation before a larger customer. Not blocking.
+* **BL-038:** run `check-a11y-tree.mjs` at 390 px as well as 1440 px.
+* **CodeQL:** run once on `main` after the merge (workflow run 45969464233); the result goes in the next entry.
+* **Read block:** `blockReadsOutsideWorkingDirectories` is false in the user settings but a session still enforced it on 2026-11-26; check `/status` after a fresh restart.
 
 **Scripts:** `scripts/gate.ps1` runs all local gates in one command (`-Only frontend|python`, output in `.gate\gate-*.txt`). `bash scripts/wait-ci.sh <commit>` reports a CI run once it finishes (no polling). The read block outside the working directory is set to false in `C:\Users\HP\.claude\settings.json` (backup: `settings.json.bak`) but a session still enforced it on 2026-11-26; its source is not found in any settings file (check `/status` after a fresh restart). Permission rule fixes (git push main/master deny, git -C ask rules) are in the machine local `.claude/settings.local.json`; the context-mode plugin is being turned off for this project there.
 
 **Brief rules for issue-builder:** 44 px targets, prototype first; reseed before Newman; no `&` joining in PowerShell; repo is public (no secrets or personal data); use gate.ps1 and wait-ci.sh.
 
-**CodeQL:** appears and can be run manually only after stage 4 is merged to main; run it once then.
-
 **Repository (D-073, 2026-11-25):** history rewritten to the noreply address and published to the new repo `Bilex95/qa-pilot`, now PUBLIC (the old one is the private `Bilex95/qa-pilot-archive`, kept). Actions are enabled again, `safe-push.sh` accepts a public repo, CLAUDE.md updated. Backups: `C:\Users\HP\Documents\qa-pilot-backup\`. All repository security settings are confirmed through the API (private vulnerability reporting, outside contributor approval, secret scanning and push protection, Dependabot, `main` protection, read only workflow token). **CI is green on the production frontend build** (`docker-compose.ci.yml`): run 45663790977 on fd61d32 (after the generator checkbox fix, D-073) and run 45680964795 on 684b723 (I-18), every job success, layout shards about 6 minutes each. Measured on the production build: first request of /login, dashboard, projects and bugs 0.015 to 0.098 s, first sign in to the dashboard heading 0.4 s (the old dev build needed up to 90 s). Not yet seen in CI: the runs for the I-19 commits (ef55723, 0ddb366, 82e6888); check once with `gh run list --branch stage/4-core-features --limit 3`. A public scan (gitleaks, all 191 commits scanned of 194 reachable) found only 4 test values, no real secret.
 
-**Then:** Stage 6 (I-20 to I-22), one final review. Each issue goes to the `issue-builder` subagent (CLAUDE.md "Token rules"). No full browser suites locally; stop only if CI stays red after two honest fixes of the same failure.
+**Next:** nothing is queued. Pick from the open items above or the backlog. Work goes to the `issue-builder` subagent (CLAUDE.md "Token rules"); no full browser suites locally; stop only if CI stays red after two honest fixes of the same failure.
 
 ## Done
 * Older entries (Stages 0 to 3, I-01 to I-12 and I-13 detail): `docs/progress-archive.md`.
