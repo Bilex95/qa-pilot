@@ -155,7 +155,7 @@ function CaseForm({ existing, suites, projects }: { existing?: TestCaseFull; sui
     onSuccess: async () => {
       await refresh();
       toast(`Case ${existing?.key} deleted`);
-      router.push(`/o/${encodeURIComponent(org.slug)}/tests?suite=${encodeURIComponent(String(existing?.suite_id))}`);
+      router.push(`/o/${encodeURIComponent(org.slug)}/tests${existing?.suite_id ? `?suite=${encodeURIComponent(existing.suite_id)}` : ""}`);
     },
     onError: (err) => {
       setDeleting(false);
