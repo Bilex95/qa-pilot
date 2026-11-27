@@ -87,7 +87,7 @@ export function UsagePage() {
       <>
         {head}
         <EmptyState icon={IconMeter} title="No AI requests yet"
-          action={<Link className="btn" href={`/o/${org.slug}/bugs/new`}><IconSpark />Try the Bug Writer</Link>}>
+          action={<Link className="btn" href={`/o/${encodeURIComponent(org.slug)}/bugs/new`}><IconSpark />Try the Bug Writer</Link>}>
           When people use the Bug Writer, triage, duplicate check, test case generator or release summary, each request appears here.
         </EmptyState>
       </>

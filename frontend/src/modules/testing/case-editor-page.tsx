@@ -39,7 +39,7 @@ export function CaseEditorPage({ caseRef }: { caseRef?: string }) {
   const suites = useSuites();
   const projects = useProjectList();
   const existing = useTestCase(caseRef);
-  const back = `/o/${org.slug}/tests`;
+  const back = `/o/${encodeURIComponent(org.slug)}/tests`;
 
   if (caseRef) {
     if (existing.isPending || suites.isPending) return <><Header title="Test case" /><LoadingPanel rows={8} /></>;
@@ -82,7 +82,7 @@ function Header({ title }: { title: string }) {
   const org = useOrg();
   return (
     <>
-      <div className="crumbs"><Link href={`/o/${org.slug}/tests`}>Test suites</Link> / {title}</div>
+      <div className="crumbs"><Link href={`/o/${encodeURIComponent(org.slug)}/tests`}>Test suites</Link> / {title}</div>
       <div className="page-head"><div className="grow"><h1>{title}</h1></div></div>
     </>
   );
@@ -129,7 +129,7 @@ function CaseForm({ existing, suites, projects }: { existing?: TestCaseFull; sui
       await refresh();
       toast(`Case ${saved.key} saved`);
       if (existing) setValues(valuesFromCase(saved)); // saved steps now have ids
-      else router.replace(`/o/${org.slug}/tests/cases/${saved.key}`);
+      else router.replace(`/o/${encodeURIComponent(org.slug)}/tests/cases/${encodeURIComponent(saved.key)}`);
     },
     onError: (err) => {
       const f = isApiError(err) ? err.fieldErrors() : {};
@@ -155,7 +155,7 @@ function CaseForm({ existing, suites, projects }: { existing?: TestCaseFull; sui
     onSuccess: async () => {
       await refresh();
       toast(`Case ${existing?.key} deleted`);
-      router.push(`/o/${org.slug}/tests?suite=${existing?.suite_id}`);
+      router.push(`/o/${encodeURIComponent(org.slug)}/tests?suite=${encodeURIComponent(String(existing?.suite_id))}`);
     },
     onError: (err) => {
       setDeleting(false);
@@ -174,7 +174,7 @@ function CaseForm({ existing, suites, projects }: { existing?: TestCaseFull; sui
   }
 
   const errorCount = Object.keys(errors).length;
-  const crumbTarget = `/o/${org.slug}/tests${suiteOf ? `?suite=${suiteOf.id}` : ""}`;
+  const crumbTarget = `/o/${encodeURIComponent(org.slug)}/tests${suiteOf ? `?suite=${encodeURIComponent(suiteOf.id)}` : ""}`;
   // A saved case moves only inside its project (D-052); a new case can go into any suite
   const suiteGroups = existing ? groups.filter((g) => g.suites.some((s) => s.project_id === existing.project_id)) : groups;
 

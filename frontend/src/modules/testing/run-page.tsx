@@ -44,7 +44,7 @@ export function RunPage({ runRef }: { runRef: string }) {
   const run = useRun(runRef);
   const crumbs = (
     <div className="crumbs">
-      <Link href={`/o/${org.slug}/runs`}>Test runs</Link> / <span className="mono" style={{ fontSize: "1em" }}>{runRef.toUpperCase()}</span>
+      <Link href={`/o/${encodeURIComponent(org.slug)}/runs`}>Test runs</Link> / <span className="mono" style={{ fontSize: "1em" }}>{runRef.toUpperCase()}</span>
     </div>
   );
   if (run.isPending) {
@@ -75,7 +75,7 @@ export function RunPage({ runRef }: { runRef: string }) {
               <IconAlert className="big" />
               <h2>Run {runRef.toUpperCase()} was not found</h2>
               <p>It may belong to a workspace you are not a member of.</p>
-              <Link className="btn primary" href={`/o/${org.slug}/runs`}>Back to test runs</Link>
+              <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/runs`}>Back to test runs</Link>
             </div>
           </div>
         ) : (
@@ -160,7 +160,7 @@ function Loaded({ run, runRef, crumbs }: { run: Run; runRef: string; crumbs: Rea
           <h1 style={{ overflowWrap: "anywhere" }}>{run.name}</h1>
           <p>
             {runStatusName(run.status)}{envText ? <> on {envText}</> : null}.
-            {run.release_id ? <> Linked to <Link href={`/o/${org.slug}/releases/${run.release_id}`}>{run.release_name}</Link>.</> : null} Started by {run.created_by_name}.
+            {run.release_id ? <> Linked to <Link href={`/o/${encodeURIComponent(org.slug)}/releases/${encodeURIComponent(run.release_id)}`}>{run.release_name}</Link>.</> : null} Started by {run.created_by_name}.
           </p>
         </div>
         {can(org.role, "run.complete") && running ? (
@@ -290,12 +290,12 @@ function CaseRow({ run, result: r, open, canRun, onToggle, onSet }: {
                 <p className="small">
                   Linked {r.bugs.length === 1 ? "bug" : "bugs"}:{" "}
                   {r.bugs.map((b, i) => (
-                    <span key={b.id}>{i ? ", " : ""}<Link className="mono" href={`/o/${org.slug}/bugs/${b.key}`}>{b.key}</Link></span>
+                    <span key={b.id}>{i ? ", " : ""}<Link className="mono" href={`/o/${encodeURIComponent(org.slug)}/bugs/${encodeURIComponent(b.key)}`}>{b.key}</Link></span>
                   ))}
                 </p>
               ) : canBug ? (
                 <div className="row">
-                  <Link className="btn primary" href={`/o/${org.slug}/bugs/new?from_run=${run.id}&result=${r.id}`}>
+                  <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/bugs/new?from_run=${encodeURIComponent(run.id)}&result=${encodeURIComponent(r.id)}`}>
                     <IconBug />
                     Create bug from failed step
                   </Link>

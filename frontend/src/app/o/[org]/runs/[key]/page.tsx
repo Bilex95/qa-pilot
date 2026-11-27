@@ -12,6 +12,6 @@ const KEY = /^R-\d{1,9}$/i;
 export default function Page() {
   const { key } = useParams<{ key: string }>();
   const org = useOrg();
-  if (!KEY.test(key)) return <NotFoundScreen home={`/o/${org.slug}/dashboard`} />;
+  if (!KEY.test(key)) return <NotFoundScreen home={`/o/${encodeURIComponent(org.slug)}/dashboard`} />;
   return <RunPage runRef={key} />;
 }

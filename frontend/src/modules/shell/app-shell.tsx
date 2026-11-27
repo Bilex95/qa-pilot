@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     setNavPath(pathname);
     setNavOpen(false);
   }
-  const base = `/o/${org.slug}`;
+  const base = `/o/${encodeURIComponent(org.slug)}`;
   const section = pathname.slice(base.length + 1).split("/")[0] ?? "";
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <DropdownMenuLabel>Your workspaces</DropdownMenuLabel>
               {me?.memberships.map((m) => (
                 <DropdownMenuItem key={m.org.id} asChild>
-                  <Link href={`/o/${m.org.slug}/dashboard`}>
+                  <Link href={`/o/${encodeURIComponent(m.org.slug)}/dashboard`}>
                     {m.org.name}
                     {m.org.slug === org.slug ? " (current)" : ""}
                   </Link>

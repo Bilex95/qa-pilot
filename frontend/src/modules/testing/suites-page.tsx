@@ -65,7 +65,7 @@ export function SuitesPage() {
     },
   });
 
-  const newCaseHref = `/o/${org.slug}/tests/cases/new${selected ? `?suite=${selected.id}` : ""}`;
+  const newCaseHref = `/o/${encodeURIComponent(org.slug)}/tests/cases/new${selected ? `?suite=${encodeURIComponent(selected.id)}` : ""}`;
   const newSuite = (
     <Button onClick={() => setCreating(true)}>
       <IconPlus />
@@ -95,7 +95,7 @@ export function SuitesPage() {
     <>
       {creating ? (
         <SuiteDialog defaultProjectId={selected?.project_id} onClose={() => setCreating(false)}
-          onSaved={(s) => { setCreating(false); router.replace(`${pathname}?suite=${s.id}`); }} />
+          onSaved={(s) => { setCreating(false); router.replace(`${pathname}?suite=${encodeURIComponent(s.id)}`); }} />
       ) : null}
       {editing ? <SuiteDialog suite={editing} onClose={() => setEditing(null)} onSaved={() => setEditing(null)} /> : null}
       {deleting ? (
@@ -138,7 +138,7 @@ export function SuitesPage() {
   const data = cases.data;
   const first = (page - 1) * PAGE_SIZE + 1;
   const last = data ? first + data.items.length - 1 : 0;
-  const goPage = (next: number) => router.push(`${pathname}?suite=${selected.id}${next > 1 ? `&page=${next}` : ""}`);
+  const goPage = (next: number) => router.push(`${pathname}?suite=${encodeURIComponent(selected.id)}${next > 1 ? `&page=${next}` : ""}`);
 
   return (
     <>

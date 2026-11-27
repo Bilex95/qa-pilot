@@ -25,7 +25,7 @@ function OrgGate({ children }: { children: ReactNode }) {
     // Same screen whether the workspace does not exist or belongs to someone else (D-003)
     return (
       <main id="main" className="content">
-        <NotFoundScreen home={me.memberships[0] ? `/o/${me.memberships[0].org.slug}/dashboard` : "/onboarding/org"} />
+        <NotFoundScreen home={me.memberships[0] ? `/o/${encodeURIComponent(me.memberships[0].org.slug)}/dashboard` : "/onboarding/org"} />
       </main>
     );
   }

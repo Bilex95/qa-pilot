@@ -32,7 +32,7 @@ export function OrgSetupForm() {
     try {
       const created = await unwrap(api.POST("/api/v1/orgs", { body: parsed.data }));
       await qc.invalidateQueries({ queryKey: ["me"] });
-      router.replace(`/o/${created.org.slug}/dashboard`);
+      router.replace(`/o/${encodeURIComponent(created.org.slug)}/dashboard`);
     } catch (err) {
       setPending(false);
       if (isApiError(err, "slug_taken")) setErrors({ slug: `This address is taken. Try ${parsed.data.slug}-team.` });

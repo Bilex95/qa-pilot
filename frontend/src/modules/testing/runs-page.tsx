@@ -47,7 +47,7 @@ export function RunsPage() {
     </div>
   );
   const dialog = creating ? (
-    <NewRunDialog onClose={() => setCreating(false)} onCreated={(run) => router.push(`/o/${org.slug}/runs/${run.key}`)} />
+    <NewRunDialog onClose={() => setCreating(false)} onCreated={(run) => router.push(`/o/${encodeURIComponent(org.slug)}/runs/${encodeURIComponent(run.key)}`)} />
   ) : null;
 
   if (runs.isPending) return <>{head}<TableSkeleton /></>;
@@ -90,7 +90,7 @@ export function RunsPage() {
               {data.items.map((r) => (
                 <tr key={r.id}>
                   <td className="title-cell">
-                    <Link href={`/o/${org.slug}/runs/${r.key}`} style={{ overflowWrap: "anywhere" }}>{r.name}</Link>
+                    <Link href={`/o/${encodeURIComponent(org.slug)}/runs/${encodeURIComponent(r.key)}`} style={{ overflowWrap: "anywhere" }}>{r.name}</Link>
                     <div className="xs muted mono">{r.key}</div>
                   </td>
                   <td data-label="Status"><span className={`badge ${r.status === "completed" ? "st-verified" : "st-in_progress"}`}>{runStatusName(r.status)}</span></td>

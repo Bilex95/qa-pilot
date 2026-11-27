@@ -26,7 +26,7 @@ export function CasesTable({ items }: { items: CaseSummary[] }) {
             <tr key={c.id}>
               <td data-label="ID" className="no-label"><span className="mono muted">{c.key}</span></td>
               <td className="title-cell">
-                <Link href={`/o/${org.slug}/tests/cases/${c.key}`} style={{ overflowWrap: "anywhere" }}>{c.title}</Link>
+                <Link href={`/o/${encodeURIComponent(org.slug)}/tests/cases/${encodeURIComponent(c.key)}`} style={{ overflowWrap: "anywhere" }}>{c.title}</Link>
               </td>
               <td data-label="Type"><span className="type-tag">{CASE_TYPE_NAME[c.case_type] ?? c.case_type}</span></td>
               <td data-label="Priority"><PriorityTag priority={c.priority} /></td>

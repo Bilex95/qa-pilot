@@ -28,7 +28,7 @@ export function ProjectPage({ projectKey }: { projectKey: string }) {
   const project = useProjectByKey(projectKey);
   const crumbs = (label: string) => (
     <div className="crumbs">
-      <Link href={`/o/${org.slug}/projects`}>Projects</Link> / <span className="mono" style={{ fontSize: "1em" }}>{label}</span>
+      <Link href={`/o/${encodeURIComponent(org.slug)}/projects`}>Projects</Link> / <span className="mono" style={{ fontSize: "1em" }}>{label}</span>
     </div>
   );
   if (project.isPending) {
@@ -61,7 +61,7 @@ export function ProjectPage({ projectKey }: { projectKey: string }) {
             <IconAlert className="big" />
             <h2>This project was not found</h2>
             <p>It may have been deleted, or it belongs to a workspace you are not a member of.</p>
-            <Link className="btn primary" href={`/o/${org.slug}/projects`}>Back to projects</Link>
+            <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/projects`}>Back to projects</Link>
           </div>
         </div>
       </>
@@ -103,7 +103,7 @@ function FailedDetail({ crumbs, listed, error }: { crumbs: React.ReactNode; list
       {listed ? <ProjectHead project={listed} onEdit={() => setEditing(true)} /> : null}
       {error}
       {editing && listed ? (
-        <ProjectDialog project={listed} onClose={() => setEditing(false)} onSaved={() => setEditing(false)} onArchived={() => router.push(`/o/${org.slug}/projects`)} />
+        <ProjectDialog project={listed} onClose={() => setEditing(false)} onSaved={() => setEditing(false)} onArchived={() => router.push(`/o/${encodeURIComponent(org.slug)}/projects`)} />
       ) : null}
     </>
   );
@@ -132,7 +132,7 @@ function Loaded({ project, crumbs }: { project: ProjectDetail; crumbs: React.Rea
       <div className="split">
         <div className="stack">
           <section className="panel">
-            <div className="panel-head"><h2>Recently updated bugs</h2><Link className="small" href={`/o/${org.slug}/bugs?project=${project.id}`}>All bugs</Link></div>
+            <div className="panel-head"><h2>Recently updated bugs</h2><Link className="small" href={`/o/${encodeURIComponent(org.slug)}/bugs?project=${encodeURIComponent(project.id)}`}>All bugs</Link></div>
             {bugs.isPending ? <div className="panel-body">{[90, 70, 100].map((w, i) => <div key={i} className="sk sk-line" style={{ width: `${w}%` }} />)}</div>
               : bugs.isError ? <div className="panel-body"><ErrorState what="the bugs" onRetry={() => void bugs.refetch()} requestId={isApiError(bugs.error) ? bugs.error.requestId : undefined} /></div>
               : bugs.data.items.length ? <BugTable items={bugs.data.items} sort="-updated_at" onSort={() => undefined} />
@@ -141,12 +141,12 @@ function Loaded({ project, crumbs }: { project: ProjectDetail; crumbs: React.Rea
                   <IconBug className="big" />
                   <h2>No bugs in {project.name}</h2>
                   <p>Bugs reported for this project will show up here.</p>
-                  {can(org.role, "bug.create") && !archived ? <Link className="btn primary" href={`/o/${org.slug}/bugs/new`}><IconPlus />Report bug</Link> : null}
+                  {can(org.role, "bug.create") && !archived ? <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/bugs/new`}><IconPlus />Report bug</Link> : null}
                 </div>
               )}
           </section>
           <section className="panel">
-            <div className="panel-head"><h2>Latest test runs</h2><Link className="small" href={`/o/${org.slug}/runs`}>All runs</Link></div>
+            <div className="panel-head"><h2>Latest test runs</h2><Link className="small" href={`/o/${encodeURIComponent(org.slug)}/runs`}>All runs</Link></div>
             {runs.isPending ? <div className="panel-body">{[90, 70].map((w, i) => <div key={i} className="sk sk-line" style={{ width: `${w}%` }} />)}</div>
               : runs.isError ? <div className="panel-body small muted">Could not load the runs.</div>
               : runs.data.items.length ? (
@@ -155,7 +155,7 @@ function Loaded({ project, crumbs }: { project: ProjectDetail; crumbs: React.Rea
                     <tbody>
                       {runs.data.items.map((r) => (
                         <tr key={r.id}>
-                          <td className="title-cell"><Link href={`/o/${org.slug}/runs/${r.key}`} style={{ overflowWrap: "anywhere" }}>{r.name}</Link></td>
+                          <td className="title-cell"><Link href={`/o/${encodeURIComponent(org.slug)}/runs/${encodeURIComponent(r.key)}`} style={{ overflowWrap: "anywhere" }}>{r.name}</Link></td>
                           <td data-label="Progress" style={{ width: "40%" }}><ProgressBar counts={r.counts} /></td>
                           <td data-label="Pass rate">{rateText(r.pass_rate ?? null)}</td>
                         </tr>
@@ -201,7 +201,7 @@ function Loaded({ project, crumbs }: { project: ProjectDetail; crumbs: React.Rea
         </div>
       </div>
       {dialog === "edit" ? (
-        <ProjectDialog project={project} onClose={() => setDialog(null)} onSaved={() => setDialog(null)} onArchived={() => router.push(`/o/${org.slug}/projects`)} />
+        <ProjectDialog project={project} onClose={() => setDialog(null)} onSaved={() => setDialog(null)} onArchived={() => router.push(`/o/${encodeURIComponent(org.slug)}/projects`)} />
       ) : null}
       {dialog === "components" ? <ComponentsDialog project={project} components={project.components} onClose={() => setDialog(null)} /> : null}
       {dialog === "environments" ? <EnvironmentsDialog project={project} environments={project.environments} onClose={() => setDialog(null)} /> : null}

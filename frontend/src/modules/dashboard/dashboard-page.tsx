@@ -59,7 +59,7 @@ export function DashboardPage() {
       <>
         {head}
         <EmptyState icon={IconDash} title="Nothing to measure yet"
-          action={can(org.role, "project.create") ? <Link className="btn primary" href={`/o/${org.slug}/projects`}><IconPlus />Create a project</Link> : undefined}>
+          action={can(org.role, "project.create") ? <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/projects`}><IconPlus />Create a project</Link> : undefined}>
           Create a project and report the first bug. Charts fill in as your team works.
         </EmptyState>
       </>
@@ -78,7 +78,7 @@ export function DashboardPage() {
         </div>
         <div className={d.sla_breached ? "alert" : ""}>
           <div className="num">{d.sla_breached}</div><div className="cap">Past SLA</div>
-          <div className="sub"><Link href={`/o/${org.slug}/bugs?status=any&sla=1${project ? `&project=${project}` : ""}`}>See breaching bugs</Link></div>
+          <div className="sub"><Link href={`/o/${encodeURIComponent(org.slug)}/bugs?status=any&sla=1${project ? `&project=${encodeURIComponent(project)}` : ""}`}>See breaching bugs</Link></div>
         </div>
         <div>
           <div className="num">{d.pass_rate.last_7_days === null ? "n/a" : `${d.pass_rate.last_7_days}%`}</div>
@@ -121,7 +121,7 @@ export function DashboardPage() {
           </div>
         </section>
         <section className="panel">
-          <div className="panel-head"><h2>Release readiness</h2><Link className="small" href={`/o/${org.slug}/releases`}>All releases</Link></div>
+          <div className="panel-head"><h2>Release readiness</h2><Link className="small" href={`/o/${encodeURIComponent(org.slug)}/releases`}>All releases</Link></div>
           {d.releases.length === 0 ? <div className="panel-body small muted">No releases in progress.</div> : (
             <div className="table-wrap">
               <table className="t">
@@ -129,7 +129,7 @@ export function DashboardPage() {
                   {d.releases.map((r) => (
                     <tr key={r.id}>
                       <td className="title-cell">
-                        <Link href={`/o/${org.slug}/releases/${r.id}`} style={{ overflowWrap: "anywhere" }}>{r.name}</Link>
+                        <Link href={`/o/${encodeURIComponent(org.slug)}/releases/${encodeURIComponent(r.id)}`} style={{ overflowWrap: "anywhere" }}>{r.name}</Link>
                         <div className="xs muted">Target {r.target_date ? formatDate(r.target_date) : "not set"}</div>
                       </td>
                       <td><ReadinessBadge readiness={r.readiness} /></td>

@@ -52,7 +52,7 @@ export function SettingsPage() {
             id={`settings-tab-${t.key}`}
             aria-selected={t.key === active.key}
             aria-controls="settings-panel"
-            onClick={() => router.replace(`${pathname}?tab=${t.key}`, { scroll: false })}
+            onClick={() => router.replace(`${pathname}?tab=${encodeURIComponent(t.key)}`, { scroll: false })}
           >
             {t.label}
           </button>

@@ -10,6 +10,6 @@ import { useOrg } from "@/modules/shell/org-context";
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const org = useOrg();
-  if (!isReleaseId(id)) return <NotFoundScreen home={`/o/${org.slug}/dashboard`} />;
+  if (!isReleaseId(id)) return <NotFoundScreen home={`/o/${encodeURIComponent(org.slug)}/dashboard`} />;
   return <ReleasePage releaseId={id} />;
 }

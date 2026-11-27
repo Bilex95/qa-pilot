@@ -36,7 +36,7 @@ export function BugDetailPage({ bugRef }: { bugRef: string }) {
   const bug = useBug(bugRef);
   const crumbs = (
     <div className="crumbs">
-      <Link href={`/o/${org.slug}/bugs`}>Bugs</Link> / <span className="mono" style={{ fontSize: "1em" }}>{bugRef.toUpperCase()}</span>
+      <Link href={`/o/${encodeURIComponent(org.slug)}/bugs`}>Bugs</Link> / <span className="mono" style={{ fontSize: "1em" }}>{bugRef.toUpperCase()}</span>
     </div>
   );
 
@@ -70,7 +70,7 @@ export function BugDetailPage({ bugRef }: { bugRef: string }) {
               <IconAlert className="big" />
               <h2>Bug {bugRef.toUpperCase()} was not found</h2>
               <p>It may have been deleted, or it belongs to a workspace you are not a member of.</p>
-              <Link className="btn primary" href={`/o/${org.slug}/bugs`}>Back to bugs</Link>
+              <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/bugs`}>Back to bugs</Link>
             </div>
           </div>
         ) : (
@@ -119,11 +119,11 @@ function Loaded({ bug, crumbs }: { bug: BugDetail; crumbs: React.ReactNode }) {
     onSuccess: () => {
       toast(`${bug.key} deleted`);
       refresh(bug.id, { activity: false, bug: false });
-      router.push(`/o/${org.slug}/bugs`);
+      router.push(`/o/${encodeURIComponent(org.slug)}/bugs`);
     },
     onError: (err) => {
       setConfirmDelete(false);
-      if (isApiError(err, "not_found")) router.push(`/o/${org.slug}/bugs`);
+      if (isApiError(err, "not_found")) router.push(`/o/${encodeURIComponent(org.slug)}/bugs`);
       else toast("Could not delete the bug. Try again.", "error");
     },
   });
