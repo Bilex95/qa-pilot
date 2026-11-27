@@ -132,14 +132,14 @@ try {
   await fillStable(admPage, '#m-q', 'amara@lumenfreight.test');
   const own = admPage.locator('table.t tbody tr', { hasText: 'amara@lumenfreight.test' });
   await own.waitFor();
-  check((await own.locator('button[aria-label^="Reset the password of"]').count()) === 0, 'your own row must not offer Reset password');
+  check((await own.locator('button[aria-label^="Reset password for"]').count()) === 0, 'your own row must not offer Reset password');
   log('your own row has no Reset password action');
 
   step = 'a person in two workspaces is refused';
   await fillStable(admPage, '#m-q', 'priya@lumenfreight.test');
   const shared = admPage.locator('table.t tbody tr', { hasText: 'priya@lumenfreight.test' });
   await shared.waitFor();
-  await shared.locator('button[aria-label^="Reset the password of"]').click();
+  await shared.locator('button[aria-label^="Reset password for"]').click();
   await admPage.waitForSelector('.modal');
   await admPage.click('.modal button:has-text("Create reset link")');
   await admPage.waitForSelector('.modal .banner.error');
@@ -151,7 +151,7 @@ try {
   step = 'the Org Admin creates the reset link';
   await fillStable(admPage, '#m-q', EMAIL);
   await row.waitFor();
-  await row.locator('button[aria-label^="Reset the password of"]').click();
+  await row.locator('button[aria-label^="Reset password for"]').click();
   await admPage.waitForSelector('.modal');
   check((await admPage.innerText('.modal')).includes('signed out on every device'), 'the confirmation should say that the person is signed out everywhere');
   await admPage.click('.modal button:has-text("Create reset link")');
