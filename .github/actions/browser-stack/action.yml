@@ -28,6 +28,19 @@ runs:
         node-version: "22"
         cache: npm
         cache-dependency-path: e2e/package-lock.json
+    - name: Drop the Microsoft apt source (BL-043)
+      # `playwright install --with-deps` runs `apt-get update`. The runner image ships an apt source for packages.microsoft.com, and on
+      # 2026-11-27 that host answered 403 ("The repository ... is no longer signed") for three runs, so the update failed with exit code 100
+      # and the browser jobs died before they tested anything. Chromium's system libraries come from the Ubuntu archive only, so the
+      # Microsoft source is not needed here: remove it, and print what was removed so the log shows the step did its work.
+      shell: bash
+      run: |
+        files="$(grep -rlE 'packages\.microsoft\.com' /etc/apt/sources.list.d/ 2>/dev/null || true)"
+        if [ -z "$files" ]; then echo "no apt source for packages.microsoft.com on this runner, nothing to remove"; fi
+        for f in $files; do
+          echo "removing apt source $f"
+          sudo rm -f "$f"
+        done
     - name: Install Playwright
       shell: bash
       working-directory: e2e
