@@ -2,6 +2,8 @@
 the sleep are injected so nothing waits. No live call, no real key."""
 
 import logging
+from datetime import UTC, datetime, timedelta
+from email.utils import format_datetime
 from typing import Literal
 
 import httpx
@@ -21,7 +23,7 @@ from app.modules.ai.infrastructure.http_json import _retry_after
 from app.modules.ai.infrastructure.mock import MockProvider
 from app.modules.ai.infrastructure.models import AIUsage
 from app.modules.ai.infrastructure.openai_compatible_provider import OpenAICompatibleProvider
-from app.modules.ai.tests.test_ai_rest_providers import KEY, Fake, openai_body
+from app.modules.ai.tests.test_ai_rest_providers import KEY, Fake, call, make_compat, make_gemini, openai_body
 
 VALID = '{"severity": "high", "summary": "Checkout total is wrong"}'
 
@@ -119,12 +121,62 @@ def test_two_503s_go_to_the_secondary_which_answers_with_the_reason_and_three_at
     assert (p.calls, s.calls) == (2, 1) and len(c.sleeps) == 1
 
 
-@pytest.mark.parametrize(("header", "waited"), [(3, 3.0), (0, 0.0), (99, 5.0)])
-def test_a_429_with_retry_after_waits_that_long_capped_at_five_seconds(header, waited) -> None:
+@pytest.mark.parametrize(("header", "waited"), [(3, 3.0), (0, 0.0), (2.5, 2.5), (12, 12.0), (30, 30.0)])
+@pytest.mark.parametrize("reason", ["http_429", "http_503"])
+def test_a_retry_after_is_waited_exactly_with_no_five_second_cap(header, waited, reason) -> None:
     c = Clock()
-    p, s = Scripted("gemini", c, unavailable("http_429", header), VALID), Scripted("openai_compatible", c)
+    p, s = Scripted("gemini", c, unavailable(reason, header), VALID), Scripted("openai_compatible", c)
     got = go(chain(c, p, s))
     assert c.sleeps == [waited] and got.attempts == 2 and got.provider == "gemini"
+
+
+def test_a_wait_that_just_fits_the_budget_is_honoured() -> None:
+    c = Clock()
+    p, s = Scripted("gemini", c, unavailable("http_429", 50), VALID, takes=0), Scripted("openai_compatible", c)
+    got = go(chain(c, p, s))  # 0 elapsed + 50 wait + 10 reserve = 60, which fits
+    assert c.sleeps == [50.0] and got.provider == "gemini" and got.attempts == 2
+
+
+def test_a_wait_that_does_not_fit_the_budget_skips_the_retry_and_falls_back_at_once() -> None:
+    c = Clock()
+    p, s = Scripted("gemini", c, unavailable("http_429", 51)), Scripted("openai_compatible", c, VALID)
+    got = go(chain(c, p, s))  # 51 + 10 > 60
+    assert c.sleeps == [] and (p.calls, s.calls) == (1, 1)
+    assert (got.provider, got.attempts, got.fallback_reason) == ("openai_compatible", 2, "http_429")
+
+
+def test_the_elapsed_time_counts_against_the_budget_when_deciding_to_wait() -> None:
+    c = Clock()
+    p, s = Scripted("gemini", c, unavailable("http_503", 20), takes=35), Scripted("openai_compatible", c, VALID)
+    got = go(chain(c, p, s))  # 35 elapsed + 20 + 10 > 60
+    assert c.sleeps == [] and got.provider == "openai_compatible" and got.fallback_reason == "http_503"
+
+
+def test_a_wait_that_does_not_fit_with_no_other_provider_raises_with_the_reason() -> None:
+    c = Clock()
+    p = Scripted("gemini", c, unavailable("http_503", 90))
+    with pytest.raises(ProviderError) as caught:
+        go(lone(c, p))
+    assert c.sleeps == [] and p.calls == 1 and caught.value.reasons == "http_503"
+
+
+def test_the_default_backoff_applies_when_there_is_no_retry_after() -> None:
+    c = Clock()
+    p, s = Scripted("gemini", c, unavailable("http_429", None), VALID), Scripted("openai_compatible", c)
+    go(chain(c, p, s))
+    assert c.sleeps == [1.5]
+
+
+@pytest.mark.parametrize(("retry_after", "seconds"), [(None, 30.0), (5, 30.0), (30, 30.0), (60, 60.0), (120, 120.0), (500, 120.0)])
+def test_the_cool_down_is_the_longer_of_thirty_seconds_and_retry_after_capped_at_120(retry_after, seconds) -> None:
+    c = Clock()
+    p = Scripted("gemini", c, unavailable("http_429", retry_after), unavailable("http_429", retry_after))
+    s = Scripted("openai_compatible", c, VALID, VALID)
+    provider = chain(c, p, s)
+    go(provider)
+    state = provider._state  # the secondary answered without taking time, so the clock is still where the primary failed
+    assert state.down_until == pytest.approx(c.now + seconds)
+    assert state.cooling(state.down_until - 0.01) and not state.cooling(state.down_until + 0.01)
 
 
 def test_two_429s_fall_back() -> None:
@@ -315,10 +367,55 @@ def test_a_permanent_http_error_on_a_fake_server_warns_without_the_key_or_url(db
         o.close()
 
 
-@pytest.mark.parametrize(("value", "seconds"), [("3", 3.0), (" 2.5 ", 2.5), ("0", 0.0), ("", None), ("soon", None), ("-4", None),
-                                                  ("Wed, 21 Oct 2026 07:28:00 GMT", None)])
-def test_retry_after_is_read_as_plain_seconds_only(value, seconds) -> None:
-    assert _retry_after(httpx.Response(429, headers={"retry-after": value} if value else {})) == seconds
+@pytest.fixture
+def fake():  # type: ignore[no-untyped-def]
+    f = Fake()
+    yield f
+    f.close()
+
+
+NOW = datetime(2026, 10, 21, 7, 28, 0, tzinfo=UTC)
+
+
+@pytest.mark.parametrize(("value", "seconds"), [
+    ("3", 3.0), (" 2.5 ", 2.5), ("0", 0.0), ("12.75", 12.75), ("", None), ("soon", None), ("-4", None), ("-0.5", None), ("1e3", None),
+    ("nan", None), ("inf", None), ("Wed, 21 Oct 2026 07:28:30 GMT", 30.0), ("Wed, 21 Oct 2026 07:30:00 GMT", 120.0),
+    ("Wed, 21 Oct 2026 07:27:00 GMT", None), ("Wed, 99 Foo 2026 07:28:00 GMT", None)])
+def test_retry_after_is_read_as_seconds_or_an_http_date(value, seconds) -> None:
+    assert _retry_after(httpx.Response(429, headers={"retry-after": value} if value else {}), NOW) == seconds
+
+
+def test_a_missing_retry_after_header_is_none() -> None:
+    assert _retry_after(httpx.Response(503)) is None
+
+
+@pytest.mark.parametrize("status", [429, 500, 502, 503, 504])
+@pytest.mark.parametrize(("header", "seconds"), [("7", 7.0), ("1.5", 1.5), ("junk", None), ("-3", None)])
+def test_a_fake_server_retry_after_is_parsed_without_leaking_the_value(fake, status, header, seconds, caplog) -> None:
+    fake.headers = {"Retry-After": header}
+    fake.script = [(status, b"slow down", 0)]
+    with caplog.at_level(logging.DEBUG), pytest.raises(ProviderUnavailable) as caught:
+        call(make_compat(fake.url))
+    assert caught.value.retry_after == seconds and caught.value.reason == f"http_{status}"
+    assert header not in str(caught.value) and f"retry-after: {header}" not in caplog.text.lower()
+
+
+def test_a_fake_server_http_date_is_parsed(fake) -> None:
+    future = format_datetime(datetime.now(UTC) + timedelta(seconds=40), usegmt=True)
+    fake.headers = {"Retry-After": future}
+    fake.script = [(429, b"x", 0)]
+    with pytest.raises(ProviderUnavailable) as caught:
+        call(make_gemini(fake.url))
+    assert caught.value.retry_after is not None and 30 <= caught.value.retry_after <= 40
+    assert future not in str(caught.value)
+
+
+def test_the_header_is_ignored_on_a_permanent_error(fake) -> None:
+    fake.headers = {"Retry-After": "9"}
+    fake.script = [(404, b"gone", 0)]
+    with pytest.raises(ProviderError) as caught:
+        call(make_gemini(fake.url))
+    assert not isinstance(caught.value, ProviderUnavailable)
 
 
 # A single provider (D-087) -----------------------------------------------------------------------------------------------------------------

@@ -38,6 +38,7 @@ class Fake:
     def __init__(self) -> None:
         self.script: list[tuple[int, bytes, float]] = []
         self.requests: list[dict] = []
+        self.headers: dict[str, str] = {}  # extra response headers on every answer (for example Retry-After)
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -51,6 +52,8 @@ class Fake:
                     self.send_response(status)
                     self.send_header("content-type", "application/json")
                     self.send_header("content-length", str(len(body)))
+                    for name, value in outer.headers.items():
+                        self.send_header(name, value)
                     self.end_headers()
                     self.wfile.write(body)
                 except OSError:
@@ -136,6 +139,14 @@ def test_the_openai_compatible_request_uses_bearer_json_object_and_the_schema_in
     assert req["body"]["response_format"] == {"type": "json_object"} and req["body"]["model"] == "model-test"
     assert req["body"]["messages"][0] == {"role": "system", "content": "Be brief."}
     assert '"severity"' in req["body"]["messages"][1]["content"]
+
+
+def test_every_rest_provider_forwards_max_tokens(fake) -> None:
+    fake.script = [(200, gemini_body(VALID), 0), (200, openai_body(VALID), 0)]
+    call(make_gemini(fake.url))
+    call(make_compat(fake.url))
+    assert fake.requests[0]["body"]["generationConfig"]["maxOutputTokens"] == 256
+    assert fake.requests[1]["body"]["max_tokens"] == 256
 
 
 @pytest.mark.parametrize(("make", "body"), CASES)
