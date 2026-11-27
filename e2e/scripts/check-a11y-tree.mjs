@@ -222,6 +222,13 @@ try {
   f = await page.evaluate(focusState);
   if (f.lost) found('Release page', 'focus', 'focus is lost on the body after opening a release');
   await audit(page, 'Release page');
+
+  // 6. Members: the row buttons carry an aria-label next to visible text ("Reset password", "Remove"), the case the Label in Name rule found (BL-042)
+  await page.goto(`${BASE}/o/lumen/members`);
+  await page.getByRole('heading', { level: 1 }).first().waitFor();
+  await page.locator('button[aria-label^="Reset password for"]').first().waitFor();
+  await page.waitForLoadState('networkidle');
+  await audit(page, 'Members');
   await ctx.close();
 } catch (e) {
   crashed = true;
