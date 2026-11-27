@@ -1,5 +1,5 @@
 """A primary provider, usually with a second one behind it (D-085). The second may be absent (D-087): then it only retries once.
-A 429 or 5xx answer is retried once on the same provider after a short backoff;
+A 429 or 5xx answer is retried once on the same provider after the Retry-After value, or a short backoff, if that still fits the budget;
 a timeout or a connection error goes straight to the next provider; a permanent failure (bad key, retired model) goes to the next provider
 and is logged once as a warning for the workspace admin. The whole request has a 60 second budget, and a primary that just failed is
 skipped for 30 seconds. Invalid JSON is not an availability problem and never reaches this class (service.run handles it). No key, URL or
@@ -24,7 +24,9 @@ BUDGET_SECONDS = 60.0
 COOLDOWN_SECONDS = 30.0
 BACKOFF_BASE_SECONDS = 1.5
 BACKOFF_JITTER_SECONDS = 0.5
-BACKOFF_CAP_SECONDS = 5.0
+BACKOFF_CAP_SECONDS = 5.0  # caps the default backoff only; a Retry-After value is honoured exactly (D-088)
+ATTEMPT_RESERVE_SECONDS = 10.0  # a retry needs elapsed + wait + this to fit in the budget
+COOLDOWN_MAX_SECONDS = 120.0
 WARN_EVERY_SECONDS = 600.0
 REASONS_MAX = 24
 
@@ -46,9 +48,10 @@ class ChainState:
         with self.lock:
             return now < self.down_until
 
-    def mark_down(self, now: float, reason: str) -> None:
+    def mark_down(self, now: float, reason: str, retry_after: float | None = None) -> None:
+        """Skip the primary for the longer of 30 s and its Retry-After, at most 120 s (D-088)."""
         with self.lock:
-            self.down_until = now + COOLDOWN_SECONDS
+            self.down_until = now + min(max(COOLDOWN_SECONDS, retry_after or 0.0), COOLDOWN_MAX_SECONDS)
             self.last_reason = reason
 
     def mark_up(self) -> None:
@@ -84,8 +87,9 @@ class FallbackProvider:
         self.model = primary.model
 
     def _delay(self, error: ProviderUnavailable) -> float:
+        """Exactly the Retry-After value when the provider sent one (D-088), else the default backoff."""
         if error.retry_after is not None:
-            return min(error.retry_after, BACKOFF_CAP_SECONDS)
+            return error.retry_after
         return min(BACKOFF_BASE_SECONDS + self._jitter() * BACKOFF_JITTER_SECONDS, BACKOFF_CAP_SECONDS)
 
     def _warn_permanent(self, failed: AIProvider, error: ProviderError, other: AIProvider | None) -> None:
@@ -112,7 +116,10 @@ class FallbackProvider:
                 error = exc
             if not (may_retry and calls == 1 and isinstance(error, ProviderUnavailable) and error.retry_same):
                 return None, calls, error
-            self._sleep(self._delay(error))
+            wait = self._delay(error)
+            if self._clock() - started + wait + ATTEMPT_RESERVE_SECONDS > BUDGET_SECONDS:
+                return None, calls, error  # the wait would not leave room for the attempt: move on without waiting
+            self._sleep(wait)
 
     def complete_json(self, *, feature: str, system: str, blocks: Sequence[Block], output_model: type[BaseModel], max_tokens: int,
                       correction: str | None = None) -> ProviderResult:
@@ -146,7 +153,7 @@ class FallbackProvider:
             final["primary" if provider is self._primary else "secondary"] = error.reason
             other = secondary if provider is self._primary else None
             if provider is self._primary and secondary is not None:
-                self._state.mark_down(self._clock(), error.reason)
+                self._state.mark_down(self._clock(), error.reason, getattr(error, "retry_after", None))
             self._warn_permanent(provider, error, other)
             if self._clock() - started >= BUDGET_SECONDS:
                 break
