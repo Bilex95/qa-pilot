@@ -45,7 +45,7 @@ export function InviteAccept() {
     onSuccess: async (res) => {
       clearPendingInvite();
       await qc.invalidateQueries({ queryKey: ["me"] });
-      router.replace(`/o/${res.org.slug}/dashboard`);
+      router.replace(`/o/${encodeURIComponent(res.org.slug)}/dashboard`);
     },
     onError: () => {
       clearPendingInvite(); // any error ends the stored token; the person opens the link again to retry

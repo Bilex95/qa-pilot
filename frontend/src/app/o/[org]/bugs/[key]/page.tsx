@@ -12,6 +12,6 @@ const KEY = /^[A-Za-z]{2,6}-\d{1,9}$/;
 export default function Page() {
   const { key } = useParams<{ key: string }>();
   const org = useOrg();
-  if (!KEY.test(key)) return <NotFoundScreen home={`/o/${org.slug}/dashboard`} />;
+  if (!KEY.test(key)) return <NotFoundScreen home={`/o/${encodeURIComponent(org.slug)}/dashboard`} />;
   return <BugDetailPage bugRef={key} />;
 }

@@ -142,7 +142,7 @@ export function BoardPage() {
   }
   if (data.columns.every((c) => c.total === 0)) {
     const report = can(org.role, "bug.create") ? (
-      <Link className="btn primary" href={`/o/${org.slug}/bugs/new`}><IconPlus />Report bug</Link>
+      <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/bugs/new`}><IconPlus />Report bug</Link>
     ) : undefined;
     return (
       <>
@@ -155,7 +155,7 @@ export function BoardPage() {
   }
 
   const dropOk = dragging ? allowedTargets(workflow.data, dragging, who) : [];
-  const search = project ? `&project=${project}` : "";
+  const search = project ? `&project=${encodeURIComponent(project)}` : "";
 
   return (
     <>
@@ -190,7 +190,7 @@ export function BoardPage() {
                 {col.total > col.items.length ? (
                   <div className="col-empty">
                     Showing {Math.min(col.items.length, PER_COLUMN)} of {col.total}.{" "}
-                    <Link href={`/o/${org.slug}/bugs?status=${col.status}${search}`}>See all {name} bugs</Link>
+                    <Link href={`/o/${encodeURIComponent(org.slug)}/bugs?status=${encodeURIComponent(col.status)}${search}`}>See all {name} bugs</Link>
                   </div>
                 ) : null}
               </div>

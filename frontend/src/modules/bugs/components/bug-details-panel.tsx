@@ -149,7 +149,7 @@ export function BugDetailsPanel({ bug }: { bug: BugDetail }) {
                 ? <option value={shown.release_id}>{bug.release_name ?? "Release"}</option> : null}
               {(releases.data?.items ?? []).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </Select>
-            {bug.release_id ? <Link className="small" href={`/o/${org.slug}/releases/${bug.release_id}`}>Open the release</Link> : null}
+            {bug.release_id ? <Link className="small" href={`/o/${encodeURIComponent(org.slug)}/releases/${encodeURIComponent(bug.release_id)}`}>Open the release</Link> : null}
           </dd>
           <dt>Labels</dt>
           <dd><BugLabels bug={bug} canEdit={canEdit} /></dd>
@@ -164,7 +164,7 @@ export function BugDetailsPanel({ bug }: { bug: BugDetail }) {
             <>
               <dt>Found in</dt>
               <dd>
-                <Link href={`/o/${org.slug}/runs/${bug.source_run.run_key}`} className="mono" title={bug.source_run.run_name}>{bug.source_run.run_key}</Link>{" "}
+                <Link href={`/o/${encodeURIComponent(org.slug)}/runs/${encodeURIComponent(bug.source_run.run_key)}`} className="mono" title={bug.source_run.run_name}>{bug.source_run.run_key}</Link>{" "}
                 <span className="muted small">{bug.source_run.case_key}</span>
               </dd>
             </>

@@ -38,7 +38,7 @@ export function ReleasePage({ releaseId }: { releaseId: string }) {
   const release = useRelease(releaseId);
   const crumbs = (name: string) => (
     <div className="crumbs">
-      <Link href={`/o/${org.slug}/releases`}>Releases</Link> / {name}
+      <Link href={`/o/${encodeURIComponent(org.slug)}/releases`}>Releases</Link> / {name}
     </div>
   );
   if (release.isPending) {
@@ -69,7 +69,7 @@ export function ReleasePage({ releaseId }: { releaseId: string }) {
               <IconAlert className="big" />
               <h2>This release was not found</h2>
               <p>It may have been deleted, or it belongs to a workspace you are not a member of.</p>
-              <Link className="btn primary" href={`/o/${org.slug}/releases`}>Back to releases</Link>
+              <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/releases`}>Back to releases</Link>
             </div>
           </div>
         ) : (
@@ -125,7 +125,7 @@ function Loaded({ release, crumbs }: { release: Release; crumbs: React.ReactNode
     onSuccess: () => {
       toast(`${release.name} deleted`);
       refresh();
-      router.push(`/o/${org.slug}/releases`);
+      router.push(`/o/${encodeURIComponent(org.slug)}/releases`);
     },
     onError: (err) => { setDialog(null); onFail(err); },
   });
@@ -182,7 +182,7 @@ function Loaded({ release, crumbs }: { release: Release; crumbs: React.ReactNode
                     {release.bugs.map((b) => (
                       <tr key={b.id}>
                         <td data-label="Key" className="no-label"><span className="mono muted">{b.key}</span></td>
-                        <td className="title-cell"><Link href={`/o/${org.slug}/bugs/${b.key}`} style={{ overflowWrap: "anywhere" }}>{b.title}</Link></td>
+                        <td className="title-cell"><Link href={`/o/${encodeURIComponent(org.slug)}/bugs/${encodeURIComponent(b.key)}`} style={{ overflowWrap: "anywhere" }}>{b.title}</Link></td>
                         <td data-label="Status"><StatusBadge status={b.status} /></td>
                         <td data-label="Severity"><SeverityBadge severity={b.severity} /></td>
                         <td data-label="Priority"><PriorityTag priority={b.priority} /></td>
@@ -216,7 +216,7 @@ function Loaded({ release, crumbs }: { release: Release; crumbs: React.ReactNode
                     {release.runs.map((r) => (
                       <tr key={r.id}>
                         <td className="title-cell">
-                          <Link href={`/o/${org.slug}/runs/${r.key}`} style={{ overflowWrap: "anywhere" }}>{r.name}</Link>
+                          <Link href={`/o/${encodeURIComponent(org.slug)}/runs/${encodeURIComponent(r.key)}`} style={{ overflowWrap: "anywhere" }}>{r.name}</Link>
                           <div className="xs muted mono">{r.key}</div>
                         </td>
                         <td data-label="Status">{runStatusName(r.status)}</td>

@@ -18,7 +18,7 @@ export default function SectionPage() {
   const org = useOrg();
   const key = section[0] ?? "";
   const item = NAV.flatMap((g) => g.items).find((i) => i.path === key);
-  if (!item || section.length > 1) return <NotFoundScreen home={`/o/${org.slug}/dashboard`} />;
+  if (!item || section.length > 1) return <NotFoundScreen home={`/o/${encodeURIComponent(org.slug)}/dashboard`} />;
   if (item.requires && !can(org.role, item.requires)) {
     return (
       <EmptyState icon={IconLock} title={`You do not have access to ${item.label}`}>

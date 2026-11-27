@@ -46,7 +46,7 @@ export function ProjectsPage() {
     </div>
   );
   const dialog = creating ? (
-    <ProjectDialog onClose={() => setCreating(false)} onSaved={(p) => router.push(`/o/${org.slug}/projects/${p.key}`)} />
+    <ProjectDialog onClose={() => setCreating(false)} onSaved={(p) => router.push(`/o/${encodeURIComponent(org.slug)}/projects/${encodeURIComponent(p.key)}`)} />
   ) : null;
 
   if (projects.isPending) return <>{head}<TableSkeleton /></>;
@@ -87,7 +87,7 @@ export function ProjectsPage() {
               {data.items.map((p) => (
                 <tr key={p.id}>
                   <td className="title-cell">
-                    <Link href={`/o/${org.slug}/projects/${p.key}`} style={{ overflowWrap: "anywhere" }}>{p.name}</Link>
+                    <Link href={`/o/${encodeURIComponent(org.slug)}/projects/${encodeURIComponent(p.key)}`} style={{ overflowWrap: "anywhere" }}>{p.name}</Link>
                     {p.description ? <div className="xs muted" style={{ overflowWrap: "anywhere" }}>{p.description}</div> : null}
                   </td>
                   <td data-label="Key"><span className="mono">{p.key}</span></td>
@@ -97,7 +97,7 @@ export function ProjectsPage() {
                   <td data-label="Next release">
                     {p.next_release ? (
                       <span className="row" style={{ gap: 6 }}>
-                        <Link href={`/o/${org.slug}/releases/${p.next_release.id}`} style={{ overflowWrap: "anywhere" }}>{p.next_release.name}</Link>
+                        <Link href={`/o/${encodeURIComponent(org.slug)}/releases/${encodeURIComponent(p.next_release.id)}`} style={{ overflowWrap: "anywhere" }}>{p.next_release.name}</Link>
                         <ReadinessBadge readiness={p.next_release.readiness} />
                       </span>
                     ) : <span className="muted">None planned</span>}

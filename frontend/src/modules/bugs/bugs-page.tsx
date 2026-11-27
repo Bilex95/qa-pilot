@@ -96,7 +96,7 @@ export function BugsPage() {
   }, [data]);
 
   const report = can(org.role, "bug.create") ? (
-    <Link className="btn primary" href={`/o/${org.slug}/bugs/new`}>
+    <Link className="btn primary" href={`/o/${encodeURIComponent(org.slug)}/bugs/new`}>
       <IconPlus />
       Report bug
     </Link>

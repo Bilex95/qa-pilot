@@ -33,7 +33,7 @@ export function DuplicatesBox({ projectId, projectName, title, actualResult }: {
         <div key={c.bug.id} className="dupe">
           <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
             <span className="mono muted" style={{ fontSize: 13 }}>{c.bug.key}</span>{" "}
-            <Link href={`/o/${org.slug}/bugs/${c.bug.key}`} target="_blank" rel="noreferrer">{c.bug.title}</Link>{" "}
+            <Link href={`/o/${encodeURIComponent(org.slug)}/bugs/${encodeURIComponent(c.bug.key)}`} target="_blank" rel="noreferrer">{c.bug.title}</Link>{" "}
             <StatusBadge status={c.bug.status} />
           </div>
           <span className="score">

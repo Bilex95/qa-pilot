@@ -29,7 +29,7 @@ export function SuiteList({ groups, selectedId }: { groups: SuiteGroup[]; select
             <li className="proj" style={{ overflowWrap: "anywhere" }}>{g.name}</li>
             {g.suites.map((s) => (
               <li key={s.id}>
-                <Link href={`/o/${org.slug}/tests?suite=${s.id}`} aria-current={s.id === selectedId}>
+                <Link href={`/o/${encodeURIComponent(org.slug)}/tests?suite=${encodeURIComponent(s.id)}`} aria-current={s.id === selectedId}>
                   <b style={{ overflowWrap: "anywhere" }}>{s.name}</b>
                   <span className="xs muted">{s.case_count} {s.case_count === 1 ? "case" : "cases"}</span>
                 </Link>

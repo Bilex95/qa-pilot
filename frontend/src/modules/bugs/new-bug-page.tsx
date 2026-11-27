@@ -94,7 +94,7 @@ export function NewBugPage() {
         qc.invalidateQueries({ queryKey: ["test-run", org.id] }),
       ]);
       toast(`Bug ${bug.key} reported`);
-      router.push(source ? `/o/${org.slug}/bugs/${bug.key}` : `/o/${org.slug}/bugs`); // a bug from a run opens, to show its link back
+      router.push(source ? `/o/${encodeURIComponent(org.slug)}/bugs/${encodeURIComponent(bug.key)}` : `/o/${encodeURIComponent(org.slug)}/bugs`); // a bug from a run opens, to show its link back
     },
     onError: (err) => {
       const fields = isApiError(err) ? err.fieldErrors() : {};
@@ -119,7 +119,7 @@ export function NewBugPage() {
         <Crumbs />
         <div className="page-head"><div className="grow"><h1>Report a bug</h1></div></div>
         <EmptyState icon={IconLock} title="Viewers cannot report bugs"
-          action={<Link className="btn" href={`/o/${org.slug}/bugs`}>Back to bugs</Link>}>
+          action={<Link className="btn" href={`/o/${encodeURIComponent(org.slug)}/bugs`}>Back to bugs</Link>}>
           Ask a QA engineer or lead to report it, or comment on an existing bug.
         </EmptyState>
       </>
@@ -152,7 +152,7 @@ export function NewBugPage() {
       </div>
       {projects.data && projects.data.items.length === 0 ? (
         <EmptyState icon={IconPlus} title="No projects yet"
-          action={<Link className="btn" href={`/o/${org.slug}/projects`}>Go to projects</Link>}>
+          action={<Link className="btn" href={`/o/${encodeURIComponent(org.slug)}/projects`}>Go to projects</Link>}>
           A bug belongs to a project. Ask a QA Lead or an Org Admin to create one.
         </EmptyState>
       ) : (
@@ -162,7 +162,7 @@ export function NewBugPage() {
             {draft.data ? (
               <Banner kind="info">
                 Prefilled from a failed step of <b>{draft.data.case_key}</b> in run{" "}
-                <Link href={`/o/${org.slug}/runs/${draft.data.run_key}`}>{draft.data.run_key}</Link>. Review before saving. The bug will link back to the run.
+                <Link href={`/o/${encodeURIComponent(org.slug)}/runs/${encodeURIComponent(draft.data.run_key)}`}>{draft.data.run_key}</Link>. Review before saving. The bug will link back to the run.
               </Banner>
             ) : draft.isError ? (
               <Banner kind="warn">
@@ -290,7 +290,7 @@ export function NewBugPage() {
                 {create.isPending ? <Spinner /> : null}
                 Save bug
               </Button>
-              <Link className="btn ghost" href={`/o/${org.slug}/bugs`}>Cancel</Link>
+              <Link className="btn ghost" href={`/o/${encodeURIComponent(org.slug)}/bugs`}>Cancel</Link>
             </div>
           </div>
         </form>
@@ -311,7 +311,7 @@ function Crumbs() {
   const org = useOrg();
   return (
     <div className="crumbs">
-      <Link href={`/o/${org.slug}/bugs`}>Bugs</Link> / New
+      <Link href={`/o/${encodeURIComponent(org.slug)}/bugs`}>Bugs</Link> / New
     </div>
   );
 }

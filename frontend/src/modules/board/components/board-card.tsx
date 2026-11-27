@@ -63,7 +63,7 @@ export function BoardCard({ bug, canMove, allowed, dragging, onDragStart, onDrag
         ) : null}
       </div>
       <div className="ttl">
-        <Link href={`/o/${org.slug}/bugs/${bug.key}`} draggable={false} style={{ overflowWrap: "anywhere" }}>{bug.title}</Link>
+        <Link href={`/o/${encodeURIComponent(org.slug)}/bugs/${encodeURIComponent(bug.key)}`} draggable={false} style={{ overflowWrap: "anywhere" }}>{bug.title}</Link>
       </div>
       <div className="meta">
         <SeverityBadge severity={bug.severity} />

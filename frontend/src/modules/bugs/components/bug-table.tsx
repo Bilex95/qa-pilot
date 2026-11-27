@@ -56,7 +56,7 @@ export function BugTable({ items, sort, onSort }: Props) {
               <tr key={b.id}>
                 <td data-label="Key" className="no-label"><span className="mono muted">{b.key}</span></td>
                 <td className="title-cell">
-                  <Link href={`/o/${org.slug}/bugs/${b.key}`} style={{ overflowWrap: "anywhere" }}>{b.title}</Link>
+                  <Link href={`/o/${encodeURIComponent(org.slug)}/bugs/${encodeURIComponent(b.key)}`} style={{ overflowWrap: "anywhere" }}>{b.title}</Link>
                   {place || b.labels.length ? (
                     <div className="xs muted" style={{ overflowWrap: "anywhere" }}>
                       {place}

@@ -117,5 +117,5 @@ export function useSession(): SessionValue {
 export function homeFor(me: Me, next?: string | null): string {
   if (next) return next;
   const first = me.memberships[0];
-  return first ? `/o/${first.org.slug}/dashboard` : "/onboarding/org";
+  return first ? `/o/${encodeURIComponent(first.org.slug)}/dashboard` : "/onboarding/org";
 }
