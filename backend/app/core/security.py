@@ -70,5 +70,10 @@ def new_opaque_token() -> str:
     return secrets.token_urlsafe(48)
 
 
+# Only hashes high entropy random opaque tokens: refresh, reset and invitation
+# tokens from new_opaque_token() (secrets.token_urlsafe(48)) and the invite
+# tokens of the local only seed. SHA-256 is appropriate for those, as they
+# cannot be guessed or brute forced. Passwords use argon2id through
+# hash_password, never this function.
 def token_hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
