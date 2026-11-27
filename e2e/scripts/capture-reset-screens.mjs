@@ -109,7 +109,7 @@ try {
     await shot(page, `members-reset-row-${label}`); taken.push(`members-reset-row-${label}`);
     let linked = false;
     for (const who of ['hana@lumenfreight.test', 'sofia@lumenfreight.test', 'kwame@lumenfreight.test', 'mei@lumenfreight.test']) {
-      await page.locator('table.t:has(thead) tbody tr', { hasText: who }).locator('button[aria-label^="Reset the password of"]').first().click();
+      await page.locator('table.t:has(thead) tbody tr', { hasText: who }).locator('button[aria-label^="Reset password for"]').first().click();
       await page.waitForSelector('.modal');
       if (!taken.includes(`members-reset-confirm-${label}`)) { await shot(page, `members-reset-confirm-${label}`); taken.push(`members-reset-confirm-${label}`); }
       touched.add(who);

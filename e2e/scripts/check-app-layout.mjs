@@ -645,7 +645,7 @@ for (const vp of VIEWPORTS.filter(wanted)) {
   const resetRow = page.locator('table.t tbody tr', { hasText: RESET_EMAIL });
   await resetRow.waitFor();
   await check('members: the row with Reset password and Remove', { shot: 'members-reset-row' });
-  await resetRow.locator('button[aria-label^="Reset the password of"]').click();
+  await resetRow.locator('button[aria-label^="Reset password for"]').click();
   await page.waitForSelector('.modal');
   await check('reset password confirmation', { popup: '.modal', shot: 'members-reset-confirm' });
   step = 'create the reset link';
@@ -659,7 +659,7 @@ for (const vp of VIEWPORTS.filter(wanted)) {
   await fillStable(page, '#m-q', 'priya@lumenfreight.test');
   const sharedRow = page.locator('table.t tbody tr', { hasText: 'priya@lumenfreight.test' });
   await sharedRow.waitFor();
-  await sharedRow.locator('button[aria-label^="Reset the password of"]').click();
+  await sharedRow.locator('button[aria-label^="Reset password for"]').click();
   await page.waitForSelector('.modal');
   await page.click('.modal button:has-text("Create reset link")');
   await page.waitForSelector('.modal .banner.error');

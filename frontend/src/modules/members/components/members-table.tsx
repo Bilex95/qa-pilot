@@ -121,7 +121,8 @@ function MemberRow({ member, manage, isMe, soleAdmin, onRemove, onResetPassword 
       <td className="no-label">
         {manage && !isMe ? (
           <span className="row" style={{ gap: 4, flexWrap: "wrap" }}>
-            <Button variant="ghost" size="sm" aria-label={`Reset the password of ${name}`} onClick={() => onResetPassword(member)}>
+            {/* Label in Name (BL-042): the visible text is "Reset password", so the name keeps those words in a row */}
+            <Button variant="ghost" size="sm" aria-label={`Reset password for ${name}`} onClick={() => onResetPassword(member)}>
               Reset password
             </Button>
             <Button variant="danger" size="sm" className="ghost" aria-label={`Remove ${name}`} onClick={() => onRemove(member)}>
