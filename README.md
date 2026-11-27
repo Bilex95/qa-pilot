@@ -11,17 +11,22 @@ AI assisted bug tracking and QA management. Next.js and TypeScript on the front,
 
 ## Quick start on Windows (5 commands)
 
-You need Docker Desktop (Compose v2) and Git. Run these in PowerShell:
+You need Docker Desktop (Compose v2) and Git, a few GB of free memory for Docker (the running stack used about 2 GB here), and free ports 3000, 8000 and 5432. Run these in PowerShell:
 
 ```
 git clone https://github.com/Bilex95/qa-pilot.git
 cd qa-pilot
 copy .env.example .env
+```
+
+Now open `.env` and fill the three empty values before you go on: `POSTGRES_PASSWORD`, `JWT_SECRET` (at least 32 random characters) and `SEED_USER_PASSWORD` (the password every demo account shares; at least 10 characters with a letter and a number, or the seed refuses to run). Then:
+
+```
 docker compose up -d --wait
 docker compose exec backend python -m app.seed --scenario baseline
 ```
 
-Before the fourth command, open `.env` and fill the empty values: `POSTGRES_PASSWORD`, `JWT_SECRET` (at least 32 random characters) and `SEED_USER_PASSWORD` (the password every demo account shares). Then open http://localhost:3000.
+The first `up` builds the images and took about 8 minutes on a clean machine; later starts take under a minute. When it returns, all three services are healthy. Then open http://localhost:3000.
 
 ### Seeded logins
 
