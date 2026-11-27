@@ -70,7 +70,7 @@ Evidence key: UT = backend pytest, NM = Newman collection, FL = browser flow scr
 | REQ-039 reports | Verified | UT, NM, FL |
 | REQ-040 CSV export | Verified | UT, NM |
 | REQ-041 SLA breach | Verified | UT, NM, `sla-breach` seed scenario |
-| REQ-042 provider interface | Verified | UT; **live Anthropic call not tested (no API key)**, mock only |
+| REQ-042 provider interface | Verified | UT; live smoke on Gemini `gemini-3.5-flash-lite` with Groq `openai/gpt-oss-20b` as fallback (15 of 15), see `docs/reviews/LIVE_AI_SMOKE.md` (D-087); Anthropic not run |
 | REQ-043 Bug Writer | Verified | UT, NM, FL (AI flow, journeys) |
 | REQ-044 Explain this log | Verified | UT, NM |
 | REQ-045 Triage | Verified | UT, NM, FL |
@@ -93,12 +93,12 @@ Evidence key: UT = backend pytest, NM = Newman collection, FL = browser flow scr
 | REQ-062 bug list speed | Verified | `measure-api-latency.mjs`: p95 23 ms on 68 bugs, 22 ms on 5,068, 45 ms on 20,068 (target 300); dashboard 316 ms at 20,068 (target 500) (D-080) |
 | REQ-063 secure defaults | Verified | UT (headers, CORS), non root images, secret scan, REV (I-21) |
 
-Totals: 63 Verified, 0 Partial, 0 Not done (REQ-057 rests on an automated accessibility tree review; the manual NVDA check is still pending). REQ-042 is Verified for the mock provider only.
+Totals: 63 Verified, 0 Partial, 0 Not done (REQ-057 rests on an automated accessibility tree review; the manual NVDA check is still pending). REQ-042 is Verified on a live provider (Gemini `gemini-3.5-flash-lite`, Groq as fallback), see `LIVE_AI_SMOKE.md`.
 
 ## Known gaps and backlog
 
 * BL-035 is done (D-080). The dashboard is the endpoint to watch beyond 20,000 bugs (316 ms p95 against a 500 ms target).
-* BL-037: the live AI smoke test (`e2e/scripts/smoke-live-ai.mjs`) has not been run, because there is no API key yet. It must pass before any real user touches the AI features. REQ-042 stays Verified for the mock provider only.
+* BL-037 is done (27 Nov 2026): the live AI smoke test passed on Gemini with Groq as fallback (`docs/reviews/LIVE_AI_SMOKE.md`). Anthropic was not run.
 * BL-034: general API rate limit (before public exposure).
 * BL-036: the dashboard grows faster than the data (52 ms at 5,000 bugs, 316 ms at 20,000). Not blocking; before a larger customer arrives, run EXPLAIN ANALYZE on the dashboard, trend and summary queries at 20,000 bugs and propose an index or pre-aggregation.
 * No live call to the Anthropic provider was run (no key); validation, retry and fallback are tested against a fake provider.

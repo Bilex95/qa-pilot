@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = Field(default="", repr=False)
     anthropic_model: str = "claude-sonnet-5-5"
     gemini_api_key: str = Field(default="", repr=False)
-    gemini_model: str = ""  # empty means the provider default (gemini-2.5-flash)
+    gemini_model: str = ""  # empty means the provider default (gemini-3.5-flash-lite)
     gemini_base_url: str = ""
     openai_compat_api_key: str = Field(default="", repr=False)
     openai_compat_base_url: str = ""

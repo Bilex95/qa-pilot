@@ -1,6 +1,7 @@
 """Which provider is in use (REQ-042): `AI_PROVIDER=mock|anthropic|gemini|openai_compatible`. A real provider without its key (or, for
 openai_compatible, without a base URL) logs a warning once and uses the mock. `AI_FALLBACK_PROVIDER` (empty by default) names a second
-provider behind the first (D-085); the mock is never wrapped."""
+provider behind the first (D-085). Every real provider is wrapped in the retry chain, alone when there is no usable fallback (D-087);
+the mock is never wrapped."""
 
 import logging
 
@@ -59,12 +60,12 @@ def get_provider(settings: Settings | None = None) -> AIProvider:
         return MockProvider()
     wanted = s.ai_fallback_provider
     if not wanted:
-        return primary
+        return FallbackProvider(primary)  # retry once on 429 or 5xx even without a second provider (D-087)
     if wanted == s.ai_provider:
         _warn_fallback_once("AI_FALLBACK_PROVIDER is the same as AI_PROVIDER: no fallback is used.")
-        return primary
+        return FallbackProvider(primary)
     secondary = _build(wanted, s)
     if secondary is None:
         _warn_fallback_once(f"AI_FALLBACK_PROVIDER={wanted} but {_MISSING[wanted]}: no fallback is used.")
-        return primary
+        return FallbackProvider(primary)
     return FallbackProvider(primary, secondary, state=_states.setdefault((primary.name, secondary.name), ChainState()))

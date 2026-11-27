@@ -215,12 +215,12 @@ def test_an_http_failure_falls_back_as_an_error(db, world, fake, make, body, sta
 def test_the_factory_builds_the_new_providers_and_uses_the_mock_without_a_key(caplog) -> None:
     base = {"jwt_secret": "x" * 40}
     g = factory.get_provider(Settings(ai_provider="gemini", gemini_api_key="k", **base))
-    assert isinstance(g, GeminiProvider) and (g.name, g.model) == ("gemini", "gemini-2.5-flash")
+    assert isinstance(g._primary, GeminiProvider) and (g.name, g.model) == ("gemini", "gemini-3.5-flash-lite")  # type: ignore[attr-defined]
     g2 = factory.get_provider(Settings(ai_provider="gemini", gemini_api_key="k", gemini_model="gemini-x", **base))
     assert g2.model == "gemini-x"
     o = factory.get_provider(Settings(ai_provider="openai_compatible", openai_compat_api_key="k", openai_compat_base_url="http://h/v1",
                                       openai_compat_model="m", **base))
-    assert isinstance(o, OpenAICompatibleProvider) and (o.name, o.model) == ("openai_compatible", "m")
+    assert isinstance(o._primary, OpenAICompatibleProvider) and (o.name, o.model) == ("openai_compatible", "m")
     factory._warned = False
     with caplog.at_level(logging.WARNING, logger="app.ai"):
         assert factory.get_provider(Settings(ai_provider="gemini", gemini_api_key="", **base)).name == "mock"

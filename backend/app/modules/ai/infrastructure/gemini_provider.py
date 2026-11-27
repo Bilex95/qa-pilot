@@ -14,7 +14,7 @@ from app.modules.ai.domain.provider import ProviderResult
 from app.modules.ai.domain.rules import PROVIDER_TIMEOUT_SECONDS, TEMPERATURE
 from app.modules.ai.infrastructure.http_json import post_json
 
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"  # an empty GEMINI_MODEL (the .env.example value) falls back to this
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"  # an empty GEMINI_MODEL (the .env.example value) falls back to this
 DEFAULT_BASE_URL ="https://generativelanguage.googleapis.com"
 
 

@@ -321,6 +321,58 @@ def test_retry_after_is_read_as_plain_seconds_only(value, seconds) -> None:
     assert _retry_after(httpx.Response(429, headers={"retry-after": value} if value else {})) == seconds
 
 
+# A single provider (D-087) -----------------------------------------------------------------------------------------------------------------
+
+def lone(c: Clock, p: Scripted) -> FallbackProvider:
+    return FallbackProvider(p, state=ChainState(), clock=c, sleep=c.sleep, jitter=lambda: 0.0)
+
+
+def test_a_lone_provider_retries_a_503_once_and_records_no_fallback_reason() -> None:
+    c = Clock()
+    p = Scripted("gemini", c, unavailable("http_503"), VALID)
+    got = go(lone(c, p))
+    assert (got.provider, got.attempts, got.fallback_reason, p.calls) == ("gemini", 2, None, 2) and c.sleeps == [1.5]
+
+
+def test_a_lone_provider_with_two_429s_ends_in_the_manual_fallback_with_one_usage_row(db, world) -> None:
+    c = Clock()
+    p = Scripted("gemini", c, unavailable("http_429"), unavailable("http_429"))
+    got = ask(db, world, lone(c, p))
+    assert got.status == "error" and got.fallback and p.calls == 2
+    (row,) = rows(db, world)
+    assert (row.status, row.provider, row.attempts, row.fallback_reason) == ("error", "gemini", 2, "http_429")
+
+
+@pytest.mark.parametrize("failure", [ProviderTimeout("slow"), ProviderUnavailable("refused", reason="connection", retry_same=False)])
+def test_a_lone_provider_does_not_retry_a_timeout_or_a_connection_error(failure) -> None:
+    c = Clock()
+    p = Scripted("gemini", c, failure)
+    with pytest.raises(ProviderError):
+        go(lone(c, p))
+    assert p.calls == 1 and c.sleeps == []
+
+
+def test_a_lone_provider_does_not_retry_a_permanent_error_and_warns_once(caplog) -> None:
+    c = Clock()
+    p = Scripted("gemini", c, permanent(404), permanent(404))
+    provider = lone(c, p)
+    with caplog.at_level(logging.WARNING, logger="app.ai"):
+        for _ in range(2):
+            with pytest.raises(ProviderError):
+                go(provider)
+    warnings = [r.getMessage() for r in caplog.records if r.name == "app.ai" and r.levelno == logging.WARNING]
+    assert p.calls == 2 and c.sleeps == [] and len(warnings) == 1 and "No other provider is available" in warnings[0]
+
+
+def test_a_lone_provider_has_no_cool_down() -> None:
+    c = Clock()
+    p = Scripted("gemini", c, permanent(404), VALID)
+    provider = lone(c, p)
+    with pytest.raises(ProviderError):
+        go(provider)
+    assert go(provider).provider == "gemini" and p.calls == 2
+
+
 # The factory -------------------------------------------------------------------------------------------------------------------------------
 
 BASE = {"jwt_secret": "x" * 40}
@@ -334,11 +386,12 @@ def settings(**kw):  # type: ignore[no-untyped-def]
 
 def test_a_configured_different_fallback_wraps_the_primary(caplog) -> None:
     got = factory.get_provider(settings(ai_fallback_provider="openai_compatible"))
-    assert isinstance(got, FallbackProvider) and (got.name, got.model) == ("gemini", "gemini-2.5-flash")
+    assert isinstance(got, FallbackProvider) and (got.name, got.model) == ("gemini", "gemini-3.5-flash-lite")
 
 
-def test_no_fallback_setting_gives_the_single_provider() -> None:
-    assert isinstance(factory.get_provider(settings()), GeminiProvider)
+def test_no_fallback_setting_gives_the_single_provider_in_a_retry_only_chain() -> None:
+    got = factory.get_provider(settings())
+    assert isinstance(got, FallbackProvider) and isinstance(got._primary, GeminiProvider) and got._secondary is None
 
 
 @pytest.mark.parametrize(("kw", "words"), [({"ai_fallback_provider": "gemini"}, "same as AI_PROVIDER"),
@@ -346,8 +399,9 @@ def test_no_fallback_setting_gives_the_single_provider() -> None:
 def test_a_fallback_equal_to_the_primary_or_unconfigured_is_ignored_with_one_warning(kw, words, caplog) -> None:
     factory._warned_fallback = False
     with caplog.at_level(logging.WARNING, logger="app.ai"):
-        assert isinstance(factory.get_provider(settings(**kw)), GeminiProvider)
-        assert isinstance(factory.get_provider(settings(**kw)), GeminiProvider)
+        for _ in range(2):
+            got = factory.get_provider(settings(**kw))
+            assert isinstance(got, FallbackProvider) and got._secondary is None
     messages = [r.getMessage() for r in caplog.records if r.name == "app.ai"]
     assert len(messages) == 1 and words in messages[0]
     factory._warned_fallback = False

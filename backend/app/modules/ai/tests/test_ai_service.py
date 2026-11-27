@@ -307,7 +307,7 @@ def test_anthropic_selected_without_a_key_uses_the_mock_and_warns_once(caplog) -
 def test_the_provider_follows_the_settings() -> None:
     assert isinstance(factory.get_provider(Settings(ai_provider="mock", jwt_secret="x" * 40)), MockProvider)
     real = factory.get_provider(Settings(ai_provider="anthropic", anthropic_api_key="k", anthropic_model="claude-opus-5-5", jwt_secret="x" * 40))
-    assert isinstance(real, AnthropicProvider) and (real.name, real.model) == ("anthropic", "claude-opus-5-5")
+    assert isinstance(real._primary, AnthropicProvider) and (real.name, real.model) == ("anthropic", "claude-opus-5-5")
 
 
 # Pure rules ----------------------------------------------------------------------------------------------------------------------------------

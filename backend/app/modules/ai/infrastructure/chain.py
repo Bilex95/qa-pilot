@@ -1,4 +1,5 @@
-"""A primary provider with a second one behind it (D-085). A 429 or 5xx answer is retried once on the same provider after a short backoff;
+"""A primary provider, usually with a second one behind it (D-085). The second may be absent (D-087): then it only retries once.
+A 429 or 5xx answer is retried once on the same provider after a short backoff;
 a timeout or a connection error goes straight to the next provider; a permanent failure (bad key, retired model) goes to the next provider
 and is logged once as a warning for the workspace admin. The whole request has a 60 second budget, and a primary that just failed is
 skipped for 30 seconds. Invalid JSON is not an availability problem and never reaches this class (service.run handles it). No key, URL or
@@ -70,7 +71,7 @@ class ChainState:
 class FallbackProvider:
     """The AIProvider protocol over [primary, secondary]. `name` and `model` are the primary's (what a refused call is logged with)."""
 
-    def __init__(self, primary: AIProvider, secondary: AIProvider, *, state: ChainState | None = None,
+    def __init__(self, primary: AIProvider, secondary: AIProvider | None = None, *, state: ChainState | None = None,
                  clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
                  jitter: Callable[[], float] = random.random) -> None:
         self._primary = primary
@@ -118,9 +119,14 @@ class FallbackProvider:
         kwargs = {"feature": feature, "system": system, "blocks": blocks, "output_model": output_model, "max_tokens": max_tokens,
                   "correction": correction}
         started = self._clock()
-        cooling = self._state.cooling(started)
-        # While the primary cools down the secondary goes first, and the primary is tried once anyway if the secondary fails.
-        sequence = [(self._secondary, True), (self._primary, False)] if cooling else [(self._primary, True), (self._secondary, True)]
+        secondary = self._secondary
+        if secondary is None:  # a lone provider: retry once, nothing to skip to, so no cool-down
+            cooling = False
+            sequence = [(self._primary, True)]
+        else:
+            cooling = self._state.cooling(started)
+            # While the primary cools down the secondary goes first, and the primary is tried once anyway if the secondary fails.
+            sequence = [(secondary, True), (self._primary, False)] if cooling else [(self._primary, True), (secondary, True)]
         total = 0
         final: dict[str, str] = {}
         last: ProviderError | None = None
@@ -138,8 +144,8 @@ class FallbackProvider:
                 break
             last = error
             final["primary" if provider is self._primary else "secondary"] = error.reason
-            other = self._secondary if provider is self._primary else None
-            if provider is self._primary:
+            other = secondary if provider is self._primary else None
+            if provider is self._primary and secondary is not None:
                 self._state.mark_down(self._clock(), error.reason)
             self._warn_permanent(provider, error, other)
             if self._clock() - started >= BUDGET_SECONDS:
