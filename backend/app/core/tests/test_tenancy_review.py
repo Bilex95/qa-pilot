@@ -27,6 +27,9 @@ REVIEWED = {
     "testing/infrastructure/repository.py": {"suite_name_taken"},
     # the mock provider reads no database
     "ai/infrastructure/mock.py": {"complete_json"},
+    # the REST providers call a model over HTTP and read no database
+    "ai/infrastructure/gemini_provider.py": {"complete_json"},
+    "ai/infrastructure/openai_compatible_provider.py": {"complete_json"},
     "ai/infrastructure/mock_features.py": {"bug_writer", "explain_log", "triage", "test_cases"},
 }
 

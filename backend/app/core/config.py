@@ -31,9 +31,15 @@ class Settings(BaseSettings):
     upload_dir: str = "/data/uploads"
     max_upload_mb: int = 10
 
-    ai_provider: Literal["mock", "anthropic"] = "mock"
+    ai_provider: Literal["mock", "anthropic", "gemini", "openai_compatible"] = "mock"
     anthropic_api_key: str = Field(default="", repr=False)
     anthropic_model: str = "claude-sonnet-5-5"
+    gemini_api_key: str = Field(default="", repr=False)
+    gemini_model: str = ""  # empty means the provider default (gemini-2.5-flash)
+    gemini_base_url: str = ""
+    openai_compat_api_key: str = Field(default="", repr=False)
+    openai_compat_base_url: str = ""
+    openai_compat_model: str = ""
     ai_user_rate_per_minute: int = 20
     ai_org_daily_limit_default: int = 500
 
