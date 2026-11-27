@@ -3,7 +3,7 @@
 // validation error, the New test run dialog, a release page. It is NOT a test with a real screen reader (NVDA stays a manual check).
 // Rules: every button, link, field and dialog has a clear name; fields have labels; errors are announced and linked to the field
 // (aria-invalid, aria-describedby to the message, role=alert); one h1 and no skipped heading level; focus is never lost on the body
-// after an action; nothing focusable or meaningful is hidden from the tree.
+// after an action; nothing focusable or meaningful is hidden from the tree; a control's aria-label contains its visible text (BL-042).
 //
 // Usage (stack up, baseline seeded):
 //   & <repo>\scripts\with-wsl.ps1 -Up <repo>\scripts\e2e.ps1 check-a11y-tree.mjs
@@ -86,6 +86,31 @@ function domFacts() {
     if (e.closest('[aria-hidden="true"]')) out.push({ el: desc(e), problem: 'focusable but inside aria-hidden' });
     const r = e.getAttribute('role');
     if (r === 'presentation' || r === 'none') out.push({ el: desc(e), problem: `control with role=${r}` });
+  }
+  // WCAG 2.5.3 Label in Name (BL-042): when a control has an aria-label (or aria-labelledby), that name must contain the text a person
+  // sees on it, so speech input ("click LF Lumen Freight") and screen readers agree. The visible text is built the way axe-core
+  // builds it: the rendered text nodes joined with no separator (so two spans need a space node between them), compared after
+  // lower casing and dropping punctuation. Text of fewer than two letters or digits (an icon, one glyph) is skipped, as axe does.
+  const norm = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+  const shown = (root) => {
+    let t = '';
+    const walk = (n) => {
+      if (n.nodeType === 3) { t += n.nodeValue; return; }
+      if (n.nodeType !== 1) return;
+      const s = getComputedStyle(n);
+      if (s.display === 'none' || s.visibility === 'hidden') return;
+      for (const c of n.childNodes) walk(c);
+    };
+    walk(root);
+    return norm(t);
+  };
+  const labelled = 'button, a[href], summary, [role=button], [role=link], [role=menuitem], [role=tab], [role=checkbox], [role=switch], [role=radio]';
+  for (const e of document.querySelectorAll(labelled)) {
+    if (!vis(e) || !(e.getAttribute('aria-label') || e.getAttribute('aria-labelledby'))) continue;
+    const seen = shown(e);
+    if ((seen.match(/[\p{L}\p{N}]/gu) ?? []).length < 2) continue;
+    const name = norm(nameOf(e));
+    if (!name.includes(seen)) out.push({ el: desc(e) + (e.className && typeof e.className === 'string' ? `.${e.className.split(/\s+/)[0]}` : ''), problem: `accessible name "${nameOf(e)}" does not contain the visible text "${seen}" (Label in Name, WCAG 2.5.3)` });
   }
   return out;
 }
