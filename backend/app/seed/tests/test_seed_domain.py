@@ -1,6 +1,8 @@
 """The seeded projects, bugs, tests and releases (I-12, REQ-060, D-066): amounts, every status and severity, the acceptance examples
 (WEB 2.4.0 Blocked with two reasons, bugs past their SLA), the timeline, tenant isolation and reset."""
 
+from datetime import datetime
+
 import pytest
 from sqlalchemy import func, select
 
@@ -88,8 +90,9 @@ def test_a_seeded_bug_has_a_real_timeline_in_order(client, db) -> None:
     assert oldest_first[0]["kind"] == "created"
     moves = [e["new_value"] for e in oldest_first if e["kind"] == "status_changed"]
     assert moves == ["triaged", "in_progress", "fixed", "ready_for_retest", "verified", "closed"]
-    stamps = [e["created_at"] for e in oldest_first]
-    assert stamps == sorted(stamps) and stamps[0] == detail["created_at"] and stamps[-1] <= detail["updated_at"]
+    stamps = [datetime.fromisoformat(e["created_at"]) for e in oldest_first]  # moments, not strings (BL-041)
+    assert stamps == sorted(stamps) and stamps[0] == datetime.fromisoformat(detail["created_at"])
+    assert stamps[-1] <= datetime.fromisoformat(detail["updated_at"])
     assert detail["resolved_at"] is not None and detail["closed_at"] is not None
     assert detail["created_at"] < detail["resolved_at"] < detail["closed_at"]
 
